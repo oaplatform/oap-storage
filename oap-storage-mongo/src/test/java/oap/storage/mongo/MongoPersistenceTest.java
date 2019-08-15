@@ -35,9 +35,11 @@ import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * It requires installed MongoDB on the machine
+ * It requires installed MongoDB on the machine with enabled Replica Set Oplog
  *
  * @see <a href="https://docs.mongodb.com/manual/administration/install-community/">Install MongoDB Community Edition</a>
+ * @see <a href="https://docs.mongodb.com/manual/tutorial/deploy-replica-set-for-testing/">Deploy a Replica Set for
+ * Testing and Development</a>
  */
 @Slf4j
 public class MongoPersistenceTest extends AbstractMongoTest {
