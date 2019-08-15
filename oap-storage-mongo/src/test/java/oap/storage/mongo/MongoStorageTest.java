@@ -81,7 +81,7 @@ public class MongoStorageTest extends AbstractMongoTest {
             storage.delete( bean1.id );
             storage.fsync();
 
-            assertThat( storage.collection.count() ).isEqualTo( 1 );
+            assertEventually( 100, 100, () -> assertThat( storage.collection.countDocuments() ).isEqualTo( 1 ) );
         }
     }
 
