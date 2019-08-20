@@ -26,13 +26,11 @@ package oap.storage;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.util.Id;
 
 @ToString
 @EqualsAndHashCode
 public class Bean {
 
-    @Id
     public String id;
     public String s = "aaa";
 

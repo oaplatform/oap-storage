@@ -38,13 +38,13 @@ public class ReplicatorTest {
     @Test
     public void masterSlave() {
         TypeIdFactory.register( Bean.class, Bean.class.getName() );
-        MemoryStorage<Bean> slave = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
-        MemoryStorage<Bean> master = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
+        var slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        var master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( Replicator<Bean> ignored = new Replicator<>( slave, master, 50, 0 ) ) {
 
-            AtomicInteger updates = new AtomicInteger();
-            AtomicInteger creates = new AtomicInteger();
-            AtomicInteger deletes = new AtomicInteger();
+            var updates = new AtomicInteger();
+            var creates = new AtomicInteger();
+            var deletes = new AtomicInteger();
             slave.addDataListener( new Storage.DataListener<>() {
                 public void updated( Collection<Bean> objects, boolean added ) {
                     ( added ? creates : updates ).set( objects.size() );

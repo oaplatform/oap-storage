@@ -53,8 +53,10 @@ public class DirectoryPersistenceTest extends Fixtures {
     @Test
     public void load() {
         Path path = deployTestData( getClass() );
-        MemoryStorage<Bean> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
-        try( DirectoryPersistence<Bean> persistence = new DirectoryPersistence<>( path, storage ) ) {
+        var storage = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
+            .suggestion( o -> o.s )
+            .build(), SERIALIZED );
+        try( var persistence = new DirectoryPersistence<>( path, storage ) ) {
             persistence.start();
             assertThat( storage.select() )
                 .containsExactly( new Bean( "t1" ), new Bean( "t2" ) );
@@ -64,15 +66,19 @@ public class DirectoryPersistenceTest extends Fixtures {
     @Test
     public void persist() {
         Path path = tmpPath( "data" );
-        MemoryStorage<Bean> storage1 = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
-        try( DirectoryPersistence<Bean> persistence = new DirectoryPersistence<>( path, storage1 ) ) {
+        var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
+            .suggestion( o -> o.s )
+            .build(), SERIALIZED );
+        try( var persistence = new DirectoryPersistence<>( path, storage1 ) ) {
             persistence.start();
             storage1.store( new Bean( "1" ) );
             storage1.store( new Bean( "2" ) );
         }
 
-        MemoryStorage<Bean> storage2 = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
-        try( DirectoryPersistence<Bean> persistence = new DirectoryPersistence<>( path, storage2 ) ) {
+        var storage2 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
+            .suggestion( o -> o.s )
+            .build(), SERIALIZED );
+        try( var persistence = new DirectoryPersistence<>( path, storage2 ) ) {
             persistence.start();
             assertThat( storage2.select() )
                 .containsExactly( new Bean( "1" ), new Bean( "2" ) );
@@ -83,8 +89,10 @@ public class DirectoryPersistenceTest extends Fixtures {
     public void persistFsLayout() {
         Path path = tmpPath( "data" );
         BiFunction<Path, Bean, Path> fsResolve = ( p, o ) -> p.resolve( o.s );
-        MemoryStorage<Bean> storage1 = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
-        try( DirectoryPersistence<Bean> persistence = new DirectoryPersistence<>( path, fsResolve, 50, 0, empty(), storage1 ) ) {
+        var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
+            .suggestion( o -> o.s )
+            .build(), SERIALIZED );
+        try( var persistence = new DirectoryPersistence<>( path, fsResolve, 50, 0, empty(), storage1 ) ) {
             persistence.start();
             storage1.store( new Bean( "1" ) );
             storage1.store( new Bean( "2" ) );
@@ -93,8 +101,10 @@ public class DirectoryPersistenceTest extends Fixtures {
         assertThat( path.resolve( "aaa/1.json" ) ).exists();
         assertThat( path.resolve( "aaa/2.json" ) ).exists();
 
-        MemoryStorage<Bean> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
-        try( DirectoryPersistence<Bean> persistence = new DirectoryPersistence<>( path, fsResolve, 50, 0, empty(), storage ) ) {
+        var storage = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
+            .suggestion( o -> o.s )
+            .build(), SERIALIZED );
+        try( var persistence = new DirectoryPersistence<>( path, fsResolve, 50, 0, empty(), storage ) ) {
             persistence.start();
             assertThat( storage.select() )
                 .containsExactly( new Bean( "1" ), new Bean( "2" ) );
@@ -105,8 +115,10 @@ public class DirectoryPersistenceTest extends Fixtures {
     @Test
     public void restructureFsLayout() {
         Path path = tmpPath( "data" );
-        MemoryStorage<Bean> storage1 = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
-        try( DirectoryPersistence<Bean> persistence = new DirectoryPersistence<>( path, storage1 ) ) {
+        var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
+            .suggestion( o -> o.s )
+            .build(), SERIALIZED );
+        try( var persistence = new DirectoryPersistence<>( path, storage1 ) ) {
             persistence.start();
             storage1.store( new Bean( "1", "aaa" ) );
             storage1.store( new Bean( "2", "bbb" ) );
@@ -118,8 +130,10 @@ public class DirectoryPersistenceTest extends Fixtures {
         assertThat( path.resolve( "1.json" ) ).exists();
         assertThat( path.resolve( "2.json" ) ).exists();
 
-        MemoryStorage<Bean> storage2 = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
-        try( DirectoryPersistence<Bean> persistence =
+        var storage2 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
+            .suggestion( o -> o.s )
+            .build(), SERIALIZED );
+        try( var persistence =
                  new DirectoryPersistence<>( path, ( p, s ) -> p.resolve( s.s ), 50, 0, empty(), storage2 ) ) {
             persistence.start();
 
@@ -136,8 +150,10 @@ public class DirectoryPersistenceTest extends Fixtures {
     @Test
     public void storeAndUpdate() {
         Path path = tmpPath( "data" );
-        MemoryStorage<Bean> storage1 = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
-        try( DirectoryPersistence<Bean> persistence = new DirectoryPersistence<>( path, storage1 ) ) {
+        var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
+            .suggestion( o -> o.s )
+            .build(), SERIALIZED );
+        try( var persistence = new DirectoryPersistence<>( path, storage1 ) ) {
             persistence.start();
             storage1.store( new Bean( "111" ) );
             storage1.update( "111", u -> {
@@ -146,8 +162,10 @@ public class DirectoryPersistenceTest extends Fixtures {
             } );
         }
 
-        MemoryStorage<Bean> storage2 = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
-        try( DirectoryPersistence<Bean> persistence = new DirectoryPersistence<>( path, storage2 ) ) {
+        var storage2 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
+            .suggestion( o -> o.s )
+            .build(), SERIALIZED );
+        try( var persistence = new DirectoryPersistence<>( path, storage2 ) ) {
             persistence.start();
             assertThat( storage2.select() )
                 .containsExactly( new Bean( "111", "bbb" ) );
@@ -157,8 +175,10 @@ public class DirectoryPersistenceTest extends Fixtures {
     @Test
     public void delete() {
         Path path = tmpPath( "data" );
-        MemoryStorage<Bean> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
-        try( DirectoryPersistence<Bean> persistence = new DirectoryPersistence<>( path, 50, 0, empty(), storage ) ) {
+        var storage = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
+            .suggestion( o -> o.s )
+            .build(), SERIALIZED );
+        try( var persistence = new DirectoryPersistence<>( path, 50, 0, empty(), storage ) ) {
             persistence.start();
             storage.store( new Bean( "111" ) );
             assertEventually( 200, 10, () -> {
@@ -174,8 +194,10 @@ public class DirectoryPersistenceTest extends Fixtures {
     @Test
     public void deleteVersion() {
         Path path = tmpPath( "data" );
-        MemoryStorage<Bean> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
-        try( DirectoryPersistence<Bean> persistence = new DirectoryPersistence<>( path, 50, 1, empty(), storage ) ) {
+        var storage = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
+            .suggestion( o -> o.s )
+            .build(), SERIALIZED );
+        try( var persistence = new DirectoryPersistence<>( path, 50, 1, empty(), storage ) ) {
             persistence.start();
             storage.store( new Bean( "111" ) );
             assertEventually( 100, 100, () -> assertThat( path.resolve( "111.v1.json" ) ).exists() );

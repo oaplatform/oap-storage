@@ -48,7 +48,7 @@ public class FilePersistenceTest extends Fixtures {
     @Test
     public void fsync() {
         Path path = Env.tmpPath( "storage.json.gz" );
-        MemoryStorage<Bean> storge = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
+        var storge = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( FilePersistence<Bean> persistence = new FilePersistence<>( path, 10, storge ) ) {
             persistence.start();
             storge.store( new Bean( "123" ) );
@@ -60,13 +60,13 @@ public class FilePersistenceTest extends Fixtures {
     @Test
     public void persist() {
         Path path = Env.tmpPath( "storage.json.gz" );
-        MemoryStorage<Bean> storge1 = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
+        var storge1 = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( FilePersistence<Bean> persistence = new FilePersistence<>( path, 10, storge1 ) ) {
             persistence.start();
             storge1.store( new Bean( "123" ) );
         }
 
-        MemoryStorage<Bean> storge2 = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
+        var storge2 = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( FilePersistence<Bean> persistence = new FilePersistence<>( path, 10, storge2 ) ) {
             persistence.start();
             assertThat( storge2.select() ).containsExactly( new Bean( "123" ) );

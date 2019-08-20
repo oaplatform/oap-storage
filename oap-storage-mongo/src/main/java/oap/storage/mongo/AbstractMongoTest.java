@@ -30,7 +30,6 @@ import lombok.extern.slf4j.Slf4j;
 import oap.storage.Identifier;
 import oap.testng.Env;
 import oap.testng.Teamcity;
-import oap.util.Id;
 import org.bson.types.ObjectId;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -40,15 +39,14 @@ public abstract class AbstractMongoTest {
     protected String dbName;
     protected MongoClient mongoClient;
     protected Identifier<Bean> beanIdentifier =
-        Identifier.<Bean>forAnnotation()
+        Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
             .length( 10 )
             .build();
     protected Identifier<Bean> beanIdentifierWithoutName =
-        Identifier.<Bean>forAnnotation()
+        Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( ar -> ObjectId.get().toString() )
             .length( 10 )
-            .options()
             .build();
 
     @BeforeMethod
@@ -69,7 +67,6 @@ public abstract class AbstractMongoTest {
     @ToString
     @EqualsAndHashCode
     public static class Bean {
-        @Id
         public String id;
         public String name;
         public int c;

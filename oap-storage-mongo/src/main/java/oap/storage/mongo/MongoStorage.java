@@ -58,7 +58,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, AutoC
 
     public MongoStorage( MongoClient mongoClient, String table, Lock lock ) {
         this( mongoClient, table,
-            Identifier.<T>forAnnotation()
+            Identifier.<T>forPath( "id" )
                 .suggestion( ar -> ObjectId.get().toString() )
                 .length( 24 )
                 .options()

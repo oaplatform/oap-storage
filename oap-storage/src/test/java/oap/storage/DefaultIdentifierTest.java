@@ -37,7 +37,7 @@ public class DefaultIdentifierTest {
 
     @Test
     public void forPath() {
-        MemoryStorage<Bean> storage = new MemoryStorage<>( Identifier.<Bean>forPath( "s" ).build(), SERIALIZED );
+        var storage = new MemoryStorage<>( Identifier.<Bean>forPath( "s" ).build(), SERIALIZED );
         storage.store( new Bean( "1", "aaaa" ) );
         storage.store( new Bean( "2", "bbbb" ) );
         assertThat( storage.get( "aaaa" ) )
@@ -49,15 +49,43 @@ public class DefaultIdentifierTest {
     }
 
     @Test
+    public void forId() {
+        var storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        storage.store( new Bean( "1", "aaaa" ) );
+        storage.store( new Bean( "2", "bbbb" ) );
+        assertThat( storage.get( "1" ) )
+            .isPresent()
+            .hasValue( new Bean( "1", "aaaa" ) );
+        assertThat( storage.get( "2" ) )
+            .isPresent()
+            .hasValue( new Bean( "2", "bbbb" ) );
+    }
+
+    @Test
+    public void forIdWithSetter() {
+        var storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id, ( o, id ) -> o.id = id )
+            .suggestion( o -> o.s )
+            .build(), SERIALIZED );
+        storage.store( new Bean( "1", "aaaa" ) );
+        storage.store( new Bean( "2", "bbbb" ) );
+        assertThat( storage.get( "1" ) )
+            .isPresent()
+            .hasValue( new Bean( "1", "aaaa" ) );
+        assertThat( storage.get( "2" ) )
+            .isPresent()
+            .hasValue( new Bean( "2", "bbbb" ) );
+    }
+
+    @Test
     public void idAndSizeGeneration() {
-        Identifier<Bean> identifier = Identifier.<Bean>forPath( "id" )
+        var identifier = Identifier.<Bean>forPath( "id" )
             .suggestion( bean -> bean.s )
             .length( 7 )
             .options( NO_VOWELS, FILL )
             .build();
-        MemoryStorage<Bean> storage = new MemoryStorage<>( identifier, SERIALIZED );
-        Bean a = new Bean( null, "some text" );
-        Bean b = new Bean( null, "another text" );
+        var storage = new MemoryStorage<>( identifier, SERIALIZED );
+        var a = new Bean( null, "some text" );
+        var b = new Bean( null, "another text" );
 
         storage.store( a );
         storage.store( b );
@@ -75,13 +103,13 @@ public class DefaultIdentifierTest {
             .options( NO_VOWELS, FILL )
             .build();
         MemoryStorage<Bean> storage = new MemoryStorage<>( identifier, CONCURRENT );
-        Bean a = new Bean( null, "some text" );
-        Bean b = new Bean( null, "some text" );
-        Bean c = new Bean( null, "some text" );
-        Bean d = new Bean( null, "some text" );
-        Bean e = new Bean( null, "some text" );
-        Bean f = new Bean( null, "some text" );
-        Bean g = new Bean( null, "some text" );
+        var a = new Bean( null, "some text" );
+        var b = new Bean( null, "some text" );
+        var c = new Bean( null, "some text" );
+        var d = new Bean( null, "some text" );
+        var e = new Bean( null, "some text" );
+        var f = new Bean( null, "some text" );
+        var g = new Bean( null, "some text" );
 
         storage.store( a );
         storage.store( b );
