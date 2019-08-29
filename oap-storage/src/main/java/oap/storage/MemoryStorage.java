@@ -109,18 +109,24 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
             } );
     }
 
+    /**
+     * @todo threadsafety of this method is questinable. Rethink it.
+     */
     protected Optional<Metadata<T>> updateObject( String id, Function<T, T> update, Supplier<T> init ) {
-        return lock.synchronizedOn( id, () -> {
-            Metadata<T> metadata = data.get( id );
-            if( metadata == null ) {
-                if( init == null ) return Optional.empty();
-                metadata = data.computeIfAbsent( id, newId -> {
-                    var object = init.get();
-                    identifier.set( object, newId );
-                    return new Metadata<>( object );
+        Metadata<T> metadata = id == null ? null : data.get( id );
+        if( id == null || metadata == null )
+            if( init == null ) return Optional.empty();
+            else {
+                T object = init.get();
+                String objectId = identifier.getOrInit( object, this::get );
+                return lock.synchronizedOn( objectId, () -> {
+                    var m = new Metadata<>( object );
+                    data.put( objectId, m );
+                    return Optional.of( m );
                 } );
-                data.put( id, metadata );
-            } else metadata.update( update.apply( metadata.object ) );
+            }
+        else return lock.synchronizedOn( id, () -> {
+            metadata.update( update.apply( metadata.object ) );
             return Optional.of( metadata );
         } );
     }
