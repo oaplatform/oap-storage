@@ -26,6 +26,9 @@ package oap.storage;
 
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,10 +40,18 @@ public class MemoryStorageTest {
                 .suggestion( b -> b.s )
                 .build(),
             SERIALIZED );
+        List<String> ids = new ArrayList<>();
+        storage.addDataListener( new Storage.DataListener<>() {
+            @Override
+            public void updated( Bean object, boolean added ) {
+                ids.add( object.id );
+            }
+        } );
         Bean noId = new Bean();
         storage.update( noId.id, b -> noId, () -> noId );
         assertThat( storage.list() ).containsOnly( noId );
         assertThat( noId.id ).isNotNull();
+        assertThat( ids ).containsOnly( noId.id );
     }
 
 }
