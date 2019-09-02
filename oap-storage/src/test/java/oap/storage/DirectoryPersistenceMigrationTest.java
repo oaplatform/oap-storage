@@ -24,6 +24,7 @@
 
 package oap.storage;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.json.TypeIdFactory;
 import oap.storage.migration.JsonMetadata;
 import oap.storage.migration.Migration;
@@ -38,6 +39,7 @@ import java.nio.file.Path;
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Slf4j
 public class DirectoryPersistenceMigrationTest extends Fixtures {
     {
         fixture( TestDirectory.FIXTURE );
@@ -58,6 +60,7 @@ public class DirectoryPersistenceMigrationTest extends Fixtures {
             persistence.start();
             assertThat( storage.select() ).containsExactly( new Bean( "11" ), new Bean( "21" ) );
         }
+        log.info( "DirectoryPersistence#close" );
 
         assertThat( path.resolve( "1.json" ) ).doesNotExist();
         assertThat( path.resolve( "2.json" ) ).doesNotExist();
