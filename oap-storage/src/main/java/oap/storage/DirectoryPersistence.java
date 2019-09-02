@@ -59,11 +59,11 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class DirectoryPersistence<T> implements Closeable {
     private final Path path;
     private final BiFunction<Path, T, Path> fsResolve;
-    private long fsync;
     private final int version;
     private final List<Migration> migrations;
     private final Logger log;
     private final Lock lock = new ReentrantLock();
+    private long fsync;
     private MemoryStorage<T> storage;
     private PeriodicScheduled scheduled;
 
@@ -86,6 +86,9 @@ public class DirectoryPersistence<T> implements Closeable {
         this.log = getLogger( toString() );
     }
 
+    public static <T> BiFunction<Path, T, Path> plainResolve() {
+        return ( p, object ) -> p;
+    }
 
     public void start() {
         Threads.synchronously( lock, () -> {
@@ -190,6 +193,8 @@ public class DirectoryPersistence<T> implements Closeable {
         } else {
             log.debug( "This {} was't started or already closed", this );
         }
+
+        log.debug( "closing {}... Done.", this );
     }
 
     private Path pathFor( T object ) {
@@ -227,9 +232,5 @@ public class DirectoryPersistence<T> implements Closeable {
         Path toVersion( long version ) {
             return path.resolve( id + ".v" + version + ".json" );
         }
-    }
-
-    public static <T> BiFunction<Path, T, Path> plainResolve() {
-        return ( p, object ) -> p;
     }
 }
