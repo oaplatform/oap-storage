@@ -187,7 +187,6 @@ public class DirectoryPersistence<T> implements Closeable {
         log.debug( "closing {}...", this );
         if( scheduled != null && storage != null ) {
             Threads.synchronously( lock, () -> {
-                fsync( scheduled.lastExecuted() );
                 Scheduled.cancel( scheduled );
                 fsync( scheduled.lastExecuted() );
             } );
