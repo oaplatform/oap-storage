@@ -218,6 +218,11 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
+    public Identifier<T> identifier() {
+        return identifier;
+    }
+
+    @Override
     @Nonnull
     public Iterator<T> iterator() {
         return select().iterator();
