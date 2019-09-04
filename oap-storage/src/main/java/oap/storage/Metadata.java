@@ -38,6 +38,7 @@ import java.io.Serializable;
 @ToString( exclude = "object" )
 public class Metadata<T> implements Serializable {
     public long modified = DateTimeUtils.currentTimeMillis();
+    public long hash = 0;
     @JsonTypeIdResolver( TypeIdFactory.class )
     @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type" )
     public T object;
@@ -45,7 +46,7 @@ public class Metadata<T> implements Serializable {
 
     @JsonCreator
     protected Metadata( T object ) {
-        this.object = object;
+        update( object );
     }
 
     protected Metadata() {
@@ -54,6 +55,7 @@ public class Metadata<T> implements Serializable {
     public static <T> Metadata<T> from( Metadata<T> metadata ) {
         Metadata<T> m = new Metadata<>( metadata.object );
         m.modified = metadata.modified;
+        m.hash = metadata.hash;
         return m;
     }
 
@@ -66,6 +68,7 @@ public class Metadata<T> implements Serializable {
 
     public void refresh() {
         this.modified = DateTimeUtils.currentTimeMillis();
+        this.hash = this.object.hashCode();
     }
 
     public boolean isDeleted() {
@@ -77,4 +80,7 @@ public class Metadata<T> implements Serializable {
         refresh();
     }
 
+    public boolean looksUnmodified( Metadata<T> metadata ) {
+        return modified == metadata.modified && hash == metadata.hash;
+    }
 }

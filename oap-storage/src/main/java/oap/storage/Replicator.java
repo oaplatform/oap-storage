@@ -64,7 +64,7 @@ public class Replicator<T> implements Closeable {
         for( int b = 0; b < 100000; b++ ) {
             var offset = b * batchSize;
             var updates = master.updatedSince( last, batchSize, offset );
-            log.trace( "replicate {} to {} last: {}, length {}, batch {}, offset {}",
+            log.trace( "replicate {} to {} last: {}, size {}, batch {}, offset {}",
                 master, slave, last, updates.size(), batchSize, offset );
             if( updates.isEmpty() ) break;
             newUpdates.addAll( updates );
@@ -77,6 +77,11 @@ public class Replicator<T> implements Closeable {
         for( Metadata<T> metadata : newUpdates ) {
             log.trace( "replicate {}", metadata );
             var id = slave.identifier.get( metadata.object );
+            boolean unmodified = slave.memory.get( id ).map( m -> m.looksUnmodified( metadata ) ).orElse( false );
+            if( unmodified ) {
+                log.trace( "skipping unmodified {}", id );
+                continue;
+            }
             if( slave.memory.put( id, Metadata.from( metadata ) ) ) added.add( __( id, metadata.object ) );
             else updated.add( __( id, metadata.object ) );
         }
