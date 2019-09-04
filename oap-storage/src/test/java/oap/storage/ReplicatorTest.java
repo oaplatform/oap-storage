@@ -25,9 +25,10 @@
 package oap.storage;
 
 import oap.json.TypeIdFactory;
+import oap.util.Pair;
 import org.testng.annotations.Test;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
@@ -43,16 +44,22 @@ public class ReplicatorTest {
         try( Replicator<Bean> ignored = new Replicator<>( slave, master, 50, 0 ) ) {
 
             var updates = new AtomicInteger();
-            var creates = new AtomicInteger();
-            var deletes = new AtomicInteger();
+            var addons = new AtomicInteger();
+            var deletions = new AtomicInteger();
             slave.addDataListener( new Storage.DataListener<>() {
-                public void updated( Collection<Bean> objects, boolean added ) {
-                    ( added ? creates : updates ).set( objects.size() );
+                @Override
+                public void added( List<Pair<String, Bean>> objects ) {
+                    addons.set( objects.size() );
                 }
 
                 @Override
-                public void deleted( Collection<Bean> objects ) {
-                    deletes.set( objects.size() );
+                public void updated( List<Pair<String, Bean>> objects ) {
+                    updates.set( objects.size() );
+                }
+
+                @Override
+                public void deleted( List<Pair<String, Bean>> objects ) {
+                    deletions.set( objects.size() );
                 }
             } );
 
@@ -60,29 +67,29 @@ public class ReplicatorTest {
             master.store( new Bean( "222" ) );
             assertEventually( 120, 5, () -> {
                 assertThat( slave.select() ).containsExactly( new Bean( "111" ), new Bean( "222" ) );
+                assertThat( addons.get() ).isEqualTo( 2 );
                 assertThat( updates.get() ).isEqualTo( 0 );
-                assertThat( creates.get() ).isEqualTo( 2 );
-                assertThat( deletes.get() ).isEqualTo( 0 );
+                assertThat( deletions.get() ).isEqualTo( 0 );
             } );
 
             updates.set( 0 );
-            creates.set( 0 );
+            addons.set( 0 );
             master.store( new Bean( "111", "bbb" ) );
             assertEventually( 120, 5, () -> {
                 assertThat( slave.select() ).containsExactly( new Bean( "111", "bbb" ), new Bean( "222" ) );
+                assertThat( addons.get() ).isEqualTo( 0 );
                 assertThat( updates.get() ).isEqualTo( 1 );
-                assertThat( creates.get() ).isEqualTo( 0 );
-                assertThat( deletes.get() ).isEqualTo( 0 );
+                assertThat( deletions.get() ).isEqualTo( 0 );
             } );
 
             updates.set( 0 );
-            creates.set( 0 );
+            addons.set( 0 );
             master.delete( "111" );
             assertEventually( 120, 5, () -> {
                 assertThat( slave.select() ).containsExactly( new Bean( "222" ) );
+                assertThat( addons.get() ).isEqualTo( 0 );
                 assertThat( updates.get() ).isEqualTo( 0 );
-                assertThat( creates.get() ).isEqualTo( 0 );
-                assertThat( deletes.get() ).isEqualTo( 1 );
+                assertThat( deletions.get() ).isEqualTo( 1 );
             } );
         }
     }

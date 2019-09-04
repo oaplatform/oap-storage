@@ -32,6 +32,7 @@ import oap.concurrent.scheduler.Scheduler;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
 import oap.util.Lists;
+import oap.util.Pair;
 import org.slf4j.Logger;
 
 import java.io.Closeable;
@@ -40,7 +41,6 @@ import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static oap.util.Collections.anyMatch;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class FilePersistence<T> implements Closeable {
@@ -69,22 +69,23 @@ public class FilePersistence<T> implements Closeable {
             var metadata = Binder.json.unmarshal( new TypeRef<List<Metadata<T>>>() {}, path ).orElse( Lists.empty() );
             metadata.forEach( m -> {
                 String id = storage.identifier.get( m.object );
-                storage.data.put( id, m );
+                storage.memory.put( id, m );
             } );
-            log.info( storage.data.size() + " object(s) loaded." );
+            log.info( storage.size() + " object(s) loaded." );
         } );
     }
 
     @SneakyThrows
     private synchronized void fsync( long last ) {
         Threads.synchronously( lock, () -> {
-            log.trace( "fsync: last: {}, storage length: {}", last, storage.data.size() );
+            log.trace( "fsync: last: {}, objects in storage: {}", last, storage.size() );
 
-            if( anyMatch( storage.data.values(), m -> m.modified > last ) ) {
-                storage.data.forEach( ( id, m ) -> {
-                    if( m.isDeleted() ) storage.deleteInternalObject( id );
+            List<Pair<String, Metadata<T>>> updates = storage.memory.selectUpdatedSince( last ).toList();
+            if( !updates.isEmpty() ) {
+                updates.forEach( p -> {
+                    if( p._2.isDeleted() ) storage.memory.removePermanently( p._1 );
                 } );
-                List<Metadata<T>> ms = storage.selectLiveMetadatas().toList();
+                List<Metadata<T>> ms = storage.memory.selectLive().mapToObj( ( id, m ) -> m ).toList();
                 log.debug( "fsync storing {} to {}...", ms.size(), path );
 
                 Binder.json.marshal( path, ms );

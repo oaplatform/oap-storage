@@ -120,10 +120,10 @@ public class DirectoryPersistence<T> implements Closeable {
                 persist( id, metadata );
             }
 
-            storage.data.put( id, metadata );
+            storage.memory.put( id, metadata );
         }
 
-        log.info( storage.data.size() + " object(s) loaded." );
+        log.info( storage.size() + " object(s) loaded." );
     }
 
     @SneakyThrows
@@ -161,10 +161,8 @@ public class DirectoryPersistence<T> implements Closeable {
 
     private void fsync( long last ) {
         Threads.synchronously( lock, () -> {
-            log.trace( "fsyncing, last: {}, storage length: {}", last, storage.data.size() );
-            storage.data.forEach( ( id, m ) -> {
-                if( m.modified >= last ) persist( id, m );
-            } );
+            log.trace( "fsyncing, last: {}, objects in storage: {}", last, storage.size() );
+            storage.memory.selectUpdatedSince( last ).forEach( this::persist );
         } );
     }
 
@@ -174,7 +172,7 @@ public class DirectoryPersistence<T> implements Closeable {
         if( metadata.isDeleted() ) {
             log.trace( "delete {}", path );
             Files.delete( path );
-            storage.deleteInternalObject( id );
+            storage.memory.removePermanently( id );
         } else try( OutputStream outputStream = IoStreams.out( path, PLAIN, DEFAULT_BUFFER, false, true ) ) {
             log.trace( "storing {} with modification time {}", path, metadata.modified );
             Binder.json.marshal( outputStream, metadata );

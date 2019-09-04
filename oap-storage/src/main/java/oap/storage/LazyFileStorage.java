@@ -30,9 +30,9 @@ import oap.io.Files;
 import oap.io.IoStreams;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
-import oap.util.Lists;
 import oap.util.Stream;
 
+import javax.annotation.Nonnull;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.List;
@@ -55,13 +55,13 @@ public class LazyFileStorage<T> extends MemoryStorage<T> implements AutoCloseabl
     }
 
     @Override
-    public T store( T object ) {
+    public T store( @Nonnull T object ) {
         open();
         return super.store( object );
     }
 
     @Override
-    public Optional<T> get( String id ) {
+    public Optional<T> get( @Nonnull String id ) {
         open();
         return super.get( id );
     }
@@ -73,24 +73,20 @@ public class LazyFileStorage<T> extends MemoryStorage<T> implements AutoCloseabl
     }
 
     @Override
-    public Optional<T> delete( String id ) {
+    public Optional<T> delete( @Nonnull String id ) {
         open();
         return super.delete( id );
     }
 
     private synchronized void open() {
-        if( data.size() > 0 ) {
-            return;
-        }
+        if( size() > 0 ) return;
         Files.ensureFile( path );
 
-        Binder.json.unmarshal( new TypeRef<List<Metadata<T>>>() {}, path ).orElse( Lists.empty() )
-            .forEach( m -> {
-                var id = identifier.get( m.object );
-                data.put( id, m );
-            } );
+        Binder.json.unmarshal( new TypeRef<List<Metadata<T>>>() {}, path )
+            .orElse( List.of() )
+            .forEach( m -> memory.put( identifier.get( m.object ), m ) );
         closed = false;
-        log.info( data.size() + " object(s) loaded." );
+        log.info( size() + " object(s) loaded." );
     }
 
     @Override
@@ -98,7 +94,6 @@ public class LazyFileStorage<T> extends MemoryStorage<T> implements AutoCloseabl
     public synchronized void close() {
         if( closed ) return;
         fsync();
-        data.clear();
         closed = true;
     }
 
@@ -106,7 +101,7 @@ public class LazyFileStorage<T> extends MemoryStorage<T> implements AutoCloseabl
     public void fsync() {
         if( size() > 0 ) {
             try( OutputStream out = IoStreams.out( path, IoStreams.Encoding.from( path ), IoStreams.DEFAULT_BUFFER, false, true ) ) {
-                Binder.json.marshal( out, selectLiveMetadatas().toList() );
+                Binder.json.marshal( out, memory.selectLive().toList() );
             }
             log.debug( "storing {}... done", path );
         } else {

@@ -28,12 +28,14 @@ import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.util.Lists;
-import oap.util.Stream;
+import oap.util.Pair;
 
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import static oap.util.Pair.__;
 
 /**
  * Replicator works on the MemoryStorage internals. It's intentional.
@@ -69,28 +71,28 @@ public class Replicator<T> implements Closeable {
         }
         log.trace( "updated objects {}", newUpdates.size() );
 
-        List<T> newObjects = new ArrayList<>();
-        List<T> updatedObjects = new ArrayList<>();
+        List<Pair<String, T>> added = new ArrayList<>();
+        List<Pair<String, T>> updated = new ArrayList<>();
 
         for( Metadata<T> metadata : newUpdates ) {
             log.trace( "replicate {}", metadata );
             var id = slave.identifier.get( metadata.object );
-            if( slave.data.put( id, metadata ) != null ) updatedObjects.add( metadata.object );
-            else newObjects.add( metadata.object );
+            if( slave.memory.put( id, Metadata.from( metadata ) ) ) added.add( __( id, metadata.object ) );
+            else updated.add( __( id, metadata.object ) );
         }
-        if( !newObjects.isEmpty() ) slave.fireUpdated( newObjects, true );
-        if( !updatedObjects.isEmpty() ) slave.fireUpdated( updatedObjects, false );
+        slave.fireAdded( added );
+        slave.fireUpdated( updated );
 
         var ids = master.ids();
         log.trace( "master ids {}", ids );
-        var deletedObjects = Stream.of( slave.data.keySet() )
+        List<Pair<String, T>> deleted = slave.memory.selectLiveIds()
             .filter( id -> !ids.contains( id ) )
-            .map( slave::deleteInternalObject )
+            .map( id -> slave.memory.removePermanently( id ).map( m -> __( id, m.object ) ) )
             .filter( Optional::isPresent )
-            .map( m -> m.get().object )
+            .map( Optional::get )
             .toList();
-        log.trace( "deleted {}", deletedObjects );
-        slave.fireDeleted( deletedObjects );
+        log.trace( "deleted {}", deleted );
+        slave.fireDeleted( deleted );
 
     }
 

@@ -53,5 +53,4 @@ public class MemoryStorageTest {
         assertThat( noId.id ).isNotNull();
         assertThat( ids ).containsOnly( noId.id );
     }
-
 }

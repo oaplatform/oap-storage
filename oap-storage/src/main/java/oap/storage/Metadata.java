@@ -51,10 +51,17 @@ public class Metadata<T> implements Serializable {
     protected Metadata() {
     }
 
-    public void update( T t ) {
+    public static <T> Metadata<T> from( Metadata<T> metadata ) {
+        Metadata<T> m = new Metadata<>( metadata.object );
+        m.modified = metadata.modified;
+        return m;
+    }
+
+    public Metadata<T> update( T t ) {
         this.object = t;
         this.deleted = false;
         refresh();
+        return this;
     }
 
     public void refresh() {
@@ -69,4 +76,5 @@ public class Metadata<T> implements Serializable {
         this.deleted = true;
         refresh();
     }
+
 }

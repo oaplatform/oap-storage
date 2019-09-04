@@ -52,11 +52,6 @@ import java.util.function.Consumer;
 
 import static com.mongodb.client.model.Filters.eq;
 
-/**
- * Mongo Persistence storage (similar to {@link oap.storage.DirectoryPersistence})
- *
- * @param <T> Type of Metadata
- */
 @Slf4j
 public class MongoPersistence<T> implements Closeable, Runnable, OplogService.OplogListener {
 
@@ -101,50 +96,38 @@ public class MongoPersistence<T> implements Closeable, Runnable, OplogService.Op
         } );
     }
 
-    /**
-     * Load all {@link MongoCollection} documents to the {@link MemoryStorage#data}
-     */
     private void load() {
         MongoNamespace namespace = collection.getNamespace();
         log.debug( "loading data from {}", namespace );
-        final Consumer<Metadata<T>> cons = metadata -> {
-            var id = storage.identifier.get( metadata.object );
-            storage.data.put( id, metadata );
-        };
+        Consumer<Metadata<T>> cons = metadata -> storage.memory.put( storage.identifier.get( metadata.object ), metadata );
         log.info( "Load {} documents from [{}] Mongo namespace", collection.countDocuments(), namespace );
         collection.find().forEach( cons );
-        log.info( storage.data.size() + " object(s) loaded." );
+        log.info( storage.size() + " object(s) loaded." );
     }
 
-    /**
-     * It persists the objects modified earlier than {@code last} to MongoDB
-     *
-     * @param last executed sync
-     *             TODO: avoid explicit usage of fsync
-     */
     private void fsync( long last ) {
         Threads.synchronously( lock, () -> {
-            log.trace( "fsyncing, last: {}, storage length: {}", last, storage.data.size() );
+            log.trace( "fsyncing, last: {}, objects in storage: {}", last, storage.size() );
             var list = new ArrayList<WriteModel<Metadata<T>>>( batchSize );
             var deletedIds = new ArrayList<String>( batchSize );
-            storage.data.forEach( ( id, m ) -> {
-                if( m.modified >= last ) {
-                    if( m.isDeleted() ) {
-                        deletedIds.add( id );
-                        list.add( new DeleteOneModel<>( eq( "_id", id ) ) );
-                    } else list.add( new ReplaceOneModel<>( eq( "_id", id ), m, REPLACE_OPTIONS_UPSERT ) );
-                    if( list.size() >= batchSize ) persist( deletedIds, list );
-                }
+            storage.memory.selectUpdatedSince( last ).forEach( ( id, m ) -> {
+                if( m.isDeleted() ) {
+                    deletedIds.add( id );
+                    list.add( new DeleteOneModel<>( eq( "_id", id ) ) );
+                } else list.add( new ReplaceOneModel<>( eq( "_id", id ), m, REPLACE_OPTIONS_UPSERT ) );
+                if( list.size() >= batchSize ) persist( deletedIds, list );
             } );
-            if( !list.isEmpty() ) persist( deletedIds, list );
+            persist( deletedIds, list );
         } );
     }
 
     private void persist( List<String> deletedIds, List<WriteModel<Metadata<T>>> list ) {
-        collection.bulkWrite( list, new BulkWriteOptions().ordered( false ) );
-        deletedIds.forEach( storage::deleteInternalObject );
-        deletedIds.clear();
-        list.clear();
+        if( !list.isEmpty() ) {
+            collection.bulkWrite( list, new BulkWriteOptions().ordered( false ) );
+            deletedIds.forEach( storage.memory::removePermanently );
+            deletedIds.clear();
+            list.clear();
+        }
     }
 
     @Override
@@ -180,14 +163,13 @@ public class MongoPersistence<T> implements Closeable, Runnable, OplogService.Op
         var m = collection.find( eq( "_id", id ) ).first();
         if( m != null ) {
             storage.lock.synchronizedOn( id, () -> {
-                var oldM = storage.data.get( id );
-                if( oldM == null || m.modified > oldM.modified ) {
+                var old = storage.memory.get( id );
+                if( old.isEmpty() || m.modified > old.get().modified ) {
                     log.debug( "refresh from mongo {}", id );
-                    storage.data.put( id, m );
-                    storage.fireUpdated( m.object, false );
-                } else {
-                    log.debug( "[{}] m.modified <= oldM.modified", id );
-                }
+                    storage.memory.put( id, m );
+                    if( old.isEmpty() ) storage.fireAdded( id, m.object );
+                    else storage.fireUpdated( id, m.object );
+                } else log.debug( "[{}] m.modified <= oldM.modified", id );
             } );
         }
     }

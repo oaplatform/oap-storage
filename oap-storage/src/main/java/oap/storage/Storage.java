@@ -24,8 +24,11 @@
 package oap.storage;
 
 import oap.concurrent.Threads;
+import oap.util.Lists;
+import oap.util.Pair;
 import oap.util.Stream;
 
+import javax.annotation.Nonnull;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -39,29 +42,21 @@ public interface Storage<T> extends Iterable<T> {
 
     List<T> list();
 
-    Optional<T> get( String id );
+    Optional<T> get( @Nonnull String id );
 
     long size();
 
-    T store( T object );
+    T store( @Nonnull T object );
 
     void store( Collection<T> objects );
 
     void forEach( Consumer<? super T> action );
 
-    default Optional<T> update( String id, Function<T, T> update ) {
-        return update( id, update, null );
-    }
+    Optional<T> update( @Nonnull String id, @Nonnull Function<T, T> update );
 
-    Optional<T> update( String id, Function<T, T> update, Supplier<T> init );
+    T update( String id, @Nonnull Function<T, T> update, @Nonnull Supplier<T> init );
 
-    void update( Collection<String> ids, Function<T, T> update, Supplier<T> init );
-
-    default void update( Collection<String> ids, Function<T, T> update ) {
-        update( ids, update, null );
-    }
-
-    Optional<T> delete( String id );
+    Optional<T> delete( @Nonnull String id );
 
     void deleteAll();
 
@@ -73,28 +68,70 @@ public interface Storage<T> extends Iterable<T> {
 
     interface DataListener<D> {
 
+        default void added( String id, D object ) {
+            updated( object, true );
+        }
+
+        default void updated( String id, D object ) {
+            updated( object, false );
+        }
+
+        default void deleted( String id, D object ) {
+            deleted( object );
+        }
+
+        default void added( List<Pair<String, D>> objects ) {
+            updated( Lists.map( objects, p -> p._2 ), true );
+        }
+
+        default void updated( List<Pair<String, D>> objects ) {
+            updated( Lists.map( objects, p -> p._2 ), false );
+        }
+
+        default void deleted( List<Pair<String, D>> objects ) {
+            deleted( ( Collection<D> ) Lists.map( objects, p -> p._2 ) );
+        }
+
+        /**
+         * @see #updated(String, Object)
+         * @see #added(String, Object)
+         */
+        @Deprecated
         default void updated( D object, boolean added ) {
         }
 
+        /**
+         * @see #added(List)
+         * @see #updated(List)
+         */
+        @Deprecated
         default void updated( Collection<D> objects ) {
         }
 
+        /**
+         * @see #added(List)
+         * @see #updated(List)
+         */
+        @Deprecated
         default void updated( Collection<D> objects, boolean added ) {
             updated( objects );
-
-            objects.forEach( obj -> updated( obj, added ) );
         }
 
-
+        /**
+         * @see #deleted(String, Object)
+         */
+        @Deprecated
         default void deleted( D object ) {
         }
 
+        /**
+         * @see #deleted(List)
+         */
+        @Deprecated
         default void deleted( Collection<D> objects ) {
             objects.forEach( this::deleted );
         }
 
-        @Deprecated
-        default void fsync() {}
     }
 
     interface Lock {

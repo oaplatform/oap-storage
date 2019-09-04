@@ -26,8 +26,7 @@ package oap.storage;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.BiStream;
 import oap.util.Lists;
-import oap.util.Maps;
-import oap.util.Optionals;
+import oap.util.Pair;
 import oap.util.Stream;
 
 import javax.annotation.Nonnull;
@@ -42,21 +41,25 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static java.util.Objects.requireNonNull;
+import static oap.util.Pair.__;
+
 @Slf4j
 public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     public final Identifier<T> identifier;
     protected final Lock lock;
     protected final List<DataListener<T>> dataListeners = new ArrayList<>();
-    protected final ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
+    protected final Memory<T> memory;
 
     public MemoryStorage( Identifier<T> identifier, Lock lock ) {
         this.identifier = identifier;
         this.lock = lock;
+        this.memory = new Memory<>( lock );
     }
 
     @Override
     public Stream<T> select() {
-        return Stream.of( data.values() ).filter( i -> !i.isDeleted() ).map( i -> i.object );
+        return memory.selectLive().map( p -> p._2.object );
     }
 
     @Override
@@ -65,146 +68,93 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
-    public T store( T object ) {
+    public T store( @Nonnull T object ) {
         String id = identifier.getOrInit( object, this::get );
         lock.synchronizedOn( id, () -> {
-            var metadata = data.get( id );
-
-            if( metadata != null ) metadata.update( object );
-            else data.computeIfAbsent( id, id1 -> new Metadata<>( object ) );
-            fireUpdated( object, metadata == null );
+            if( memory.put( id, object ) ) fireAdded( id, object );
+            else fireUpdated( id, object );
         } );
-
         return object;
     }
 
     @Override
     public void store( Collection<T> objects ) {
-        ArrayList<T> newObjects = new ArrayList<>();
-        ArrayList<T> updatedObjects = new ArrayList<>();
+        List<Pair<String, T>> added = new ArrayList<>();
+        List<Pair<String, T>> updated = new ArrayList<>();
 
         for( T object : objects ) {
             String id = identifier.getOrInit( object, this::get );
             lock.synchronizedOn( id, () -> {
-                var metadata = data.get( id );
-                if( metadata != null ) {
-                    metadata.update( object );
-                    updatedObjects.add( object );
-                } else {
-                    data.computeIfAbsent( id, id1 -> new Metadata<>( object ) );
-                    newObjects.add( object );
-                }
+                if( memory.put( id, object ) ) added.add( __( id, object ) );
+                else updated.add( __( id, object ) );
             } );
         }
-        if( !newObjects.isEmpty() ) fireUpdated( newObjects, true );
-        if( !updatedObjects.isEmpty() ) fireUpdated( updatedObjects, false );
+        fireAdded( added );
+        fireUpdated( updated );
     }
 
     @Override
-    public Optional<T> update( String id, Function<T, T> update, Supplier<T> init ) {
-        return updateObject( id, update, init )
-            .map( m -> {
-                fireUpdated( m.object, false );
-                return m.object;
-            } );
-    }
-
-    /**
-     * @todo threadsafety of this method is questinable. Rethink it.
-     */
-    protected Optional<Metadata<T>> updateObject( String id, Function<T, T> update, Supplier<T> init ) {
-        Metadata<T> metadata = id == null ? null : data.get( id );
-        if( id == null || metadata == null )
-            if( init == null ) return Optional.empty();
-            else {
-                T object = init.get();
-                String objectId = identifier.getOrInit( object, this::get );
-                return lock.synchronizedOn( objectId, () -> {
-                    var m = new Metadata<>( object );
-                    data.put( objectId, m );
-                    return Optional.of( m );
-                } );
-            }
-        else return lock.synchronizedOn( id, () -> {
-            metadata.update( update.apply( metadata.object ) );
-            return Optional.of( metadata );
-        } );
+    public Optional<T> update( @Nonnull String id, @Nonnull Function<T, T> update ) {
+        requireNonNull( id );
+        Optional<Metadata<T>> result = memory.remap( id, update );
+        result.ifPresent( m -> fireUpdated( id, m.object ) );
+        return result.map( m -> m.object );
     }
 
     @Override
-    public void update( Collection<String> ids, Function<T, T> update, Supplier<T> init ) {
-        fireUpdated( Stream.of( ids )
-            .flatMap( id -> Optionals.toStream( updateObject( id, update, init )
-                .map( m -> m.object ) ) )
-            .toList(), false );
+    public T update( String id, @Nonnull Function<T, T> update, @Nonnull Supplier<T> init ) {
+        if( id == null ) return store( init.get() );
+        else return update( id, update ).orElseThrow();
     }
 
     @Override
-    public Optional<T> get( String id ) {
-        return getLiveMetadata( id )
-            .map( m -> m.object );
-
+    public Optional<T> get( @Nonnull String id ) {
+        return memory.get( id ).map( m -> m.object );
     }
 
     @Override
     public void deleteAll() {
-        List<Metadata<T>> objects = selectLiveMetadatas().toList();
-        objects.forEach( Metadata::delete );
-        fireDeleted( Lists.map( objects, m -> m.object ) );
+        fireDeleted( Lists.map( memory.markDeletedAll(), p -> __( p._1, p._2.object ) ) );
     }
 
-    public Optional<T> delete( String id ) {
-        return lock.synchronizedOn( id, () -> {
-            Metadata<T> metadata = data.get( id );
-            if( metadata != null && !metadata.isDeleted() ) {
-                metadata.delete();
-                fireDeleted( metadata.object );
-                return Optional.of( metadata.object );
-            } else return Optional.empty();
-        } );
-    }
-
-    protected Optional<Metadata<T>> deleteInternalObject( String id ) {
-        return Optional.ofNullable( data.remove( id ) );
-    }
-
-    protected Optional<Metadata<T>> getLiveMetadata( String id ) {
-        return Maps.get( data, id )
-            .filter( m -> !m.isDeleted() );
-    }
-
-    protected Stream<Metadata<T>> selectLiveMetadatas() {
-        return selectLiveObjects().mapToObj( ( k, m ) -> m );
-    }
-
-    protected BiStream<String, Metadata<T>> selectLiveObjects() {
-        return BiStream.of( data ).filter( ( k, m ) -> !m.isDeleted() );
+    public Optional<T> delete( @Nonnull String id ) {
+        requireNonNull( id );
+        Optional<T> old = memory.markDeleted( id ).map( m -> m.object );
+        old.ifPresent( o -> fireDeleted( id, o ) );
+        return old;
     }
 
 
     @Override
     public long size() {
-        return selectLiveObjects().count();
+        return memory.selectLiveIds().count();
     }
 
-    public void fireUpdated( T object, boolean isNew ) {
-        for( DataListener<T> dataListener : this.dataListeners ) dataListener.updated( object, isNew );
+    protected void fireAdded( String id, T object ) {
+        for( DataListener<T> dataListener : this.dataListeners ) dataListener.added( id, object );
     }
 
-    protected void fireUpdated( Collection<T> objects, boolean isNew ) {
+    protected void fireUpdated( String id, T object ) {
+        for( DataListener<T> dataListener : this.dataListeners ) dataListener.updated( id, object );
+    }
+
+    protected void fireAdded( List<Pair<String, T>> objects ) {
         if( !objects.isEmpty() )
-            for( DataListener<T> dataListener : this.dataListeners )
-                dataListener.updated( objects, isNew );
+            for( DataListener<T> dataListener : this.dataListeners ) dataListener.added( objects );
     }
 
-    protected void fireDeleted( T object ) {
-        for( DataListener<T> dataListener : this.dataListeners ) dataListener.deleted( object );
-    }
-
-    protected void fireDeleted( List<T> objects ) {
+    protected void fireUpdated( List<Pair<String, T>> objects ) {
         if( !objects.isEmpty() )
-            for( DataListener<T> dataListener : this.dataListeners )
-                dataListener.deleted( objects );
+            for( DataListener<T> dataListener : this.dataListeners ) dataListener.updated( objects );
+    }
+
+    protected void fireDeleted( List<Pair<String, T>> objects ) {
+        if( !objects.isEmpty() )
+            for( DataListener<T> dataListener : this.dataListeners ) dataListener.deleted( objects );
+    }
+
+    protected void fireDeleted( String id, T object ) {
+        for( DataListener<T> dataListener : this.dataListeners ) dataListener.deleted( id, object );
     }
 
     @Override
@@ -235,7 +185,8 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
     @Override
     public List<Metadata<T>> updatedSince( long time, int limit, int offset ) {
-        return selectLiveMetadatas()
+        return memory.selectLive()
+            .mapToObj( ( id, m ) -> m )
             .filter( m -> m.modified >= time )
             .skip( offset )
             .limit( limit )
@@ -243,9 +194,77 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
-    public Collection<String> ids() {
-        return selectLiveObjects()
-            .mapToObj( ( k, m ) -> k )
-            .toList();
+    public List<String> ids() {
+        return memory.selectLiveIds().toList();
+    }
+
+    protected static class Memory<T> {
+        private final ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
+        private final Lock lock;
+
+        public Memory( Lock lock ) {
+            this.lock = lock;
+        }
+
+        public BiStream<String, Metadata<T>> selectLive() {
+            return BiStream.of( data ).filter( ( id, m ) -> !m.isDeleted() );
+        }
+
+        public BiStream<String, Metadata<T>> selectUpdatedSince( long since ) {
+            return BiStream.of( data ).filter( ( id, m ) -> m.modified > since );
+        }
+
+        public Optional<Metadata<T>> get( @Nonnull String id ) {
+            requireNonNull( id );
+            return Optional.ofNullable( data.get( id ) );
+        }
+
+        public boolean put( @Nonnull String id, @Nonnull Metadata<T> m ) {
+            requireNonNull( id );
+            requireNonNull( m );
+            return data.put( id, m ) == null;
+        }
+
+        public boolean put( @Nonnull String id, @Nonnull T object ) {
+            requireNonNull( id );
+            requireNonNull( object );
+            return lock.synchronizedOn( id, () -> {
+                boolean isNew = !data.containsKey( id );
+                data.compute( id, ( anId, m ) -> m != null ? m.update( object ) : new Metadata<>( object ) );
+                return isNew;
+            } );
+        }
+
+        public Optional<Metadata<T>> remap( @Nonnull String id, @Nonnull Function<T, T> update ) {
+            return lock.synchronizedOn( id, () ->
+                Optional.ofNullable( data.compute( id, ( anId, m ) -> m == null
+                    ? null
+                    : m.update( update.apply( m.object ) ) ) ) );
+        }
+
+        public List<Pair<String, Metadata<T>>> markDeletedAll() {
+            List<Pair<String, Metadata<T>>> ms = selectLive().toList();
+            ms.forEach( p -> p._2.delete() );
+            return ms;
+        }
+
+        public Optional<Metadata<T>> markDeleted( @Nonnull String id ) {
+            return lock.synchronizedOn( id, () -> {
+                Metadata<T> metadata = data.get( id );
+                if( metadata != null ) {
+                    metadata.delete();
+                    return Optional.of( metadata );
+                } else return Optional.empty();
+            } );
+        }
+
+        public Optional<Metadata<T>> removePermanently( @Nonnull String id ) {
+            return Optional.ofNullable( data.remove( id ) );
+        }
+
+        public Stream<String> selectLiveIds() {
+            return selectLive().mapToObj( ( id, m ) -> id );
+        }
+
     }
 }
