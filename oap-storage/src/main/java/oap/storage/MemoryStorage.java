@@ -24,6 +24,7 @@
 package oap.storage;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.storage.Storage.DataListener.IdObject;
 import oap.util.BiStream;
 import oap.util.Lists;
 import oap.util.Pair;
@@ -42,7 +43,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
-import static oap.util.Pair.__;
 
 @Slf4j
 public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
@@ -79,14 +79,14 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
     @Override
     public void store( Collection<T> objects ) {
-        List<Pair<String, T>> added = new ArrayList<>();
-        List<Pair<String, T>> updated = new ArrayList<>();
+        List<IdObject<T>> added = new ArrayList<>();
+        List<IdObject<T>> updated = new ArrayList<>();
 
         for( T object : objects ) {
             String id = identifier.getOrInit( object, this::get );
             lock.synchronizedOn( id, () -> {
-                if( memory.put( id, object ) ) added.add( __( id, object ) );
-                else updated.add( __( id, object ) );
+                if( memory.put( id, object ) ) added.add( new IdObject<>( id, object ) );
+                else updated.add( new IdObject<>( id, object ) );
             } );
         }
         fireAdded( added );
@@ -114,7 +114,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
     @Override
     public void deleteAll() {
-        fireDeleted( Lists.map( memory.markDeletedAll(), p -> __( p._1, p._2.object ) ) );
+        fireDeleted( Lists.map( memory.markDeletedAll(), p -> new IdObject<>( p._1, p._2.object ) ) );
     }
 
     public Optional<T> delete( @Nonnull String id ) {
@@ -131,30 +131,33 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     protected void fireAdded( String id, T object ) {
-        for( DataListener<T> dataListener : this.dataListeners ) dataListener.added( id, object );
+        for( DataListener<T> dataListener : this.dataListeners )
+            dataListener.added( List.of( new IdObject<>( id, object ) ) );
     }
 
     protected void fireUpdated( String id, T object ) {
-        for( DataListener<T> dataListener : this.dataListeners ) dataListener.updated( id, object );
+        for( DataListener<T> dataListener : this.dataListeners )
+            dataListener.updated( List.of( new IdObject<>( id, object ) ) );
     }
 
-    protected void fireAdded( List<Pair<String, T>> objects ) {
+    protected void fireAdded( List<IdObject<T>> objects ) {
         if( !objects.isEmpty() )
             for( DataListener<T> dataListener : this.dataListeners ) dataListener.added( objects );
     }
 
-    protected void fireUpdated( List<Pair<String, T>> objects ) {
+    protected void fireUpdated( List<IdObject<T>> objects ) {
         if( !objects.isEmpty() )
             for( DataListener<T> dataListener : this.dataListeners ) dataListener.updated( objects );
     }
 
-    protected void fireDeleted( List<Pair<String, T>> objects ) {
+    protected void fireDeleted( List<IdObject<T>> objects ) {
         if( !objects.isEmpty() )
             for( DataListener<T> dataListener : this.dataListeners ) dataListener.deleted( objects );
     }
 
     protected void fireDeleted( String id, T object ) {
-        for( DataListener<T> dataListener : this.dataListeners ) dataListener.deleted( id, object );
+        for( DataListener<T> dataListener : this.dataListeners )
+            dataListener.deleted( List.of( new DataListener.IdObject<>( id, object ) ) );
     }
 
     @Override

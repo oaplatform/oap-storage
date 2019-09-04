@@ -25,7 +25,6 @@
 package oap.storage;
 
 import oap.json.TypeIdFactory;
-import oap.util.Pair;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -48,17 +47,17 @@ public class ReplicatorTest {
             var deletions = new AtomicInteger();
             slave.addDataListener( new Storage.DataListener<>() {
                 @Override
-                public void added( List<Pair<String, Bean>> objects ) {
+                public void added( List<IdObject<Bean>> objects ) {
                     addons.set( objects.size() );
                 }
 
                 @Override
-                public void updated( List<Pair<String, Bean>> objects ) {
+                public void updated( List<IdObject<Bean>> objects ) {
                     updates.set( objects.size() );
                 }
 
                 @Override
-                public void deleted( List<Pair<String, Bean>> objects ) {
+                public void deleted( List<IdObject<Bean>> objects ) {
                     deletions.set( objects.size() );
                 }
             } );

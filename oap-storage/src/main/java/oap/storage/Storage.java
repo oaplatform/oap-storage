@@ -23,9 +23,8 @@
  */
 package oap.storage;
 
+import lombok.ToString;
 import oap.concurrent.Threads;
-import oap.util.Lists;
-import oap.util.Pair;
 import oap.util.Stream;
 
 import javax.annotation.Nonnull;
@@ -67,71 +66,22 @@ public interface Storage<T> extends Iterable<T> {
     Identifier<T> identifier();
 
     interface DataListener<D> {
+        default void added( List<IdObject<D>> objects ) {}
 
-        default void added( String id, D object ) {
-            updated( object, true );
+        default void updated( List<IdObject<D>> objects ) {}
+
+        default void deleted( List<IdObject<D>> objects ) {}
+
+        @ToString
+        class IdObject<D> {
+            public final String id;
+            public final D object;
+
+            public IdObject( String id, D object ) {
+                this.id = id;
+                this.object = object;
+            }
         }
-
-        default void updated( String id, D object ) {
-            updated( object, false );
-        }
-
-        default void deleted( String id, D object ) {
-            deleted( object );
-        }
-
-        default void added( List<Pair<String, D>> objects ) {
-            updated( Lists.map( objects, p -> p._2 ), true );
-        }
-
-        default void updated( List<Pair<String, D>> objects ) {
-            updated( Lists.map( objects, p -> p._2 ), false );
-        }
-
-        default void deleted( List<Pair<String, D>> objects ) {
-            deleted( ( Collection<D> ) Lists.map( objects, p -> p._2 ) );
-        }
-
-        /**
-         * @see #updated(String, Object)
-         * @see #added(String, Object)
-         */
-        @Deprecated
-        default void updated( D object, boolean added ) {
-        }
-
-        /**
-         * @see #added(List)
-         * @see #updated(List)
-         */
-        @Deprecated
-        default void updated( Collection<D> objects ) {
-        }
-
-        /**
-         * @see #added(List)
-         * @see #updated(List)
-         */
-        @Deprecated
-        default void updated( Collection<D> objects, boolean added ) {
-            updated( objects );
-        }
-
-        /**
-         * @see #deleted(String, Object)
-         */
-        @Deprecated
-        default void deleted( D object ) {
-        }
-
-        /**
-         * @see #deleted(List)
-         */
-        @Deprecated
-        default void deleted( Collection<D> objects ) {
-            objects.forEach( this::deleted );
-        }
-
     }
 
     interface Lock {

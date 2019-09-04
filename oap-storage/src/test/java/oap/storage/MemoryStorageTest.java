@@ -43,8 +43,8 @@ public class MemoryStorageTest {
         List<String> ids = new ArrayList<>();
         storage.addDataListener( new Storage.DataListener<>() {
             @Override
-            public void added( String id, Bean object ) {
-                ids.add( id );
+            public void added( List<IdObject<Bean>> objects ) {
+                objects.forEach( io -> ids.add( io.id ) );
             }
         } );
         Bean noId = new Bean();
@@ -64,8 +64,8 @@ public class MemoryStorageTest {
         List<String> ids = new ArrayList<>();
         storage.addDataListener( new Storage.DataListener<>() {
             @Override
-            public void added( String id, Bean object ) {
-                ids.add( id );
+            public void added( List<IdObject<Bean>> objects ) {
+                objects.forEach( io -> ids.add( io.id ) );
             }
         } );
         Bean id = new Bean( "id" );

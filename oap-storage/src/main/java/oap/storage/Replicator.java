@@ -27,15 +27,13 @@ package oap.storage;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
+import oap.storage.Storage.DataListener.IdObject;
 import oap.util.Lists;
-import oap.util.Pair;
 
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-import static oap.util.Pair.__;
 
 /**
  * Replicator works on the MemoryStorage internals. It's intentional.
@@ -71,8 +69,8 @@ public class Replicator<T> implements Closeable {
         }
         log.trace( "updated objects {}", newUpdates.size() );
 
-        List<Pair<String, T>> added = new ArrayList<>();
-        List<Pair<String, T>> updated = new ArrayList<>();
+        List<IdObject<T>> added = new ArrayList<>();
+        List<IdObject<T>> updated = new ArrayList<>();
 
         for( Metadata<T> metadata : newUpdates ) {
             log.trace( "replicate {}", metadata );
@@ -82,17 +80,17 @@ public class Replicator<T> implements Closeable {
                 log.trace( "skipping unmodified {}", id );
                 continue;
             }
-            if( slave.memory.put( id, Metadata.from( metadata ) ) ) added.add( __( id, metadata.object ) );
-            else updated.add( __( id, metadata.object ) );
+            if( slave.memory.put( id, Metadata.from( metadata ) ) ) added.add( new IdObject<>( id, metadata.object ) );
+            else updated.add( new IdObject<>( id, metadata.object ) );
         }
         slave.fireAdded( added );
         slave.fireUpdated( updated );
 
         var ids = master.ids();
         log.trace( "master ids {}", ids );
-        List<Pair<String, T>> deleted = slave.memory.selectLiveIds()
+        List<IdObject<T>> deleted = slave.memory.selectLiveIds()
             .filter( id -> !ids.contains( id ) )
-            .map( id -> slave.memory.removePermanently( id ).map( m -> __( id, m.object ) ) )
+            .map( id -> slave.memory.removePermanently( id ).map( m -> new IdObject<>( id, m.object ) ) )
             .filter( Optional::isPresent )
             .map( Optional::get )
             .toList();
