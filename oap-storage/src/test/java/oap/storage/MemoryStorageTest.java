@@ -43,8 +43,8 @@ public class MemoryStorageTest {
         List<String> ids = new ArrayList<>();
         storage.addDataListener( new Storage.DataListener<>() {
             @Override
-            public void updated( Bean object, boolean added ) {
-                ids.add( object.id );
+            public void added( String id, Bean object ) {
+                ids.add( id );
             }
         } );
         Bean noId = new Bean();
@@ -52,5 +52,26 @@ public class MemoryStorageTest {
         assertThat( storage.list() ).containsOnly( noId );
         assertThat( noId.id ).isNotNull();
         assertThat( ids ).containsOnly( noId.id );
+    }
+
+    @Test
+    public void updateWithId() {
+        MemoryStorage<Bean> storage = new MemoryStorage<>(
+            Identifier.<Bean>forId( b -> b.id, ( b, id ) -> b.id = id )
+                .suggestion( b -> b.s )
+                .build(),
+            SERIALIZED );
+        List<String> ids = new ArrayList<>();
+        storage.addDataListener( new Storage.DataListener<>() {
+            @Override
+            public void added( String id, Bean object ) {
+                ids.add( id );
+            }
+        } );
+        Bean id = new Bean( "id" );
+        storage.update( id.id, b -> id, () -> id );
+        assertThat( storage.list() ).containsOnly( id );
+        assertThat( id.id ).isNotNull();
+        assertThat( ids ).containsOnly( id.id );
     }
 }
