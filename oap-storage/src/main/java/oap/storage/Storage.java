@@ -23,8 +23,8 @@
  */
 package oap.storage;
 
-import lombok.ToString;
 import oap.concurrent.Threads;
+import oap.util.Pair;
 import oap.util.Stream;
 
 import javax.annotation.Nonnull;
@@ -72,14 +72,35 @@ public interface Storage<T> extends Iterable<T> {
 
         default void deleted( List<IdObject<D>> objects ) {}
 
-        @ToString
-        class IdObject<D> {
+        class IdObject<D> extends Pair<String, D> {
+            /**
+             * @see #id()
+             */
+            @Deprecated
             public final String id;
+            /**
+             * @see #object()
+             */
+            @Deprecated
             public final D object;
 
             public IdObject( String id, D object ) {
+                super( id, object );
                 this.id = id;
                 this.object = object;
+            }
+
+            public String id() {
+                return _1;
+            }
+
+            public D object() {
+                return _2;
+            }
+
+            @SuppressWarnings( "CheckStyle" )
+            public static <D> IdObject<D> __io( String id, D object ) {
+                return new IdObject<>( id, object );
             }
         }
     }

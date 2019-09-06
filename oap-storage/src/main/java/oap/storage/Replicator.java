@@ -35,6 +35,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static oap.storage.Storage.DataListener.IdObject.__io;
+
 /**
  * Replicator works on the MemoryStorage internals. It's intentional.
  *
@@ -80,8 +82,8 @@ public class Replicator<T> implements Closeable {
                 log.trace( "skipping unmodified {}", id );
                 continue;
             }
-            if( slave.memory.put( id, Metadata.from( metadata ) ) ) added.add( new IdObject<>( id, metadata.object ) );
-            else updated.add( new IdObject<>( id, metadata.object ) );
+            if( slave.memory.put( id, Metadata.from( metadata ) ) ) added.add( __io( id, metadata.object ) );
+            else updated.add( __io( id, metadata.object ) );
         }
         slave.fireAdded( added );
         slave.fireUpdated( updated );
@@ -90,7 +92,7 @@ public class Replicator<T> implements Closeable {
         log.trace( "master ids {}", ids );
         List<IdObject<T>> deleted = slave.memory.selectLiveIds()
             .filter( id -> !ids.contains( id ) )
-            .map( id -> slave.memory.removePermanently( id ).map( m -> new IdObject<>( id, m.object ) ) )
+            .map( id -> slave.memory.removePermanently( id ).map( m -> __io( id, m.object ) ) )
             .filter( Optional::isPresent )
             .map( Optional::get )
             .toList();

@@ -43,6 +43,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
+import static oap.storage.Storage.DataListener.IdObject.__io;
 
 @Slf4j
 public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
@@ -85,8 +86,8 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         for( T object : objects ) {
             String id = identifier.getOrInit( object, this::get );
             lock.synchronizedOn( id, () -> {
-                if( memory.put( id, object ) ) added.add( new IdObject<>( id, object ) );
-                else updated.add( new IdObject<>( id, object ) );
+                if( memory.put( id, object ) ) added.add( __io( id, object ) );
+                else updated.add( __io( id, object ) );
             } );
         }
         fireAdded( added );
@@ -114,7 +115,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
     @Override
     public void deleteAll() {
-        fireDeleted( Lists.map( memory.markDeletedAll(), p -> new IdObject<>( p._1, p._2.object ) ) );
+        fireDeleted( Lists.map( memory.markDeletedAll(), p -> __io( p._1, p._2.object ) ) );
     }
 
     public Optional<T> delete( @Nonnull String id ) {
@@ -132,12 +133,12 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
     protected void fireAdded( String id, T object ) {
         for( DataListener<T> dataListener : this.dataListeners )
-            dataListener.added( List.of( new IdObject<>( id, object ) ) );
+            dataListener.added( List.of( __io( id, object ) ) );
     }
 
     protected void fireUpdated( String id, T object ) {
         for( DataListener<T> dataListener : this.dataListeners )
-            dataListener.updated( List.of( new IdObject<>( id, object ) ) );
+            dataListener.updated( List.of( __io( id, object ) ) );
     }
 
     protected void fireAdded( List<IdObject<T>> objects ) {
@@ -157,7 +158,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
     protected void fireDeleted( String id, T object ) {
         for( DataListener<T> dataListener : this.dataListeners )
-            dataListener.deleted( List.of( new DataListener.IdObject<>( id, object ) ) );
+            dataListener.deleted( List.of( __io( id, object ) ) );
     }
 
     @Override
