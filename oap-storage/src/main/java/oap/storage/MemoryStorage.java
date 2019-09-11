@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -49,7 +50,7 @@ import static oap.storage.Storage.DataListener.IdObject.__io;
 public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     public final Identifier<T> identifier;
     protected final Lock lock;
-    protected final List<DataListener<T>> dataListeners = new ArrayList<>();
+    protected final List<DataListener<T>> dataListeners = new CopyOnWriteArrayList<>();
     protected final Memory<T> memory;
 
     public MemoryStorage( Identifier<T> identifier, Lock lock ) {
