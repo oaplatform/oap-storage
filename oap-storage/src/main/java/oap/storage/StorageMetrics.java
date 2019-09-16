@@ -25,6 +25,7 @@
 package oap.storage;
 
 import oap.metrics.Metrics;
+import oap.util.MemoryMeter;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,7 +38,8 @@ public class StorageMetrics<T> {
 
     public StorageMetrics( Storage<T> storage, String name ) {
         this.storage = storage;
-        this.metrics.put( name, new Count<>() );
+        this.metrics.put( name + ".total", new Count<>() );
+        this.metrics.put( name + ".memory", new Memory<>() );
     }
 
     public void start() {
@@ -51,6 +53,24 @@ public class StorageMetrics<T> {
         @Override
         public Supplier<Long> apply( Storage<T> storage ) {
             return storage::size;
+        }
+    }
+
+    public static class Memory<T> implements Gauge<T> {
+
+        private final MemoryMeter memoryMeter;
+
+        public Memory() {
+            memoryMeter = MemoryMeter.get();
+        }
+
+        @Override
+        public Supplier<Long> apply( Storage<T> storage ) {
+            if( storage instanceof MemoryStorage<?> ) {
+                return () -> memoryMeter.measureDeep( ( ( MemoryStorage<T> ) storage ).memory.data );
+            }
+
+            return () -> 0L;
         }
     }
 }

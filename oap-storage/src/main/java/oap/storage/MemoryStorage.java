@@ -204,7 +204,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     protected static class Memory<T> {
-        private final ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
+        final ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
         private final Lock lock;
 
         public Memory( Lock lock ) {
