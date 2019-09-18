@@ -25,7 +25,7 @@
 package oap.storage.mongo;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.storage.Identifier;
+import oap.id.Identifier;
 import oap.storage.MemoryStorage;
 import oap.storage.MongoPersistence;
 import org.testng.annotations.Test;

@@ -27,7 +27,7 @@ package oap.storage.mongo;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import oap.storage.Identifier;
+import oap.id.Identifier;
 import oap.testng.Env;
 import oap.testng.Teamcity;
 import org.bson.types.ObjectId;

@@ -24,6 +24,7 @@
 
 package oap.storage;
 
+import oap.id.Identifier;
 import oap.json.TypeIdFactory;
 import oap.testng.Env;
 import oap.testng.Fixtures;

@@ -24,6 +24,7 @@
 
 package oap.storage;
 
+import oap.id.Identifier;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;

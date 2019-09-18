@@ -24,6 +24,7 @@
 
 package oap.storage;
 
+import oap.id.Identifier;
 import org.testng.annotations.Test;
 
 import static oap.storage.Storage.Lock.CONCURRENT;

@@ -26,6 +26,7 @@ package oap.storage;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import oap.id.Identifier;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.json.Binder;

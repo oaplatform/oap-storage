@@ -24,6 +24,7 @@
 package oap.storage;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.id.Identifier;
 import oap.storage.Storage.DataListener.IdObject;
 import oap.util.BiStream;
 import oap.util.Lists;
@@ -41,6 +42,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
@@ -52,6 +54,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     protected final Lock lock;
     protected final List<DataListener<T>> dataListeners = new CopyOnWriteArrayList<>();
     protected final Memory<T> memory;
+    private Predicate<String> conflict = Identifier.toConflict( this::get );
 
     public MemoryStorage( Identifier<T> identifier, Lock lock ) {
         this.identifier = identifier;
@@ -71,7 +74,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
     @Override
     public T store( @Nonnull T object ) {
-        String id = identifier.getOrInit( object, this::get );
+        String id = identifier.getOrInit( object, conflict );
         lock.synchronizedOn( id, () -> {
             if( memory.put( id, object ) ) fireAdded( id, object );
             else fireUpdated( id, object );
@@ -85,7 +88,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         List<IdObject<T>> updated = new ArrayList<>();
 
         for( T object : objects ) {
-            String id = identifier.getOrInit( object, this::get );
+            String id = identifier.getOrInit( object, conflict );
             lock.synchronizedOn( id, () -> {
                 if( memory.put( id, object ) ) added.add( __io( id, object ) );
                 else updated.add( __io( id, object ) );

@@ -25,6 +25,7 @@
 package oap.storage;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.id.Identifier;
 import oap.json.TypeIdFactory;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectory;
