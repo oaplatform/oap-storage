@@ -59,6 +59,11 @@ public class Replicator<T> implements Closeable {
         this( slave, master, interval, 1000 );
     }
 
+    public void replicateNow() {
+        log.trace( "forcing replication..." );
+        scheduled.triggerNow();
+    }
+
     public synchronized void replicate( long last ) {
         List<Metadata<T>> newUpdates = Lists.empty();
         for( int b = 0; b < 100000; b++ ) {

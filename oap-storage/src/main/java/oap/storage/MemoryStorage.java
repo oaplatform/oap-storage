@@ -192,10 +192,11 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
-    public List<Metadata<T>> updatedSince( long time, int limit, int offset ) {
+    public List<Metadata<T>> updatedSince( long since, int limit, int offset ) {
+        log.trace( "requested updated objects since={}, limit={}, offset={}, total objects={}", since, limit, offset, memory.data.size() );
         return memory.selectLive()
             .mapToObj( ( id, m ) -> m )
-            .filter( m -> m.modified >= time )
+            .filter( m -> m.modified >= since )
             .skip( offset )
             .limit( limit )
             .toList();
@@ -230,6 +231,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         public boolean put( @Nonnull String id, @Nonnull Metadata<T> m ) {
             requireNonNull( id );
             requireNonNull( m );
+            log.trace( "storing {}", m );
             return data.put( id, m ) == null;
         }
 
@@ -238,7 +240,9 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
             requireNonNull( object );
             return lock.synchronizedOn( id, () -> {
                 boolean isNew = !data.containsKey( id );
-                data.compute( id, ( anId, m ) -> m != null ? m.update( object ) : new Metadata<>( object ) );
+                var nm = data.compute( id, ( anId, m ) -> m != null ? m.update( object )
+                    : new Metadata<>( object ) );
+                log.trace( "storing {}", nm );
                 return isNew;
             } );
         }

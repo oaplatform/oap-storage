@@ -36,9 +36,12 @@ import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReplicatorTest {
+    {
+        TypeIdFactory.register( Bean.class, Bean.class.getName() );
+    }
+
     @Test
     public void masterSlave() {
-        TypeIdFactory.register( Bean.class, Bean.class.getName() );
         var slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         var master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( Replicator<Bean> ignored = new Replicator<>( slave, master, 50, 0 ) ) {
@@ -91,6 +94,18 @@ public class ReplicatorTest {
                 assertThat( updates.get() ).isEqualTo( 0 );
                 assertThat( deletions.get() ).isEqualTo( 1 );
             } );
+        }
+    }
+
+    @Test
+    public void replicateNow() {
+        var slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        var master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        try( Replicator<Bean> replicator = new Replicator<>( slave, master, 5000, 0 ) ) {
+            master.store( new Bean( "1" ) );
+            master.store( new Bean( "2" ) );
+            replicator.replicateNow();
+            assertThat( slave.list() ).containsOnly( new Bean( "1" ), new Bean( "2" ) );
         }
     }
 }
