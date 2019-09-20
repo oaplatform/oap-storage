@@ -24,10 +24,14 @@
 
 package oap.storage.mongo;
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.id.Identifier;
 import oap.storage.MemoryStorage;
 import oap.storage.MongoPersistence;
+import oap.testng.Fixtures;
+import org.bson.types.ObjectId;
 import org.testng.annotations.Test;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
@@ -42,12 +46,26 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Testing and Development</a>
  */
 @Slf4j
-public class MongoPersistenceTest extends AbstractMongoTest {
+public class MongoPersistenceTest extends Fixtures {
+    protected Identifier<Bean> beanIdentifier =
+        Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
+            .suggestion( o -> o.name )
+            .length( 10 )
+            .build();
+    protected Identifier<Bean> beanIdentifierWithoutName =
+        Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
+            .suggestion( ar -> ObjectId.get().toString() )
+            .length( 10 )
+            .build();
+
+    {
+        fixture( new MongoFixture() );
+    }
 
     @Test
     public void store() {
         MemoryStorage<Bean> storage1 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-        try( var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage1 ) ) {
+        try( var persistence = new MongoPersistence<>( MongoFixture.mongoClient, "test", 6000, storage1 ) ) {
 
             persistence.start();
             Bean bean1 = storage1.store( new Bean( "test1" ) );
@@ -64,7 +82,7 @@ public class MongoPersistenceTest extends AbstractMongoTest {
 
         // Make sure that for a new connection the objects still present in MongoDB
         MemoryStorage<Bean> storage2 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-        try( var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage2 ) ) {
+        try( var persistence = new MongoPersistence<>( MongoFixture.mongoClient, "test", 6000, storage2 ) ) {
             persistence.start();
             assertThat( storage2.select() ).containsOnly(
                 new Bean( "TST1", "test1" ),
@@ -78,7 +96,7 @@ public class MongoPersistenceTest extends AbstractMongoTest {
     @Test
     public void delete() {
         MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifierWithoutName, SERIALIZED );
-        try( var persistence = new MongoPersistence<>( mongoClient, "test", 50, storage ) ) {
+        try( var persistence = new MongoPersistence<>( MongoFixture.mongoClient, "test", 50, storage ) ) {
             persistence.start();
             var bean1 = storage.store( new Bean() );
             storage.store( new Bean() );
@@ -94,7 +112,7 @@ public class MongoPersistenceTest extends AbstractMongoTest {
         var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
             .build(), SERIALIZED );
-        try( var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage1 ) ) {
+        try( var persistence = new MongoPersistence<>( MongoFixture.mongoClient, "test", 6000, storage1 ) ) {
             persistence.start();
             storage1.store( new Bean( "111", "initialName" ) );
             storage1.update( "111", bean -> {
@@ -105,10 +123,30 @@ public class MongoPersistenceTest extends AbstractMongoTest {
         var storage2 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
             .build(), SERIALIZED );
-        try( var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage2 ) ) {
+        try( var persistence = new MongoPersistence<>( MongoFixture.mongoClient, "test", 6000, storage2 ) ) {
             persistence.start();
             assertThat( storage2.select() )
                 .containsExactly( new Bean( "111", "newName" ) );
+        }
+    }
+
+    @ToString
+    @EqualsAndHashCode
+    public static class Bean {
+        public String id;
+        public String name;
+        public int c;
+
+        Bean( String id, String name ) {
+            this( name );
+            this.id = id;
+        }
+
+        Bean( String name ) {
+            this.name = name;
+        }
+
+        Bean() {
         }
     }
 }

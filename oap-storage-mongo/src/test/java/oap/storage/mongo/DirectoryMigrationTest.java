@@ -25,6 +25,7 @@
 package oap.storage.mongo;
 
 import oap.testng.Env;
+import oap.testng.Fixtures;
 import org.bson.Document;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -32,7 +33,11 @@ import org.testng.annotations.Test;
 import static com.mongodb.client.model.Filters.eq;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DirectoryMigrationTest extends AbstractMongoTest {
+public class DirectoryMigrationTest extends Fixtures {
+    {
+        fixture( new MongoFixture() );
+    }
+
     @BeforeMethod
     public void deploy() {
         Env.deployTestData( getClass() );
@@ -44,22 +49,22 @@ public class DirectoryMigrationTest extends AbstractMongoTest {
         migration.variables.put( "testB", "true" );
         migration.variables.put( "testS", "\"true\"" );
 
-        migration.run( mongoClient.database );
+        migration.run( MongoFixture.mongoClient.database );
 
-        final Document version = mongoClient.database.getCollection( "version" ).find( eq( "_id", "version" ) ).first();
+        final Document version = MongoFixture.mongoClient.database.getCollection( "version" ).find( eq( "_id", "version" ) ).first();
         assertThat( version ).isNotNull();
         assertThat( version.get( "value" ) ).isEqualTo( 10 );
 
         value( "test", "test", "c", 17 );
         value( "test", "test3", "v", 1 );
 
-        migration.run( mongoClient.database );
+        migration.run( MongoFixture.mongoClient.database );
         value( "test", "test", "c", 17 );
         value( "test", "test3", "v", 1 );
     }
 
     public void value( String collection, String id, String actual, int expected ) {
-        assertThat( mongoClient.database.getCollection( collection ).find( eq( "_id", id ) ).first().getInteger( actual ) )
+        assertThat( MongoFixture.mongoClient.database.getCollection( collection ).find( eq( "_id", id ) ).first().getInteger( actual ) )
             .isEqualTo( expected );
     }
 }
