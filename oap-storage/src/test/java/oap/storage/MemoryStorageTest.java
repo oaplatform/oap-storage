@@ -75,4 +75,17 @@ public class MemoryStorageTest {
         assertThat( id.id ).isNotNull();
         assertThat( ids ).containsOnly( id.id );
     }
+
+    @Test
+    public void get() {
+        MemoryStorage<Bean> storage = new MemoryStorage<>(
+            Identifier.<Bean>forId( b -> b.id, ( b, id ) -> b.id = id )
+                .suggestion( b -> b.s )
+                .build(),
+            SERIALIZED );
+        Bean bean = new Bean( "id" );
+        assertThat( storage.get( bean.id, () -> bean ) ).isEqualTo( bean );
+        assertThat( storage.list() ).containsOnly( bean );
+
+    }
 }

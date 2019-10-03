@@ -118,6 +118,11 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
+    public T get( @Nonnull String id, @Nonnull Supplier<T> init ) {
+        return get( id ).orElseGet( () -> store( init.get() ) );
+    }
+
+    @Override
     public void deleteAll() {
         fireDeleted( Lists.map( memory.markDeletedAll(), p -> __io( p._1, p._2.object ) ) );
     }
