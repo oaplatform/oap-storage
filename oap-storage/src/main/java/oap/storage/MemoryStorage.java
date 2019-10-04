@@ -118,8 +118,9 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
-    public T get( @Nonnull String id, @Nonnull Supplier<T> init ) {
-        return get( id ).orElseGet( () -> store( init.get() ) );
+    public T get( String id, @Nonnull Supplier<T> init ) {
+        return id == null ? store( init.get() )
+            : lock.synchronizedOn( id, () -> get( id ).orElseGet( () -> store( init.get() ) ) );
     }
 
     @Override

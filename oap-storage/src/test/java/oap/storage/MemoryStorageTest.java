@@ -86,6 +86,8 @@ public class MemoryStorageTest {
         Bean bean = new Bean( "id" );
         assertThat( storage.get( bean.id, () -> bean ) ).isEqualTo( bean );
         assertThat( storage.list() ).containsOnly( bean );
-
+        Bean beanNoId = new Bean();
+        assertThat( storage.get( beanNoId.id, () -> beanNoId ) ).isEqualTo( beanNoId );
+        assertThat( storage.list() ).containsOnly( bean, beanNoId );
     }
 }

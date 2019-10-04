@@ -44,7 +44,7 @@ public interface Storage<T> extends Iterable<T> {
 
     Optional<T> get( @Nonnull String id );
 
-    T get( @Nonnull String id, @Nonnull Supplier<T> init );
+    T get( String id, @Nonnull Supplier<T> init );
 
     long size();
 
