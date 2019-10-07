@@ -39,7 +39,7 @@ public class MongoClient implements Closeable {
     public final com.mongodb.MongoClient mongoClient;
     public boolean dropDatabaseBeforeMigration = false;
 
-    public MongoClient( String host, int port, String database, Migration migration ) {
+    public MongoClient( String host, int port, String database ) {
         var codecRegistry = CodecRegistries.fromRegistries(
             CodecRegistries.fromCodecs( new JodaTimeCodec() ),
             com.mongodb.MongoClient.getDefaultCodecRegistry() );
