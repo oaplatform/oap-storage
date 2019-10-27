@@ -24,6 +24,7 @@
 
 package oap.storage.mongo;
 
+import com.mongodb.client.model.BulkWriteOptions;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -31,12 +32,23 @@ import oap.id.Identifier;
 import oap.storage.MemoryStorage;
 import oap.storage.MongoPersistence;
 import oap.testng.Fixtures;
+import org.bson.BsonMaximumSizeExceededException;
 import org.bson.types.ObjectId;
+import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Iterator;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
+import static oap.testng.Env.tmpRoot;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.spy;
 
 /**
  * It requires installed MongoDB on the machine with enabled Replica Set Oplog
@@ -47,6 +59,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Slf4j
 public class MongoPersistenceTest extends Fixtures {
+
     protected Identifier<Bean> beanIdentifier =
         Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
@@ -128,6 +141,42 @@ public class MongoPersistenceTest extends Fixtures {
             assertThat( storage2.select() )
                 .containsExactly( new Bean( "111", "newName" ) );
         }
+    }
+
+    @Test( expectedExceptions = BsonMaximumSizeExceededException.class)
+    public void storeWithMongoException() throws Exception {
+        MemoryStorage<Bean> storage1 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+        Exception exception = null;
+        try( var persistence = new MongoPersistence<>( MongoFixture.mongoClient, "test", 6000, storage1,
+            tmpRoot.toString(), 0 ) ) {
+
+            java.lang.reflect.Field collection = persistence.getClass().getDeclaredField( "collection" );
+            collection.setAccessible( true );
+            var mock = spy( persistence.collection );
+            collection.set( persistence, mock );
+            doThrow(new BsonMaximumSizeExceededException( "Payload document size is larger than maximum of 16793600" ))
+                .when( mock ).bulkWrite( anyList(), any( BulkWriteOptions.class ) );
+
+            storage1.store( new Bean( "test1" ) );
+            persistence.start();
+        } catch( BsonMaximumSizeExceededException e ) {
+            exception = e;
+            try( var stream = Files.newDirectoryStream(  tmpRoot, "*_failed.json"  ) ) {
+                Iterator<Path> iterator = stream.iterator();
+                Assert.assertTrue( iterator.hasNext() );
+                while( iterator.hasNext() ) Assert.assertTrue( Files.exists( iterator.next() ) );
+            }
+        }
+
+        try( var persistence = new MongoPersistence<>( MongoFixture.mongoClient, "test", 6000, storage1,
+            tmpRoot.toString(), 0 ) ) {
+            persistence.start();
+        }
+
+        try( var stream = Files.newDirectoryStream(  tmpRoot, "*_failed.json"  ) ) {
+            Assert.assertFalse( stream.iterator().hasNext() );
+        }
+        if( exception != null ) throw exception;
     }
 
     @ToString

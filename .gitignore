@@ -14,3 +14,6 @@ inspectionProfiles
 kotlinc.xml
 .attach*
 .flattened-pom.xml
+
+# Default ignored files
+shelf

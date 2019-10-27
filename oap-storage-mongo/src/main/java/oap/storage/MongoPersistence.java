@@ -36,15 +36,23 @@ import oap.concurrent.Threads;
 import oap.concurrent.scheduler.PeriodicScheduled;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
+import oap.json.Binder;
 import oap.reflect.TypeRef;
 import oap.storage.mongo.JsonCodec;
 import oap.storage.mongo.MongoClient;
 import oap.storage.mongo.OplogService;
+import oap.util.Try;
+import org.bson.BsonMaximumSizeExceededException;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 
 import java.io.Closeable;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -56,6 +64,8 @@ import static com.mongodb.client.model.Filters.eq;
 public class MongoPersistence<T> implements Closeable, Runnable, OplogService.OplogListener {
 
     public static final ReplaceOptions REPLACE_OPTIONS_UPSERT = new ReplaceOptions().upsert( true );
+    public static final String errFile = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss'_failed.json'").format( new Date() );
+
     public final MongoCollection<Metadata<T>> collection;
     private final Lock lock = new ReentrantLock();
     public OplogService oplogService;
@@ -63,7 +73,10 @@ public class MongoPersistence<T> implements Closeable, Runnable, OplogService.Op
     private long delay;
     private MemoryStorage<T> storage;
     private PeriodicScheduled scheduled;
+    private Path errObjectPath = Path.of( "/tmp", errFile );
+    private long errFileExpiration = 86400000;
 
+    @Deprecated
     public MongoPersistence( MongoClient mongoClient,
                              String table,
                              long delay,
@@ -81,6 +94,17 @@ public class MongoPersistence<T> implements Closeable, Runnable, OplogService.Op
         this.collection = mongoClient.database
             .getCollection( table, ref.clazz() )
             .withCodecRegistry( codecRegistry );
+    }
+
+    public MongoPersistence( MongoClient mongoClient,
+                             String table,
+                             long delay,
+                             MemoryStorage<T> storage,
+                             String dirForFailures,
+                             int errFileExpiration ) {
+        this( mongoClient, table, delay, storage );
+        this.errObjectPath = Path.of( dirForFailures, errFile ) ;
+        this.errFileExpiration = errFileExpiration;
     }
 
     @Override
@@ -123,13 +147,27 @@ public class MongoPersistence<T> implements Closeable, Runnable, OplogService.Op
 
     private void persist( List<String> deletedIds, List<WriteModel<Metadata<T>>> list ) {
         if( !list.isEmpty() ) {
-            collection.bulkWrite( list, new BulkWriteOptions().ordered( false ) );
+            try {
+                collection.bulkWrite( list, new BulkWriteOptions().ordered( false ) );
+            } catch( BsonMaximumSizeExceededException e ) {
+                // store file to local FS, which wasn't persisted to MongoDB
+                for( WriteModel<Metadata<T>> model : list ) {
+                   if( model instanceof ReplaceOneModel ) {
+                       Binder.json.marshal( errObjectPath, ( ( ReplaceOneModel<Metadata<T>> ) model ).getReplacement().object );
+                   }
+                }
+                throw e;
+            }
             deletedIds.forEach( storage.memory::removePermanently );
             deletedIds.clear();
             list.clear();
         }
     }
 
+    /**
+     * Perform fsync.</p>
+     * Remove old error JSON files, which were not persisted to MongoDB
+     */
     @Override
     public void close() {
         log.debug( "Closing {}...", this );
@@ -137,6 +175,16 @@ public class MongoPersistence<T> implements Closeable, Runnable, OplogService.Op
             Threads.synchronously( lock, () -> {
                 Scheduled.cancel( scheduled );
                 fsync( scheduled.lastExecuted() );
+                try {
+                    Files.walk( errObjectPath.getParent() )
+                        .map( Path::toString )
+                        .filter( f -> f.endsWith( "_failed.json" ) )
+                        .map( s -> Path.of( s ) )
+                        .filter( Try.filter( path -> Files.getLastModifiedTime( path ).toMillis() > errFileExpiration ) )
+                        .forEach( Try.consume( Files::delete ) );
+                } catch( UncheckedIOException e ) {
+                    log.warn( "Failure while removing old failed files.", e );
+                }
                 log.debug( "Closed {}", this );
             } );
         } else {
