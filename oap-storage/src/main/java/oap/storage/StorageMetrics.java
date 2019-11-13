@@ -24,34 +24,38 @@
 
 package oap.storage;
 
-import oap.metrics.Metrics;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tags;
 import oap.util.MemoryMeter;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.DoubleSupplier;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class StorageMetrics<T> {
+    private final String storageName;
     private Storage<T> storage;
     private Map<String, Gauge<T>> metrics = new HashMap<>();
 
     public StorageMetrics( Storage<T> storage, String name ) {
         this.storage = storage;
-        this.metrics.put( name + ".total", new Count<>() );
-        this.metrics.put( name + ".memory", new Memory<>() );
+        this.storageName = name;
+        this.metrics.put( "oap_storage_total", new Count<>() );
+        this.metrics.put( "oap_storage_memory", new Memory<>() );
     }
 
     public void start() {
-        metrics.forEach( ( name, metric ) -> Metrics.measureGauge( name, () -> metric.apply( storage ) ) );
+        metrics.forEach( ( name, metric ) ->
+            Metrics.gauge( name, Tags.of( "storage", storageName ), storage, storage -> metric.apply( storage ).getAsDouble() ) );
     }
 
-    public interface Gauge<T> extends Function<Storage<T>, Supplier<Long>> {
+    public interface Gauge<T> extends Function<Storage<T>, DoubleSupplier> {
     }
 
     public static class Count<T> implements Gauge<T> {
         @Override
-        public Supplier<Long> apply( Storage<T> storage ) {
+        public DoubleSupplier apply( Storage<T> storage ) {
             return storage::size;
         }
     }
@@ -65,12 +69,12 @@ public class StorageMetrics<T> {
         }
 
         @Override
-        public Supplier<Long> apply( Storage<T> storage ) {
+        public DoubleSupplier apply( Storage<T> storage ) {
             if( storage instanceof MemoryStorage<?> ) {
                 return () -> memoryMeter.measureDeep( ( ( MemoryStorage<T> ) storage ).memory.data );
             }
 
-            return () -> 0L;
+            return () -> 0d;
         }
     }
 }
