@@ -41,11 +41,21 @@ import java.util.regex.Pattern;
  */
 @Slf4j
 public class MongoFixture implements Fixture {
-    public static final int MONGO_PORT = 27017;
-    public static final String MONGO_HOST = Env.getEnvOrDefault( "MONGO_HOST", "localhost" );
-    public static final String MONGO_DATABASE = "db" + StringUtils.replaceChars( Teamcity.buildPrefix(), ".-", "_" ) + "_" + DateTimeUtils.currentTimeMillis();
+    public static final int MONGO_PORT;
+    public static final String MONGO_HOST;
+    public static final String MONGO_DATABASE;
 
     public static MongoClient mongoClient;
+
+    static {
+        MONGO_PORT = 27017;
+        MONGO_HOST = Env.getEnvOrDefault( "MONGO_HOST", "localhost" );
+        MONGO_DATABASE = "db" + StringUtils.replaceChars( Teamcity.buildPrefix(), ".-", "_" ) + "_" + DateTimeUtils.currentTimeMillis();
+
+        System.setProperty( "MONGO_HOST", MONGO_HOST );
+        System.setProperty( "MONGO_PORT", String.valueOf( MONGO_PORT ) );
+        System.setProperty( "MONGO_DATABASE", MONGO_DATABASE );
+    }
 
     public static void dropTestDatabases() {
         final Pattern pattern = Pattern.compile( ".+_(\\d+)" );
