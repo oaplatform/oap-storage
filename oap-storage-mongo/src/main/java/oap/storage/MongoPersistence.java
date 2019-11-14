@@ -64,7 +64,7 @@ import static com.mongodb.client.model.Filters.eq;
 public class MongoPersistence<T> implements Closeable, Runnable, OplogService.OplogListener {
 
     public static final ReplaceOptions REPLACE_OPTIONS_UPSERT = new ReplaceOptions().upsert( true );
-    public static final String errFile = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss'_failed.json'").format( new Date() );
+    public static final String errFile = new SimpleDateFormat( "yyyy-MM-dd-HH-mm-ss'_failed.json'" ).format( new Date() );
 
     public final MongoCollection<Metadata<T>> collection;
     private final Lock lock = new ReentrantLock();
@@ -103,7 +103,7 @@ public class MongoPersistence<T> implements Closeable, Runnable, OplogService.Op
                              String dirForFailures,
                              int errFileExpiration ) {
         this( mongoClient, table, delay, storage );
-        this.errObjectPath = Path.of( dirForFailures, errFile ) ;
+        this.errObjectPath = Path.of( dirForFailures, errFile );
         this.errFileExpiration = errFileExpiration;
     }
 
@@ -152,9 +152,9 @@ public class MongoPersistence<T> implements Closeable, Runnable, OplogService.Op
             } catch( BsonMaximumSizeExceededException e ) {
                 // store file to local FS, which wasn't persisted to MongoDB
                 for( WriteModel<Metadata<T>> model : list ) {
-                   if( model instanceof ReplaceOneModel ) {
-                       Binder.json.marshal( errObjectPath, ( ( ReplaceOneModel<Metadata<T>> ) model ).getReplacement().object );
-                   }
+                    if( model instanceof ReplaceOneModel ) {
+                        Binder.json.marshal( errObjectPath, ( ( ReplaceOneModel<Metadata<T>> ) model ).getReplacement().object );
+                    }
                 }
                 throw e;
             }
