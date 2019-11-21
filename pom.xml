@@ -60,12 +60,12 @@
     <distributionManagement>
         <repository>
             <id>oap</id>
-            <url>https://mvn.oaplatform.org/</url>
+            <url>https://mvn.oaplatform.org/</url>r
         </repository>
     </distributionManagement>
 
     <properties>
-        <revision>6.0.3</revision>
+        <revision>6.0.4</revision>
 
         <maven.compiler.source>13</maven.compiler.source>
         <maven.compiler.target>13</maven.compiler.target>
@@ -74,13 +74,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>${project.build.sourceEncoding}</project.reporting.outputEncoding>
 
-        <oap.version>6.0.2</oap.version>
-        <testng.version>6.11</testng.version>
+        <oap.version>6.1.0</oap.version>
         <assertj.version>3.12.2</assertj.version>
-        <guava.version>27.1-jre</guava.version>
+        <guava.version>28.1-jre</guava.version>
         <logback.version>1.2.3</logback.version>
         <slf4j.version>1.7.21</slf4j.version>
-        <joda.version>2.10.1</joda.version>
         <lombok.version>edge-SNAPSHOT</lombok.version>
         <mongo.version>3.10.2</mongo.version>
     </properties>
