@@ -60,7 +60,7 @@
     <distributionManagement>
         <repository>
             <id>oap</id>
-            <url>https://mvn.oaplatform.org/</url>r
+            <url>https://mvn.oaplatform.org/</url>
         </repository>
     </distributionManagement>
 
