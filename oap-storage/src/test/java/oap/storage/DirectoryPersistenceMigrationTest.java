@@ -36,6 +36,7 @@ import oap.util.Lists;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
+import java.util.List;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,10 +55,10 @@ public class DirectoryPersistenceMigrationTest extends Fixtures {
     public void migration() {
         Path path = Env.deployTestData( getClass() );
         var storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        try( DirectoryPersistence<Bean> persistence = new DirectoryPersistence<>( path, 10, 2, Lists.of(
-                 new MigrationV1(),
-                 new MigrationV2()
-             ), storage ) ) {
+        try( var persistence = new DirectoryPersistence<>( path, 10, 2, List.of(
+            new MigrationV1(),
+            new MigrationV2()
+        ), storage ) ) {
             persistence.start();
             assertThat( storage.select() ).containsExactly( new Bean( "11" ), new Bean( "21" ) );
         }
@@ -77,7 +78,7 @@ public class DirectoryPersistenceMigrationTest extends Fixtures {
     public void storeWithVersion() {
         Path path = Env.tmpPath( "data" );
         var storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        try( DirectoryPersistence<Bean> persistence = new DirectoryPersistence<>( path, 10, 10, Lists.empty(), storage ) ) {
+        try( var persistence = new DirectoryPersistence<>( path, 10, 10, Lists.empty(), storage ) ) {
             persistence.start();
             storage.store( new Bean( "1" ) );
         }

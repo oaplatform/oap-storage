@@ -98,12 +98,12 @@ public class DefaultIdentifierTest {
 
     @Test
     public void conflictResolution() {
-        Identifier<Bean> identifier = Identifier.<Bean>forPath( "id" )
+        var identifier = Identifier.<Bean>forPath( "id" )
             .suggestion( bean -> bean.s )
             .length( 7 )
             .options( NO_VOWELS, FILL )
             .build();
-        MemoryStorage<Bean> storage = new MemoryStorage<>( identifier, CONCURRENT );
+        var storage = new MemoryStorage<>( identifier, CONCURRENT );
         var a = new Bean( null, "some text" );
         var b = new Bean( null, "some text" );
         var c = new Bean( null, "some text" );

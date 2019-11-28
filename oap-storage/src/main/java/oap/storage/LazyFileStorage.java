@@ -40,11 +40,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Slf4j
-public class LazyFileStorage<T> extends MemoryStorage<T> implements AutoCloseable {
+public class LazyFileStorage<T> extends MemoryStorage<String, T> implements AutoCloseable {
     private Path path;
     private boolean closed = true;
 
-    public LazyFileStorage( Path path, Identifier<T> identifier, Lock lock ) {
+    public LazyFileStorage( Path path, Identifier<T, String> identifier, Lock lock ) {
         super( identifier, lock );
         this.path = path;
     }

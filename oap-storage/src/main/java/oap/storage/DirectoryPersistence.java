@@ -56,7 +56,7 @@ import static oap.io.IoStreams.DEFAULT_BUFFER;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static org.slf4j.LoggerFactory.getLogger;
 
-public class DirectoryPersistence<T> implements Closeable {
+public class DirectoryPersistence<I, T> implements Closeable {
     private final Path path;
     private final BiFunction<Path, T, Path> fsResolve;
     private final int version;
@@ -64,19 +64,19 @@ public class DirectoryPersistence<T> implements Closeable {
     private final Logger log;
     private final Lock lock = new ReentrantLock();
     private long fsync;
-    private MemoryStorage<T> storage;
+    private MemoryStorage<I, T> storage;
     private PeriodicScheduled scheduled;
 
-    public DirectoryPersistence( Path path, long fsync, int version, List<Migration> migrations, MemoryStorage<T> storage ) {
+    public DirectoryPersistence( Path path, long fsync, int version, List<Migration> migrations, MemoryStorage<I, T> storage ) {
         this( path, plainResolve(), fsync, version, migrations, storage );
     }
 
-    public DirectoryPersistence( Path path, MemoryStorage<T> storage ) {
+    public DirectoryPersistence( Path path, MemoryStorage<I, T> storage ) {
         this( path, plainResolve(), 60000, 0, Lists.of(), storage );
     }
 
     public DirectoryPersistence( Path path, BiFunction<Path, T, Path> fsResolve, long fsync,
-                                 int version, List<Migration> migrations, MemoryStorage<T> storage ) {
+                                 int version, List<Migration> migrations, MemoryStorage<I, T> storage ) {
         this.path = path;
         this.fsResolve = fsResolve;
         this.fsync = fsync;
@@ -167,7 +167,7 @@ public class DirectoryPersistence<T> implements Closeable {
     }
 
     @SneakyThrows
-    private void persist( String id, Metadata<T> metadata ) {
+    private void persist( I id, Metadata<T> metadata ) {
         Path path = pathFor( metadata.object );
         if( metadata.isDeleted() ) {
             log.trace( "delete {}", path );
