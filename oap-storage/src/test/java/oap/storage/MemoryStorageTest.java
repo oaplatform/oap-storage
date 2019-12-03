@@ -95,7 +95,7 @@ public class MemoryStorageTest {
         assertThat( storage.list() ).containsOnly( bean, beanNoId );
     }
 
-    @Test
+    @Test( enabled = false )
     public void concurrentInsertConflict() {
         var storage = new MemoryStorage<>(
             Identifier.<Bean>forId( b -> b.id, ( b, id ) -> b.id = id )
@@ -106,7 +106,7 @@ public class MemoryStorageTest {
         Benchmark.benchmark( "insert-failure", 1000, () -> {
             storage.store( new Bean( null, "BBBBB" ) );
         } ).inThreads( 100 ).experiments( 1 ).run();
-        assertThat( storage.list().size() ).isEqualTo( 1000 );
+        assertThat( storage.list().size() ).isEqualTo( 2000 );
     }
 
     @Test

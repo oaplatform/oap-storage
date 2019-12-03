@@ -60,7 +60,7 @@ public class OplogServiceTest extends Fixtures {
                 }
 
                 @Override
-                public void inserted( String table, String mongoId ) {
+                public void inserted( String table, String id ) {
                     sb.append( 'i' );
                 }
             } );

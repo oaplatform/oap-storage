@@ -155,7 +155,7 @@ public class MongoPersistence<I, T> implements Closeable, Runnable, OplogService
                 // store file to local FS, which wasn't persisted to MongoDB
                 for( WriteModel<Metadata<T>> model : list ) {
                     if( model instanceof ReplaceOneModel ) {
-                        Binder.json.marshal( errObjectPath, ( ( ReplaceOneModel<Metadata<T>> ) model ).getReplacement().object );
+                        Binder.json.marshal(    errObjectPath, ( ( ReplaceOneModel<Metadata<T>> ) model ).getReplacement().object );
                     }
                 }
                 throw e;
