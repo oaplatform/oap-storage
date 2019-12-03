@@ -26,8 +26,10 @@ package oap.storage.mongo;
 
 import com.mongodb.client.MongoDatabase;
 
-public interface Migration {
-    Migration NONE = database -> {};
+import java.io.IOException;
 
-    void run( MongoDatabase database );
+public interface Migration {
+    Migration NONE = client -> {};
+
+    void run( MongoClient client ) throws IOException;
 }
