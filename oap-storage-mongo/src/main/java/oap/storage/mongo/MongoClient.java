@@ -30,6 +30,7 @@ import com.mongodb.client.MongoDatabase;
 import org.bson.codecs.configuration.CodecRegistries;
 
 import java.io.Closeable;
+import java.io.IOException;
 
 /**
  * Wrapper for the {@link com.mongodb.MongoClient}
@@ -37,9 +38,19 @@ import java.io.Closeable;
 public class MongoClient implements Closeable {
     public final MongoDatabase database;
     public final com.mongodb.MongoClient mongoClient;
+    public final String host;
+    public final int port;
+    private final Migration migration;
     public boolean dropDatabaseBeforeMigration = false;
 
     public MongoClient( String host, int port, String database ) {
+        this( host, port, database, null );
+    }
+
+    public MongoClient( String host, int port, String database, Migration migration ) {
+        this.host = host;
+        this.port = port;
+        this.migration = migration;
         var codecRegistry = CodecRegistries.fromRegistries(
             CodecRegistries.fromCodecs( new JodaTimeCodec() ),
             com.mongodb.MongoClient.getDefaultCodecRegistry() );
@@ -50,8 +61,10 @@ public class MongoClient implements Closeable {
         this.database = mongoClient.getDatabase( database );
     }
 
-    public void start() {
+    public void start() throws IOException {
         if( dropDatabaseBeforeMigration ) this.database.drop();
+
+        if( migration != null ) migration.run( this );
     }
 
     @Override
