@@ -109,12 +109,12 @@ public class DirectoryMigration implements Migration {
 
             log.trace( "evar = {}", sb.toString() );
             Files.writeString( tmpFile.getPath(), sb.toString() );
-
-
+            
             var commandline = new CommandLine( mongoShell );
             commandline.addArgument( "--verbose" );
             commandline.addArgument( client.host + ":" + client.port + "/" + client.database.getName() );
             commandline.addArgument( tmpFile.toString() );
+            log.debug( "migration cmd: {}", commandline );
             var defaultExecutor = new DefaultExecutor();
             var los = new LogOutputStream( 1 ) {
                 @Override
