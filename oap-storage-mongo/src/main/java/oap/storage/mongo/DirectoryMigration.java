@@ -74,7 +74,7 @@ public class DirectoryMigration implements Migration {
                 .collect( Collectors.joining( "\n" ) );
 
             sb
-                .append( "conn = new Mongo();\n" )
+                .append( "conn = new Mongo(\"" + client.host + ":" + client.port + "\");\n" )
                 .append( "db = conn.getDB(\"" + client.database.getName() + "\");\n" )
 //                .append( "session = db.getMongo().startSession( { readPreference: { mode: \"primary\" } } );\n" )
 //                .append( "session.startTransaction( { readConcern: { level: \"local\" }, writeConcern: { w: \"majority\" } } );\n" )
@@ -109,7 +109,7 @@ public class DirectoryMigration implements Migration {
 
             log.trace( "evar = {}", sb.toString() );
             Files.writeString( tmpFile.getPath(), sb.toString() );
-            
+
             var commandline = new CommandLine( mongoShell );
             commandline.addArgument( "--verbose" );
             commandline.addArgument( client.host + ":" + client.port + "/" + client.database.getName() );
