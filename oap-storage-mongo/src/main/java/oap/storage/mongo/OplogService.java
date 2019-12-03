@@ -159,10 +159,10 @@ public class OplogService implements Runnable, Closeable {
      * insert) in the other storages, for example internal {@link oap.storage.MemoryStorage}
      */
     public interface OplogListener {
-        void updated( String table, String id );
+        void updated( String table, String mongoId );
 
-        void deleted( String table, String id );
+        void deleted( String table, String mongoId );
 
-        void inserted( String table, String id );
+        void inserted( String table, String mongoId );
     }
 }

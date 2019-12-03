@@ -61,7 +61,7 @@ import java.util.function.Consumer;
 import static com.mongodb.client.model.Filters.eq;
 
 @Slf4j
-public class MongoPersistence<T> implements Closeable, Runnable, OplogService.OplogListener {
+public class MongoPersistence<I, T> implements Closeable, Runnable, OplogService.OplogListener {
 
     public static final ReplaceOptions REPLACE_OPTIONS_UPSERT = new ReplaceOptions().upsert( true );
     public static final String errFile = new SimpleDateFormat( "yyyy-MM-dd-HH-mm-ss'_failed.json'" ).format( new Date() );
@@ -71,7 +71,7 @@ public class MongoPersistence<T> implements Closeable, Runnable, OplogService.Op
     public OplogService oplogService;
     public int batchSize = 100;
     private long delay;
-    private MemoryStorage<T> storage;
+    private MemoryStorage<I, T> storage;
     private PeriodicScheduled scheduled;
     private Path errObjectPath = Path.of( "/tmp", errFile );
     private long errFileExpiration = 86400000;
@@ -80,14 +80,16 @@ public class MongoPersistence<T> implements Closeable, Runnable, OplogService.Op
     public MongoPersistence( MongoClient mongoClient,
                              String table,
                              long delay,
-                             MemoryStorage<T> storage ) {
+                             MemoryStorage<I, T> storage ) {
         this.delay = delay;
         this.storage = storage;
 
         TypeRef<Metadata<T>> ref = new TypeRef<>() {};
 
         CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
-            CodecRegistries.fromCodecs( new JsonCodec<>( ref, m -> this.storage.identifier.get( m.object ) ) ),
+            CodecRegistries.fromCodecs( new JsonCodec<>( ref,
+                m -> this.storage.identifier.get( m.object ),
+                id -> this.storage.identifier.toString( id ) ) ),
             mongoClient.database.getCodecRegistry()
         );
 
@@ -99,7 +101,7 @@ public class MongoPersistence<T> implements Closeable, Runnable, OplogService.Op
     public MongoPersistence( MongoClient mongoClient,
                              String table,
                              long delay,
-                             MemoryStorage<T> storage,
+                             MemoryStorage<I, T> storage,
                              String dirForFailures,
                              int errFileExpiration ) {
         this( mongoClient, table, delay, storage );
@@ -133,7 +135,7 @@ public class MongoPersistence<T> implements Closeable, Runnable, OplogService.Op
         Threads.synchronously( lock, () -> {
             log.trace( "fsyncing, last: {}, objects in storage: {}", last, storage.size() );
             var list = new ArrayList<WriteModel<Metadata<T>>>( batchSize );
-            var deletedIds = new ArrayList<String>( batchSize );
+            var deletedIds = new ArrayList<I>( batchSize );
             storage.memory.selectUpdatedSince( last ).forEach( ( id, m ) -> {
                 if( m.isDeleted() ) {
                     deletedIds.add( id );
@@ -145,7 +147,7 @@ public class MongoPersistence<T> implements Closeable, Runnable, OplogService.Op
         } );
     }
 
-    private void persist( List<String> deletedIds, List<WriteModel<Metadata<T>>> list ) {
+    private void persist( List<I> deletedIds, List<WriteModel<Metadata<T>>> list ) {
         if( !list.isEmpty() ) {
             try {
                 collection.bulkWrite( list, new BulkWriteOptions().ordered( false ) );
@@ -193,31 +195,32 @@ public class MongoPersistence<T> implements Closeable, Runnable, OplogService.Op
     }
 
     @Override
-    public void updated( String table, String id ) {
-        refresh( id );
+    public void updated( String table, String mongoId ) {
+        refresh( mongoId );
     }
 
     @Override
-    public void deleted( String table, String id ) {
-        storage.delete( id );
+    public void deleted( String table, String mongoId ) {
+        storage.delete( storage.identifier.fromString( mongoId ) );
     }
 
     @Override
-    public void inserted( String table, String id ) {
-        refresh( id );
+    public void inserted( String table, String mongoId ) {
+        refresh( mongoId );
     }
 
-    public void refresh( String id ) {
-        var m = collection.find( eq( "_id", id ) ).first();
+    private void refresh( String imongoId ) {
+        var m = collection.find( eq( "_id", imongoId ) ).first();
         if( m != null ) {
-            storage.lock.synchronizedOn( id, () -> {
+            storage.lock.synchronizedOn( imongoId, () -> {
+                var id = storage.identifier.fromString( imongoId );
                 var old = storage.memory.get( id );
                 if( old.isEmpty() || m.modified > old.get().modified ) {
-                    log.debug( "refresh from mongo {}", id );
+                    log.debug( "refresh from mongo {}", imongoId );
                     storage.memory.put( id, m );
                     if( old.isEmpty() ) storage.fireAdded( id, m.object );
                     else storage.fireUpdated( id, m.object );
-                } else log.debug( "[{}] m.modified <= oldM.modified", id );
+                } else log.debug( "[{}] m.modified <= oldM.modified", imongoId );
             } );
         }
     }

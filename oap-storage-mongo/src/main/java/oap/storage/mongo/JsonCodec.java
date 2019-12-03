@@ -39,16 +39,18 @@ import org.bson.codecs.EncoderContext;
 
 import java.util.function.Function;
 
-public class JsonCodec<T> implements Codec<T> {
+public class JsonCodec<I, M> implements Codec<M> {
     private final DocumentCodec documentCodec;
-    private final Class<T> clazz;
-    private final Function<T, String> identifier;
+    private final Class<M> clazz;
+    private final Function<M, I> identifier;
+    private Function<I, String> idToString;
     private ObjectWriter fileWriter;
     private ObjectReader fileReader;
 
-    public JsonCodec( TypeRef<T> ref, Function<T, String> identifier ) {
+    public JsonCodec( TypeRef<M> ref, Function<M, I> identifier, Function<I, String> idToString ) {
         this.clazz = ref.clazz();
         this.identifier = identifier;
+        this.idToString = idToString;
         this.documentCodec = new DocumentCodec();
         this.fileReader = Binder.json.readerFor( ref );
         this.fileWriter = Binder.json.writerFor( ref );
@@ -56,7 +58,7 @@ public class JsonCodec<T> implements Codec<T> {
 
     @SneakyThrows
     @Override
-    public T decode( BsonReader bsonReader, DecoderContext decoderContext ) {
+    public M decode( BsonReader bsonReader, DecoderContext decoderContext ) {
         var doc = documentCodec.decode( bsonReader, decoderContext );
         doc.remove( "_id" );
 
@@ -65,10 +67,10 @@ public class JsonCodec<T> implements Codec<T> {
 
     @SneakyThrows
     @Override
-    public void encode( BsonWriter bsonWriter, T data, EncoderContext encoderContext ) {
+    public void encode( BsonWriter bsonWriter, M data, EncoderContext encoderContext ) {
         var doc = Document.parse( fileWriter.writeValueAsString( data ) );
 
-        var id = identifier.apply( data );
+        var id = idToString.apply( identifier.apply( data ) );
 
         doc.put( "_id", id );
 
@@ -76,7 +78,7 @@ public class JsonCodec<T> implements Codec<T> {
     }
 
     @Override
-    public Class<T> getEncoderClass() {
+    public Class<M> getEncoderClass() {
         return clazz;
     }
 }

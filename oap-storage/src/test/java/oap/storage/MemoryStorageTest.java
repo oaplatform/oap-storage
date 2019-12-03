@@ -25,6 +25,7 @@
 package oap.storage;
 
 import lombok.EqualsAndHashCode;
+import oap.benchmark.Benchmark;
 import oap.id.Identifier;
 import oap.id.IntIdentifier;
 import org.testng.annotations.Test;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
+import static oap.util.Strings.FriendlyIdOption.FILL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MemoryStorageTest {
@@ -91,6 +93,20 @@ public class MemoryStorageTest {
         Bean beanNoId = new Bean();
         assertThat( storage.get( beanNoId.id, () -> beanNoId ) ).isEqualTo( beanNoId );
         assertThat( storage.list() ).containsOnly( bean, beanNoId );
+    }
+
+    @Test
+    public void concurrentInsertConflict() {
+        var storage = new MemoryStorage<>(
+            Identifier.<Bean>forId( b -> b.id, ( b, id ) -> b.id = id )
+                .suggestion( b -> b.s )
+                .options( FILL )
+                .build(),
+            SERIALIZED );
+        Benchmark.benchmark( "insert-failure", 1000, () -> {
+            storage.store( new Bean( null, "BBBBB" ) );
+        } ).inThreads( 100 ).experiments( 1 ).run();
+        assertThat( storage.list().size() ).isEqualTo( 1000 );
     }
 
     @Test

@@ -50,13 +50,13 @@ import static oap.storage.Storage.DataListener.IdObject.__io;
 
 @Slf4j
 public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, T> {
-    public final Identifier<T, I> identifier;
+    public final Identifier<I, T> identifier;
     protected final Lock lock;
     protected final List<DataListener<I, T>> dataListeners = new CopyOnWriteArrayList<>();
     protected final Memory<T, I> memory;
     private Predicate<I> conflict = Identifier.toConflict( this::get );
 
-    public MemoryStorage( Identifier<T, I> identifier, Lock lock ) {
+    public MemoryStorage( Identifier<I, T> identifier, Lock lock ) {
         this.identifier = identifier;
         this.lock = lock;
         this.memory = new Memory<>( lock );
@@ -184,7 +184,7 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
     }
 
     @Override
-    public Identifier<T, I> identifier() {
+    public Identifier<I, T> identifier() {
         return identifier;
     }
 

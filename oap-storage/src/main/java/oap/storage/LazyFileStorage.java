@@ -44,7 +44,7 @@ public class LazyFileStorage<T> extends MemoryStorage<String, T> implements Auto
     private Path path;
     private boolean closed = true;
 
-    public LazyFileStorage( Path path, Identifier<T, String> identifier, Lock lock ) {
+    public LazyFileStorage( Path path, Identifier<String, T> identifier, Lock lock ) {
         super( identifier, lock );
         this.path = path;
     }

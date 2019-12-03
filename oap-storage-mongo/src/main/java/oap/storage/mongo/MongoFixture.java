@@ -24,7 +24,6 @@
 
 package oap.storage.mongo;
 
-import com.mongodb.Block;
 import lombok.extern.slf4j.Slf4j;
 import oap.testng.Env;
 import oap.testng.Fixture;
@@ -33,6 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTimeUtils;
 
 import java.util.Date;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -60,14 +60,13 @@ public class MongoFixture implements Fixture {
     public static void dropTestDatabases() {
         final Pattern pattern = Pattern.compile( ".+_(\\d+)" );
         try( com.mongodb.MongoClient mongoClient = new com.mongodb.MongoClient( MONGO_HOST, MONGO_PORT ) ) {
-            mongoClient.listDatabaseNames().forEach( ( Block<String> ) database -> {
+            Consumer<String> drop = database -> {
                 Matcher matcher = pattern.matcher( database );
-                if( matcher.find() ) {
-                    if( new Date().getTime() - Long.parseLong( matcher.group( 1 ) ) > 1000 * 60 * 60 * 12 ) {
+                if( matcher.find() )
+                    if( new Date().getTime() - Long.parseLong( matcher.group( 1 ) ) > 1000 * 60 * 60 * 12 )
                         mongoClient.dropDatabase( database );
-                    }
-                }
-            } );
+            };
+            mongoClient.listDatabaseNames().forEach( drop );
         }
     }
 

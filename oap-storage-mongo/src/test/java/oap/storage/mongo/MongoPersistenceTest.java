@@ -60,12 +60,12 @@ import static org.mockito.Mockito.spy;
 @Slf4j
 public class MongoPersistenceTest extends Fixtures {
 
-    protected Identifier<Bean> beanIdentifier =
+    protected Identifier<String, Bean> beanIdentifier =
         Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
             .length( 10 )
             .build();
-    protected Identifier<Bean> beanIdentifierWithoutName =
+    protected Identifier<String, Bean> beanIdentifierWithoutName =
         Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( ar -> ObjectId.get().toString() )
             .length( 10 )
@@ -77,7 +77,7 @@ public class MongoPersistenceTest extends Fixtures {
 
     @Test
     public void store() {
-        MemoryStorage<Bean> storage1 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+        var storage1 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
         try( var persistence = new MongoPersistence<>( MongoFixture.mongoClient, "test", 6000, storage1 ) ) {
 
             persistence.start();
@@ -94,7 +94,7 @@ public class MongoPersistenceTest extends Fixtures {
         }
 
         // Make sure that for a new connection the objects still present in MongoDB
-        MemoryStorage<Bean> storage2 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+        var storage2 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
         try( var persistence = new MongoPersistence<>( MongoFixture.mongoClient, "test", 6000, storage2 ) ) {
             persistence.start();
             assertThat( storage2.select() ).containsOnly(
@@ -108,7 +108,7 @@ public class MongoPersistenceTest extends Fixtures {
 
     @Test
     public void delete() {
-        MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifierWithoutName, SERIALIZED );
+        var storage = new MemoryStorage<>( beanIdentifierWithoutName, SERIALIZED );
         try( var persistence = new MongoPersistence<>( MongoFixture.mongoClient, "test", 50, storage ) ) {
             persistence.start();
             var bean1 = storage.store( new Bean() );
@@ -143,9 +143,9 @@ public class MongoPersistenceTest extends Fixtures {
         }
     }
 
-    @Test( expectedExceptions = BsonMaximumSizeExceededException.class)
+    @Test( expectedExceptions = BsonMaximumSizeExceededException.class )
     public void storeWithMongoException() throws Exception {
-        MemoryStorage<Bean> storage1 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+        var storage1 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
         Exception exception = null;
         try( var persistence = new MongoPersistence<>( MongoFixture.mongoClient, "test", 6000, storage1,
             tmpRoot.toString(), 0 ) ) {
@@ -154,14 +154,14 @@ public class MongoPersistenceTest extends Fixtures {
             collection.setAccessible( true );
             var mock = spy( persistence.collection );
             collection.set( persistence, mock );
-            doThrow(new BsonMaximumSizeExceededException( "Payload document size is larger than maximum of 16793600" ))
+            doThrow( new BsonMaximumSizeExceededException( "Payload document size is larger than maximum of 16793600" ) )
                 .when( mock ).bulkWrite( anyList(), any( BulkWriteOptions.class ) );
 
             storage1.store( new Bean( "test1" ) );
             persistence.start();
         } catch( BsonMaximumSizeExceededException e ) {
             exception = e;
-            try( var stream = Files.newDirectoryStream(  tmpRoot, "*_failed.json"  ) ) {
+            try( var stream = Files.newDirectoryStream( tmpRoot, "*_failed.json" ) ) {
                 Iterator<Path> iterator = stream.iterator();
                 Assert.assertTrue( iterator.hasNext() );
                 while( iterator.hasNext() ) Assert.assertTrue( Files.exists( iterator.next() ) );
@@ -173,7 +173,7 @@ public class MongoPersistenceTest extends Fixtures {
             persistence.start();
         }
 
-        try( var stream = Files.newDirectoryStream(  tmpRoot, "*_failed.json"  ) ) {
+        try( var stream = Files.newDirectoryStream( tmpRoot, "*_failed.json" ) ) {
             Assert.assertFalse( stream.iterator().hasNext() );
         }
         if( exception != null ) throw exception;

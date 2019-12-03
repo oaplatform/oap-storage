@@ -66,7 +66,7 @@ public interface Storage<I, T> extends Iterable<T> {
 
     void removeDataListener( DataListener<I, T> dataListener );
 
-    Identifier<T, I> identifier();
+    Identifier<I, T> identifier();
 
     interface DataListener<DI, D> {
         default void added( List<IdObject<DI, D>> objects ) {}

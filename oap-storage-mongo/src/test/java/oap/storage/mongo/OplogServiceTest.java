@@ -50,17 +50,17 @@ public class OplogServiceTest extends Fixtures {
 
             oplogService.addListener( "test_OplogServiceTest", new OplogService.OplogListener() {
                 @Override
-                public void updated( String table, String id ) {
+                public void updated( String table, String mongoId ) {
                     sb.append( 'u' );
                 }
 
                 @Override
-                public void deleted( String table, String id ) {
+                public void deleted( String table, String mongoId ) {
                     sb.append( 'd' );
                 }
 
                 @Override
-                public void inserted( String table, String id ) {
+                public void inserted( String table, String mongoId ) {
                     sb.append( 'i' );
                 }
             } );
