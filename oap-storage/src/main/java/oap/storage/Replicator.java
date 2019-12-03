@@ -43,19 +43,19 @@ import static oap.storage.Storage.DataListener.IdObject.__io;
  * @param <T>
  */
 @Slf4j
-public class Replicator<T> implements Closeable {
-    private final MemoryStorage<T> slave;
-    private final ReplicationMaster<T> master;
+public class Replicator<I, T> implements Closeable {
+    private final MemoryStorage<I, T> slave;
+    private final ReplicationMaster<I, T> master;
     private final Scheduled scheduled;
     protected int batchSize = 10;
 
-    public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval, long safeModificationTime ) {
+    public Replicator( MemoryStorage<I, T> slave, ReplicationMaster<I, T> master, long interval, long safeModificationTime ) {
         this.slave = slave;
         this.master = master;
         this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, safeModificationTime, this::replicate );
     }
 
-    public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval ) {
+    public Replicator( MemoryStorage<I, T> slave, ReplicationMaster<I, T> master, long interval ) {
         this( slave, master, interval, 1000 );
     }
 
@@ -76,8 +76,8 @@ public class Replicator<T> implements Closeable {
         }
         log.trace( "updated objects {}", newUpdates.size() );
 
-        List<IdObject<T>> added = new ArrayList<>();
-        List<IdObject<T>> updated = new ArrayList<>();
+        List<IdObject<I, T>> added = new ArrayList<>();
+        List<IdObject<I, T>> updated = new ArrayList<>();
 
         for( Metadata<T> metadata : newUpdates ) {
             log.trace( "replicate {}", metadata );
@@ -95,7 +95,7 @@ public class Replicator<T> implements Closeable {
 
         var ids = master.ids();
         log.trace( "master ids {}", ids );
-        List<IdObject<T>> deleted = slave.memory.selectLiveIds()
+        List<IdObject<I, T>> deleted = slave.memory.selectLiveIds()
             .filter( id -> !ids.contains( id ) )
             .map( id -> slave.memory.removePermanently( id ).map( m -> __io( id, m.object ) ) )
             .filter( Optional::isPresent )

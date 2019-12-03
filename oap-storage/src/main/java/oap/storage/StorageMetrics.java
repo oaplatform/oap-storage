@@ -33,12 +33,12 @@ import java.util.Map;
 import java.util.function.DoubleSupplier;
 import java.util.function.Function;
 
-public class StorageMetrics<T> {
+public class StorageMetrics<I, T> {
     private final String storageName;
-    private Storage<T> storage;
-    private Map<String, Gauge<T>> metrics = new HashMap<>();
+    private Storage<I, T> storage;
+    private Map<String, Gauge<I, T>> metrics = new HashMap<>();
 
-    public StorageMetrics( Storage<T> storage, String name ) {
+    public StorageMetrics( Storage<I, T> storage, String name ) {
         this.storage = storage;
         this.storageName = name;
         this.metrics.put( "oap_storage_total", new Count<>() );
@@ -50,17 +50,17 @@ public class StorageMetrics<T> {
             Metrics.gauge( name, Tags.of( "storage", storageName ), storage, storage -> metric.apply( storage ).getAsDouble() ) );
     }
 
-    public interface Gauge<T> extends Function<Storage<T>, DoubleSupplier> {
+    public interface Gauge<I, T> extends Function<Storage<I, T>, DoubleSupplier> {
     }
 
-    public static class Count<T> implements Gauge<T> {
+    public static class Count<I, T> implements Gauge<I, T> {
         @Override
-        public DoubleSupplier apply( Storage<T> storage ) {
+        public DoubleSupplier apply( Storage<I, T> storage ) {
             return storage::size;
         }
     }
 
-    public static class Memory<T> implements Gauge<T> {
+    public static class Memory<I, T> implements Gauge<I, T> {
 
         private final MemoryMeter memoryMeter;
 
@@ -69,10 +69,9 @@ public class StorageMetrics<T> {
         }
 
         @Override
-        public DoubleSupplier apply( Storage<T> storage ) {
-            if( storage instanceof MemoryStorage<?> ) {
-                return () -> memoryMeter.measureDeep( ( ( MemoryStorage<T> ) storage ).memory.data );
-            }
+        public DoubleSupplier apply( Storage<I, T> storage ) {
+            if( storage instanceof MemoryStorage<?, ?> )
+                return () -> memoryMeter.measureDeep( ( ( MemoryStorage<I, T> ) storage ).memory.data );
 
             return () -> 0d;
         }

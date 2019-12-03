@@ -36,15 +36,15 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public interface Storage<T> extends Iterable<T> {
+public interface Storage<I, T> extends Iterable<T> {
 
     Stream<T> select();
 
     List<T> list();
 
-    Optional<T> get( @Nonnull String id );
+    Optional<T> get( @Nonnull I id );
 
-    T get( String id, @Nonnull Supplier<T> init );
+    T get( I id, @Nonnull Supplier<T> init );
 
     long size();
 
@@ -54,46 +54,34 @@ public interface Storage<T> extends Iterable<T> {
 
     void forEach( Consumer<? super T> action );
 
-    Optional<T> update( @Nonnull String id, @Nonnull Function<T, T> update );
+    Optional<T> update( @Nonnull I id, @Nonnull Function<T, T> update );
 
-    T update( String id, @Nonnull Function<T, T> update, @Nonnull Supplier<T> init );
+    T update( I id, @Nonnull Function<T, T> update, @Nonnull Supplier<T> init );
 
-    Optional<T> delete( @Nonnull String id );
+    Optional<T> delete( @Nonnull I id );
 
     void deleteAll();
 
-    void addDataListener( DataListener<T> dataListener );
+    void addDataListener( DataListener<I, T> dataListener );
 
-    void removeDataListener( DataListener<T> dataListener );
+    void removeDataListener( DataListener<I, T> dataListener );
 
-    Identifier<T> identifier();
+    Identifier<T, I> identifier();
 
-    interface DataListener<D> {
-        default void added( List<IdObject<D>> objects ) {}
+    interface DataListener<DI, D> {
+        default void added( List<IdObject<DI, D>> objects ) {}
 
-        default void updated( List<IdObject<D>> objects ) {}
+        default void updated( List<IdObject<DI, D>> objects ) {}
 
-        default void deleted( List<IdObject<D>> objects ) {}
+        default void deleted( List<IdObject<DI, D>> objects ) {}
 
-        class IdObject<D> extends Pair<String, D> {
-            /**
-             * @see #id()
-             */
-            @Deprecated
-            public final String id;
-            /**
-             * @see #object()
-             */
-            @Deprecated
-            public final D object;
+        class IdObject<DI, D> extends Pair<DI, D> {
 
-            public IdObject( String id, D object ) {
+            public IdObject( DI id, D object ) {
                 super( id, object );
-                this.id = id;
-                this.object = object;
             }
 
-            public String id() {
+            public DI id() {
                 return _1;
             }
 
@@ -102,7 +90,7 @@ public interface Storage<T> extends Iterable<T> {
             }
 
             @SuppressWarnings( "CheckStyle" )
-            public static <D> IdObject<D> __io( String id, D object ) {
+            public static <DI, D> IdObject<DI, D> __io( DI id, D object ) {
                 return new IdObject<>( id, object );
             }
         }
@@ -112,30 +100,30 @@ public interface Storage<T> extends Iterable<T> {
         Lock CONCURRENT = new ConcurrentLock();
         Lock SERIALIZED = new SerializedLock();
 
-        void synchronizedOn( String id, Runnable run );
+        void synchronizedOn( Object id, Runnable run );
 
-        <R> R synchronizedOn( String id, Supplier<R> run );
+        <R> R synchronizedOn( Object id, Supplier<R> run );
 
         final class ConcurrentLock implements Lock {
             @Override
-            public final void synchronizedOn( String id, Runnable run ) {
+            public final void synchronizedOn( Object id, Runnable run ) {
                 run.run();
             }
 
             @Override
-            public final <R> R synchronizedOn( String id, Supplier<R> run ) {
+            public final <R> R synchronizedOn( Object id, Supplier<R> run ) {
                 return run.get();
             }
         }
 
         final class SerializedLock implements Lock {
             @Override
-            public final void synchronizedOn( String id, Runnable run ) {
+            public final void synchronizedOn( Object id, Runnable run ) {
                 Threads.synchronizedOn( id, run );
             }
 
             @Override
-            public final <R> R synchronizedOn( String id, Supplier<R> run ) {
+            public final <R> R synchronizedOn( Object id, Supplier<R> run ) {
                 return Threads.synchronizedOn( id, run );
             }
         }

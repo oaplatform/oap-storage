@@ -36,7 +36,7 @@ import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReplicatorTest {
-    {
+    static {
         TypeIdFactory.register( Bean.class, Bean.class.getName() );
     }
 
@@ -44,24 +44,24 @@ public class ReplicatorTest {
     public void masterSlave() {
         var slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         var master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        try( Replicator<Bean> ignored = new Replicator<>( slave, master, 50, 0 ) ) {
+        try( var ignored = new Replicator<>( slave, master, 50, 0 ) ) {
 
             var updates = new AtomicInteger();
             var addons = new AtomicInteger();
             var deletions = new AtomicInteger();
             slave.addDataListener( new Storage.DataListener<>() {
                 @Override
-                public void added( List<IdObject<Bean>> objects ) {
+                public void added( List<IdObject<String, Bean>> objects ) {
                     addons.set( objects.size() );
                 }
 
                 @Override
-                public void updated( List<IdObject<Bean>> objects ) {
+                public void updated( List<IdObject<String, Bean>> objects ) {
                     updates.set( objects.size() );
                 }
 
                 @Override
-                public void deleted( List<IdObject<Bean>> objects ) {
+                public void deleted( List<IdObject<String, Bean>> objects ) {
                     deletions.set( objects.size() );
                 }
             } );
@@ -101,7 +101,7 @@ public class ReplicatorTest {
     public void replicateNow() {
         var slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         var master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        try( Replicator<Bean> replicator = new Replicator<>( slave, master, 5000, 0 ) ) {
+        try( var replicator = new Replicator<>( slave, master, 5000, 0 ) ) {
             master.store( new Bean( "1" ) );
             master.store( new Bean( "2" ) );
             replicator.replicateNow();

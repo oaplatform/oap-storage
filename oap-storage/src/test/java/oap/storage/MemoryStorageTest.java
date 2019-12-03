@@ -24,7 +24,9 @@
 
 package oap.storage;
 
+import lombok.EqualsAndHashCode;
 import oap.id.Identifier;
+import oap.id.IntIdentifier;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -36,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class MemoryStorageTest {
     @Test
     public void update() {
-        MemoryStorage<Bean> storage = new MemoryStorage<>(
+        var storage = new MemoryStorage<>(
             Identifier.<Bean>forId( b -> b.id, ( b, id ) -> b.id = id )
                 .suggestion( b -> b.s )
                 .build(),
@@ -44,7 +46,7 @@ public class MemoryStorageTest {
         List<String> ids = new ArrayList<>();
         storage.addDataListener( new Storage.DataListener<>() {
             @Override
-            public void added( List<IdObject<Bean>> objects ) {
+            public void added( List<IdObject<String, Bean>> objects ) {
                 objects.forEach( io -> ids.add( io.id() ) );
             }
         } );
@@ -57,7 +59,7 @@ public class MemoryStorageTest {
 
     @Test
     public void updateWithId() {
-        MemoryStorage<Bean> storage = new MemoryStorage<>(
+        var storage = new MemoryStorage<>(
             Identifier.<Bean>forId( b -> b.id, ( b, id ) -> b.id = id )
                 .suggestion( b -> b.s )
                 .build(),
@@ -65,7 +67,7 @@ public class MemoryStorageTest {
         List<String> ids = new ArrayList<>();
         storage.addDataListener( new Storage.DataListener<>() {
             @Override
-            public void added( List<IdObject<Bean>> objects ) {
+            public void added( List<IdObject<String, Bean>> objects ) {
                 objects.forEach( io -> ids.add( io.id() ) );
             }
         } );
@@ -78,7 +80,7 @@ public class MemoryStorageTest {
 
     @Test
     public void get() {
-        MemoryStorage<Bean> storage = new MemoryStorage<>(
+        var storage = new MemoryStorage<>(
             Identifier.<Bean>forId( b -> b.id, ( b, id ) -> b.id = id )
                 .suggestion( b -> b.s )
                 .build(),
@@ -89,5 +91,35 @@ public class MemoryStorageTest {
         Bean beanNoId = new Bean();
         assertThat( storage.get( beanNoId.id, () -> beanNoId ) ).isEqualTo( beanNoId );
         assertThat( storage.list() ).containsOnly( bean, beanNoId );
+    }
+
+    @Test
+    public void intId() {
+        var storage = new MemoryStorage<>(
+            IntIdentifier.<IntBean>forId( b -> b.id, ( b, id ) -> b.id = id )
+                .build(),
+            SERIALIZED );
+        var a = new IntBean( null, "a" );
+        var b = new IntBean( 2, "b" );
+        var c = new IntBean( null, "c" );
+        storage.store( a );
+        storage.store( b );
+        storage.store( c );
+        assertThat( storage.list() ).containsOnly(
+            new IntBean( 1, "a" ),
+            new IntBean( 2, "b" ),
+            new IntBean( 3, "c" )
+        );
+    }
+
+    @EqualsAndHashCode
+    static class IntBean {
+        Integer id;
+        String name;
+
+        public IntBean( Integer id, String name ) {
+            this.id = id;
+            this.name = name;
+        }
     }
 }

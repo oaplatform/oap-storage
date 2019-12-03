@@ -32,7 +32,6 @@ import oap.concurrent.scheduler.Scheduler;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
 import oap.util.Lists;
-import oap.util.Pair;
 import org.slf4j.Logger;
 
 import java.io.Closeable;
@@ -43,16 +42,16 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
-public class FilePersistence<T> implements Closeable {
+public class FilePersistence<I, T> implements Closeable {
     private final long fsync;
-    private final MemoryStorage<T> storage;
+    private final MemoryStorage<I, T> storage;
     private final Lock lock = new ReentrantLock();
     private final Logger log;
     private PeriodicScheduled scheduled;
     private Path path;
 
 
-    public FilePersistence( Path path, long fsync, MemoryStorage<T> storage ) {
+    public FilePersistence( Path path, long fsync, MemoryStorage<I, T> storage ) {
         this.path = path;
         this.fsync = fsync;
         this.storage = storage;
@@ -68,7 +67,7 @@ public class FilePersistence<T> implements Closeable {
         Threads.synchronously( lock, () -> {
             var metadata = Binder.json.unmarshal( new TypeRef<List<Metadata<T>>>() {}, path ).orElse( Lists.empty() );
             metadata.forEach( m -> {
-                String id = storage.identifier.get( m.object );
+                I id = storage.identifier.get( m.object );
                 storage.memory.put( id, m );
             } );
             log.info( storage.size() + " object(s) loaded." );
@@ -80,7 +79,7 @@ public class FilePersistence<T> implements Closeable {
         Threads.synchronously( lock, () -> {
             log.trace( "fsync: last: {}, objects in storage: {}", last, storage.size() );
 
-            List<Pair<String, Metadata<T>>> updates = storage.memory.selectUpdatedSince( last ).toList();
+            var updates = storage.memory.selectUpdatedSince( last ).toList();
             if( !updates.isEmpty() ) {
                 updates.forEach( p -> {
                     if( p._2.isDeleted() ) storage.memory.removePermanently( p._1 );

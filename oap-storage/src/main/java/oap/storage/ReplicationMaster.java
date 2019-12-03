@@ -26,8 +26,8 @@ package oap.storage;
 
 import java.util.List;
 
-public interface ReplicationMaster<T> {
+public interface ReplicationMaster<I, T> {
     List<Metadata<T>> updatedSince( long since, int limit, int offset );
 
-    List<String> ids();
+    List<I> ids();
 }

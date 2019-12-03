@@ -49,10 +49,10 @@ public class FilePersistenceTest extends Fixtures {
     @Test
     public void fsync() {
         Path path = Env.tmpPath( "storage.json.gz" );
-        var storge = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        try( FilePersistence<Bean> persistence = new FilePersistence<>( path, 10, storge ) ) {
+        var storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        try( var persistence = new FilePersistence<>( path, 10, storage ) ) {
             persistence.start();
-            storge.store( new Bean( "123" ) );
+            storage.store( new Bean( "123" ) );
 
             assertEventually( 10, 200, () -> assertThat( path ).exists() );
         }
@@ -61,16 +61,16 @@ public class FilePersistenceTest extends Fixtures {
     @Test
     public void persist() {
         Path path = Env.tmpPath( "storage.json.gz" );
-        var storge1 = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        try( FilePersistence<Bean> persistence = new FilePersistence<>( path, 10, storge1 ) ) {
+        var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        try( var persistence = new FilePersistence<>( path, 10, storage1 ) ) {
             persistence.start();
-            storge1.store( new Bean( "123" ) );
+            storage1.store( new Bean( "123" ) );
         }
 
-        var storge2 = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        try( FilePersistence<Bean> persistence = new FilePersistence<>( path, 10, storge2 ) ) {
+        var storage2 = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        try( var persistence = new FilePersistence<>( path, 10, storage2 ) ) {
             persistence.start();
-            assertThat( storge2.select() ).containsExactly( new Bean( "123" ) );
+            assertThat( storage2.select() ).containsExactly( new Bean( "123" ) );
         }
     }
 
