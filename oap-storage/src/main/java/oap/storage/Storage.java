@@ -23,12 +23,14 @@
  */
 package oap.storage;
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import oap.concurrent.Threads;
 import oap.id.Identifier;
-import oap.util.Pair;
 import oap.util.Stream;
 
 import javax.annotation.Nonnull;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -75,23 +77,30 @@ public interface Storage<I, T> extends Iterable<T> {
 
         default void deleted( List<IdObject<DI, D>> objects ) {}
 
-        class IdObject<DI, D> extends Pair<DI, D> {
+        @ToString
+        @EqualsAndHashCode
+        class IdObject<DI, D> implements Serializable {
+            private static final long serialVersionUID = -5793630001926149000L;
+
+            public final DI id;
+            public final D object;
 
             public IdObject( DI id, D object ) {
-                super( id, object );
-            }
-
-            public DI id() {
-                return _1;
-            }
-
-            public D object() {
-                return _2;
+                this.id = id;
+                this.object = object;
             }
 
             @SuppressWarnings( "CheckStyle" )
             public static <DI, D> IdObject<DI, D> __io( DI id, D object ) {
                 return new IdObject<>( id, object );
+            }
+
+            public final DI id() {
+                return id;
+            }
+
+            public final D object() {
+                return object;
             }
         }
     }
