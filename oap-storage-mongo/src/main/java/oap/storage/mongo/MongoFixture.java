@@ -44,6 +44,7 @@ public class MongoFixture implements Fixture {
     public static final int MONGO_PORT;
     public static final String MONGO_HOST;
     public static final String MONGO_DATABASE;
+    public static final String MONGO_SHELL;
 
     public static MongoClient mongoClient;
 
@@ -51,10 +52,12 @@ public class MongoFixture implements Fixture {
         MONGO_PORT = 27017;
         MONGO_HOST = Env.getEnvOrDefault( "MONGO_HOST", "localhost" );
         MONGO_DATABASE = "db" + StringUtils.replaceChars( Teamcity.buildPrefix(), ".-", "_" ) + "_" + DateTimeUtils.currentTimeMillis();
+        MONGO_SHELL = Env.getEnvOrDefault( "MONGO_SHELL", "/usr/bin/mongo" ) ;
 
         System.setProperty( "MONGO_HOST", MONGO_HOST );
         System.setProperty( "MONGO_PORT", String.valueOf( MONGO_PORT ) );
         System.setProperty( "MONGO_DATABASE", MONGO_DATABASE );
+        System.setProperty( "MONGO_SHELL", MONGO_SHELL );
     }
 
     public static void dropTestDatabases() {

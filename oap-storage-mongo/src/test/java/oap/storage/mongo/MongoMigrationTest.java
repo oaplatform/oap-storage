@@ -26,7 +26,6 @@ package oap.storage.mongo;
 
 import oap.testng.Env;
 import oap.testng.Fixtures;
-import org.bson.Document;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -34,9 +33,8 @@ import java.io.IOException;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
-public class DirectoryMigrationTest extends Fixtures {
+public class MongoMigrationTest extends Fixtures {
     {
         fixture( new MongoFixture() );
     }
@@ -48,7 +46,7 @@ public class DirectoryMigrationTest extends Fixtures {
 
     @Test
     public void migration() throws IOException {
-        var migration = new DirectoryMigration( Env.deployTestData( getClass() ) );
+        var migration = new MongoMigration( Env.deployTestData( getClass() ) );
         migration.variables.put( "testB", "true" );
         migration.variables.put( "testS", "\"true\"" );
 

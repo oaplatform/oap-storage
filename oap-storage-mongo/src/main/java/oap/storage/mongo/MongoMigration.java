@@ -45,16 +45,16 @@ import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Updates.set;
 
 @Slf4j
-public class DirectoryMigration implements Migration {
+public class MongoMigration implements Migration {
     private static final FindOneAndUpdateOptions UPSERT = new FindOneAndUpdateOptions().upsert( true );
 
     private final Path directory;
     private final String mongoShell;
     public HashMap<String, String> variables = new HashMap<>();
 
-    public DirectoryMigration( Path directory ) {
+    public MongoMigration( Path directory ) {
         this.directory = directory;
-        mongoShell = System.getenv( "MONGO_SHELL" );
+        mongoShell = MongoFixture.MONGO_SHELL;
         Preconditions.checkNotNull( mongoShell, "MONGO_SHELL is not defined" );
     }
 
@@ -131,7 +131,6 @@ public class DirectoryMigration implements Migration {
 
             log.info( "directory {} ... Done", versionDirectory );
         }
-
     }
 
     @Override

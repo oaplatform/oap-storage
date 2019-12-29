@@ -24,8 +24,6 @@
 
 package oap.storage.mongo;
 
-import com.mongodb.client.MongoDatabase;
-
 import java.io.IOException;
 
 public interface Migration {
