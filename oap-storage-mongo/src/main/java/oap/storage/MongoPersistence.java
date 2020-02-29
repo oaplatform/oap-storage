@@ -155,7 +155,7 @@ public class MongoPersistence<I, T> implements Closeable, Runnable, OplogService
                 // store file to local FS, which wasn't persisted to MongoDB
                 for( WriteModel<Metadata<T>> model : list ) {
                     if( model instanceof ReplaceOneModel ) {
-                        Binder.json.marshal(    errObjectPath, ( ( ReplaceOneModel<Metadata<T>> ) model ).getReplacement().object );
+                        Binder.json.marshal( errObjectPath, ( ( ReplaceOneModel<Metadata<T>> ) model ).getReplacement().object );
                     }
                 }
                 throw e;
@@ -178,7 +178,7 @@ public class MongoPersistence<I, T> implements Closeable, Runnable, OplogService
                 Scheduled.cancel( scheduled );
                 fsync( scheduled.lastExecuted() );
                 try {
-                    Files.walk( errObjectPath.getParent() )
+                    Files.walk( errObjectPath.getParent(), 1 )
                         .map( Path::toString )
                         .filter( f -> f.endsWith( "_failed.json" ) )
                         .map( s -> Path.of( s ) )
