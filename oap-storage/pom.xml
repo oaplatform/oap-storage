@@ -33,20 +33,20 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap-storage-parent</artifactId>
-        <version>${revision}</version>
+        <version>${oap.project.version}</version>
     </parent>
 
     <dependencies>
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib</artifactId>
-            <version>${oap.version}</version>
+            <version>${oap.deps.oap.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
+            <version>${oap.deps.lombok.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
