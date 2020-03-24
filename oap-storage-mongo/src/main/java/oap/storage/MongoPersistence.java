@@ -209,18 +209,18 @@ public class MongoPersistence<I, T> implements Closeable, Runnable, OplogService
         refresh( mongoId );
     }
 
-    private void refresh( String imongoId ) {
-        var m = collection.find( eq( "_id", imongoId ) ).first();
+    private void refresh( String mongoId ) {
+        var m = collection.find( eq( "_id", mongoId ) ).first();
         if( m != null ) {
-            storage.lock.synchronizedOn( imongoId, () -> {
-                var id = storage.identifier.fromString( imongoId );
+            storage.lock.synchronizedOn( mongoId, () -> {
+                var id = storage.identifier.fromString( mongoId );
                 var old = storage.memory.get( id );
                 if( old.isEmpty() || m.modified > old.get().modified ) {
-                    log.debug( "refresh from mongo {}", imongoId );
+                    log.debug( "refresh from mongo {}", mongoId );
                     storage.memory.put( id, m );
                     if( old.isEmpty() ) storage.fireAdded( id, m.object );
                     else storage.fireUpdated( id, m.object );
-                } else log.debug( "[{}] m.modified <= oldM.modified", imongoId );
+                } else log.debug( "[{}] m.modified <= oldM.modified", mongoId );
             } );
         }
     }

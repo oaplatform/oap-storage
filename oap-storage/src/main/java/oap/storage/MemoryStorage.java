@@ -233,7 +233,8 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
 
         public Optional<Metadata<T>> get( @Nonnull I id ) {
             requireNonNull( id );
-            return Optional.ofNullable( data.get( id ) );
+            return Optional.ofNullable( data.get( id ) )
+                .filter( m -> !m.isDeleted() );
         }
 
         public boolean put( @Nonnull I id, @Nonnull Metadata<T> m ) {
