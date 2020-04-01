@@ -28,13 +28,13 @@ import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.storage.Storage.DataListener.IdObject;
-import oap.util.Lists;
 
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.stream.Collectors.toList;
 import static oap.storage.Storage.DataListener.IdObject.__io;
 
 /**
@@ -47,7 +47,6 @@ public class Replicator<I, T> implements Closeable {
     private final MemoryStorage<I, T> slave;
     private final ReplicationMaster<I, T> master;
     private final Scheduled scheduled;
-    protected int batchSize = 10;
 
     public Replicator( MemoryStorage<I, T> slave, ReplicationMaster<I, T> master, long interval, long safeModificationTime ) {
         this.slave = slave;
@@ -65,16 +64,13 @@ public class Replicator<I, T> implements Closeable {
     }
 
     public synchronized void replicate( long last ) {
-        List<Metadata<T>> newUpdates = Lists.empty();
-        for( int b = 0; b < 100000; b++ ) {
-            var offset = b * batchSize;
-            var updates = master.updatedSince( last, batchSize, offset );
-            log.trace( "replicate {} to {} last: {}, size {}, batch {}, offset {}",
-                master, slave, last, updates.size(), batchSize, offset );
-            if( updates.isEmpty() ) break;
-            newUpdates.addAll( updates );
+        List<Metadata<T>> newUpdates;
+
+        try( var updates = master.updatedSince( last ) ) {
+            log.trace( "replicate {} to {} last: {}", master, slave, last );
+            newUpdates = updates.collect( toList() );
+            log.trace( "updated objects {}", newUpdates.size() );
         }
-        log.trace( "updated objects {}", newUpdates.size() );
 
         List<IdObject<I, T>> added = new ArrayList<>();
         List<IdObject<I, T>> updated = new ArrayList<>();

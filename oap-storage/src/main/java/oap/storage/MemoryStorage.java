@@ -200,14 +200,11 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
     }
 
     @Override
-    public List<Metadata<T>> updatedSince( long since, int limit, int offset ) {
-        log.trace( "requested updated objects since={}, limit={}, offset={}, total objects={}", since, limit, offset, memory.data.size() );
+    public Stream<Metadata<T>> updatedSince( long since ) {
+        log.trace( "requested updated objects since={}, total objects={}", since, memory.data.size() );
         return memory.selectLive()
             .mapToObj( ( id, m ) -> m )
-            .filter( m -> m.modified >= since )
-            .skip( offset )
-            .limit( limit )
-            .toList();
+            .filter( m -> m.modified >= since );
     }
 
     @Override
