@@ -26,7 +26,6 @@ package oap.storage.mongo;
 
 import oap.testng.Env;
 import oap.testng.Fixtures;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -35,13 +34,10 @@ import static com.mongodb.client.model.Filters.eq;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MongoMigrationTest extends Fixtures {
-    {
-        fixture( new MongoFixture() );
-    }
+    private final MongoFixture mongoFixture;
 
-    @BeforeMethod
-    public void deploy() {
-        Env.deployTestData( getClass() );
+    public MongoMigrationTest() {
+        fixture( mongoFixture = new MongoFixture() );
     }
 
     @Test
@@ -50,22 +46,25 @@ public class MongoMigrationTest extends Fixtures {
         migration.variables.put( "testB", "true" );
         migration.variables.put( "testS", "\"true\"" );
 
-        migration.run( MongoFixture.mongoClient );
+        migration.run( mongoFixture.mongoClient );
 
-        var version = MongoFixture.mongoClient.database.getCollection( "version" ).find( eq( "_id", "version" ) ).first();
+        var version = mongoFixture.mongoClient.database.getCollection( "version" ).find( eq( "_id", "version" ) ).first();
         assertThat( version ).isNotNull();
         assertThat( version.get( "value" ) ).isEqualTo( 10 );
 
-        value( "test", "test", "c", 17 );
-        value( "test", "test3", "v", 1 );
+        assertValue( "test", "test", "c", 17 );
+        assertValue( "test", "test3", "v", 1 );
 
-        migration.run( MongoFixture.mongoClient );
-        value( "test", "test", "c", 17 );
-        value( "test", "test3", "v", 1 );
+        migration.run( mongoFixture.mongoClient );
+        assertValue( "test", "test", "c", 17 );
+        assertValue( "test", "test3", "v", 1 );
     }
 
-    public void value( String collection, String id, String actual, int expected ) {
-        assertThat( MongoFixture.mongoClient.database.getCollection( collection ).find( eq( "_id", id ) ).first().getInteger( actual ) )
+    public void assertValue( String collection, String id, String field, int expected ) {
+        assertThat(
+            mongoFixture.mongoClient.database.getCollection( collection ).find( eq( "_id", id ) )
+                .first()
+                .getInteger( field ) )
             .isEqualTo( expected );
     }
 }

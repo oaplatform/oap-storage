@@ -46,7 +46,7 @@ public class MongoFixture implements Fixture {
     public static final String MONGO_DATABASE;
     public static final String MONGO_SHELL;
 
-    public static MongoClient mongoClient;
+    public MongoClient mongoClient;
 
     static {
         MONGO_PORT = 27017;

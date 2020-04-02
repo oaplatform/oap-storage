@@ -73,9 +73,8 @@ public class MongoMigration implements Migration {
                 .map( entry -> "var " + entry.getKey() + " = " + entry.getValue() + ";" )
                 .collect( Collectors.joining( "\n" ) );
 
-            sb
-                .append( "conn = new Mongo(\"" + client.host + ":" + client.port + "\");\n" )
-                .append( "db = conn.getDB(\"" + client.database.getName() + "\");\n" )
+            sb.append( "conn = new Mongo(\"" ).append( client.host ).append( ":" ).append( client.port ).append( "\");\n" )
+                .append( "db = conn.getDB(\"" ).append( client.database.getName() ).append( "\");\n" )
 //                .append( "session = db.getMongo().startSession( { readPreference: { mode: \"primary\" } } );\n" )
 //                .append( "session.startTransaction( { readConcern: { level: \"local\" }, writeConcern: { w: \"majority\" } } );\n" )
 //                .append( "try {\n" )
@@ -87,7 +86,7 @@ public class MongoMigration implements Migration {
 
                 log.info( "file {} ...", file );
 
-                sb.append( "function func" + i + "() {\n" )
+                sb.append( "function func" ).append( i ).append( "() {\n" )
                     .append( Files.readString( file ) )
                     .append( "\n}\n" )
                     .append( "func" ).append( i ).append( "();\n" );
@@ -98,10 +97,10 @@ public class MongoMigration implements Migration {
 //                  session.abortTransaction();
 //                  throw error;
 //                }
-//                                
+//
 //                session.commitTransaction();
 //                session.endSession();
-//                                
+//
 //                """.stripIndent() );
 
             var tmpFile = File.createTempFile( "mongo", "migration" );
@@ -147,9 +146,7 @@ public class MongoMigration implements Migration {
 
         String func = "";
         final Path functions = directory.resolve( "functions.js" );
-        if( java.nio.file.Files.exists( functions ) ) {
-            func = Files.readString( functions );
-        }
+        if( java.nio.file.Files.exists( functions ) ) func = Files.readString( functions );
 
         while( toVersion >= fromVersion + 1 ) {
             log.info( "migration from {} to {}", fromVersion, fromVersion + 1 );

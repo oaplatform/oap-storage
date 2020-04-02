@@ -22,33 +22,25 @@
  * SOFTWARE.
  */
 
-package oap.storage.mongo;
+package oap.storage;
 
-import com.mongodb.client.model.BulkWriteOptions;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.id.Identifier;
-import oap.storage.MemoryStorage;
-import oap.storage.MongoPersistence;
+import oap.io.Files;
+import oap.storage.mongo.MongoFixture;
+import oap.testng.Env;
 import oap.testng.Fixtures;
-import org.bson.BsonMaximumSizeExceededException;
+import oap.testng.TestDirectory;
 import org.bson.types.ObjectId;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Iterator;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
-import static oap.testng.Env.tmpRoot;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.spy;
 
 /**
  * It requires installed MongoDB on the machine with enabled Replica Set Oplog
@@ -60,6 +52,7 @@ import static org.mockito.Mockito.spy;
 @Slf4j
 public class MongoPersistenceTest extends Fixtures {
 
+    private final MongoFixture mongoFixture;
     protected Identifier<String, Bean> beanIdentifier =
         Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
@@ -71,14 +64,15 @@ public class MongoPersistenceTest extends Fixtures {
             .length( 10 )
             .build();
 
-    {
-        fixture( new MongoFixture() );
+    public MongoPersistenceTest() {
+        fixture( mongoFixture = new MongoFixture() );
+        fixture( TestDirectory.FIXTURE );
     }
 
     @Test
     public void store() {
         var storage1 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-        try( var persistence = new MongoPersistence<>( MongoFixture.mongoClient, "test", 6000, storage1 ) ) {
+        try( var persistence = new MongoPersistence<>( mongoFixture.mongoClient, "test", 6000, storage1 ) ) {
 
             persistence.start();
             Bean bean1 = storage1.store( new Bean( "test1" ) );
@@ -95,7 +89,7 @@ public class MongoPersistenceTest extends Fixtures {
 
         // Make sure that for a new connection the objects still present in MongoDB
         var storage2 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-        try( var persistence = new MongoPersistence<>( MongoFixture.mongoClient, "test", 6000, storage2 ) ) {
+        try( var persistence = new MongoPersistence<>( mongoFixture.mongoClient, "test", 6000, storage2 ) ) {
             persistence.start();
             assertThat( storage2.select() ).containsOnly(
                 new Bean( "TST1", "test1" ),
@@ -109,7 +103,7 @@ public class MongoPersistenceTest extends Fixtures {
     @Test
     public void delete() {
         var storage = new MemoryStorage<>( beanIdentifierWithoutName, SERIALIZED );
-        try( var persistence = new MongoPersistence<>( MongoFixture.mongoClient, "test", 50, storage ) ) {
+        try( var persistence = new MongoPersistence<>( mongoFixture.mongoClient, "test", 50, storage ) ) {
             persistence.start();
             var bean1 = storage.store( new Bean() );
             storage.store( new Bean() );
@@ -125,7 +119,7 @@ public class MongoPersistenceTest extends Fixtures {
         var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
             .build(), SERIALIZED );
-        try( var persistence = new MongoPersistence<>( MongoFixture.mongoClient, "test", 6000, storage1 ) ) {
+        try( var persistence = new MongoPersistence<>( mongoFixture.mongoClient, "test", 6000, storage1 ) ) {
             persistence.start();
             storage1.store( new Bean( "111", "initialName" ) );
             storage1.update( "111", bean -> {
@@ -136,47 +130,23 @@ public class MongoPersistenceTest extends Fixtures {
         var storage2 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
             .build(), SERIALIZED );
-        try( var persistence = new MongoPersistence<>( MongoFixture.mongoClient, "test", 6000, storage2 ) ) {
+        try( var persistence = new MongoPersistence<>( mongoFixture.mongoClient, "test", 6000, storage2 ) ) {
             persistence.start();
             assertThat( storage2.select() )
                 .containsExactly( new Bean( "111", "newName" ) );
         }
     }
 
-    @Test( expectedExceptions = BsonMaximumSizeExceededException.class )
-    public void storeWithMongoException() throws Exception {
-        var storage1 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-        Exception exception = null;
-        try( var persistence = new MongoPersistence<>( MongoFixture.mongoClient, "test", 6000, storage1,
-            tmpRoot.toString(), 0 ) ) {
-
-            java.lang.reflect.Field collection = persistence.getClass().getDeclaredField( "collection" );
-            collection.setAccessible( true );
-            var mock = spy( persistence.collection );
-            collection.set( persistence, mock );
-            doThrow( new BsonMaximumSizeExceededException( "Payload document size is larger than maximum of 16793600" ) )
-                .when( mock ).bulkWrite( anyList(), any( BulkWriteOptions.class ) );
-
-            storage1.store( new Bean( "test1" ) );
+    @Test
+    public void storeTooBig() {
+        var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+        Path crashDumpPath = Env.tmpPath( "failures" );
+        String table = "test";
+        try( var persistence = new MongoPersistence<>( mongoFixture.mongoClient, table, 6000, storage, crashDumpPath ) ) {
             persistence.start();
-        } catch( BsonMaximumSizeExceededException e ) {
-            exception = e;
-            try( var stream = Files.newDirectoryStream( tmpRoot, "*_failed.json" ) ) {
-                Iterator<Path> iterator = stream.iterator();
-                Assert.assertTrue( iterator.hasNext() );
-                while( iterator.hasNext() ) Assert.assertTrue( Files.exists( iterator.next() ) );
-            }
+            storage.store( new Bean( "X".repeat( 16793600 + 1 ) ) );
         }
-
-        try( var persistence = new MongoPersistence<>( MongoFixture.mongoClient, "test", 6000, storage1,
-            tmpRoot.toString(), 0 ) ) {
-            persistence.start();
-        }
-
-        try( var stream = Files.newDirectoryStream( tmpRoot, "*_failed.json" ) ) {
-            Assert.assertFalse( stream.iterator().hasNext() );
-        }
-        if( exception != null ) throw exception;
+        assertThat( Files.wildcard( crashDumpPath.resolve( table ), "*.json.gz" ) ).hasSize( 1 );
     }
 
     @ToString

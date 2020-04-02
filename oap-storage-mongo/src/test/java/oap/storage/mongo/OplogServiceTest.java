@@ -38,13 +38,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Testing and Development</a>
  */
 public class OplogServiceTest extends Fixtures {
-    {
-        fixture( new MongoFixture() );
+    private final MongoFixture mongoFixture;
+
+    public OplogServiceTest() {
+        fixture( this.mongoFixture = new MongoFixture() );
     }
 
     @Test
     public void oplog() {
-        try( var oplogService = new OplogService( MongoFixture.mongoClient ) ) {
+        try( var oplogService = new OplogService( mongoFixture.mongoClient ) ) {
 
             var sb = new StringBuilder();
 
@@ -67,11 +69,11 @@ public class OplogServiceTest extends Fixtures {
 
             oplogService.start();
 
-            MongoFixture.mongoClient.database.getCollection( "test_OplogServiceTest" ).insertOne( new Document( "test", "test" ) );
-            MongoFixture.mongoClient.database.getCollection( "test_OplogServiceTest2" ).updateOne( new Document( "test", "test" ), new Document( "$set", new Document( "test", "test2" ) ) );
-            MongoFixture.mongoClient.database.getCollection( "test_OplogServiceTest" ).updateOne( new Document( "test", "test" ), new Document( "$set", new Document( "test", "test2" ) ) );
-            MongoFixture.mongoClient.database.getCollection( "test_OplogServiceTest" ).updateOne( new Document( "test", "test2" ), new Document( "$set", new Document( "test", "test3" ) ) );
-            MongoFixture.mongoClient.database.getCollection( "test_OplogServiceTest" ).deleteOne( new Document( "test", "test3" ) );
+            mongoFixture.mongoClient.database.getCollection( "test_OplogServiceTest" ).insertOne( new Document( "test", "test" ) );
+            mongoFixture.mongoClient.database.getCollection( "test_OplogServiceTest2" ).updateOne( new Document( "test", "test" ), new Document( "$set", new Document( "test", "test2" ) ) );
+            mongoFixture.mongoClient.database.getCollection( "test_OplogServiceTest" ).updateOne( new Document( "test", "test" ), new Document( "$set", new Document( "test", "test2" ) ) );
+            mongoFixture.mongoClient.database.getCollection( "test_OplogServiceTest" ).updateOne( new Document( "test", "test2" ), new Document( "$set", new Document( "test", "test3" ) ) );
+            mongoFixture.mongoClient.database.getCollection( "test_OplogServiceTest" ).deleteOne( new Document( "test", "test3" ) );
 
             assertEventually( 100, 100, () -> assertThat( sb.toString() ).isEqualTo( "iuud" ) );
         }
