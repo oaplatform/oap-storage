@@ -33,7 +33,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap-storage-parent</artifactId>
-        <version>${oap.project.version}</version>
+        <version>${oap.storage.project.version}</version>
     </parent>
 
     <dependencies>
@@ -51,7 +51,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-exec</artifactId>
-            <version>1.3</version>
+            <version>${oap.deps.apache.exec.version}</version>
         </dependency>
 
         <dependency>
