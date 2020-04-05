@@ -74,8 +74,8 @@ public class MigrationTest {
     @Test
     public void toScript() {
         Migration migration = new Migration( "testdb", new Version( 666 ),
-            List.of( "/oap/storage/mongo/MigratorTest/s1.migration.js", "/oap/storage/mongo/MigratorTest/s2.migration.js" ),
-            Set.of( "/oap/storage/mongo/MigratorTest/lib.migration.js" ),
+            List.of( "/oap/storage/mongo/MigrationTest/s1.migration.js", "/oap/storage/mongo/MigrationTest/s2.migration.js" ),
+            Set.of( "/oap/storage/mongo/MigrationTest/lib.migration.js" ),
             Maps.of(
                 __( "param1", true ),
                 __( "param2", "string" ),
