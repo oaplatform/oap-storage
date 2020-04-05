@@ -1,0 +1,10 @@
+migrations:
+  ${DATABASE}:
+    - version:
+        main: 2
+      script: /oap/storage/mongo/MongoClientTest/2/2.migration.js
+      includes:
+        - /oap/storage/mongo/MongoClientTest/functions.js
+      parameters:
+        testB: true
+        testS: "true"

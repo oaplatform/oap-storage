@@ -24,8 +24,28 @@
 
 package oap.storage.mongo;
 
-public class MigrationExceptin extends RuntimeException {
-    public MigrationExceptin( String message ) {
-        super( message );
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
+@ToString
+@EqualsAndHashCode
+public class Version implements Comparable<Version> {
+    public static final Version UNDEFINED = new Version( 0, 0 );
+    public final int main;
+    public final int ext;
+
+    public Version( int main ) {
+        this( main, 0 );
+    }
+
+    public Version( int main, int ext ) {
+        this.main = main;
+        this.ext = ext;
+    }
+
+    @Override
+    public int compareTo( Version other ) {
+        int result = Integer.compare( main, other.main );
+        return result == 0 ? Integer.compare( ext, other.ext ) : result;
     }
 }

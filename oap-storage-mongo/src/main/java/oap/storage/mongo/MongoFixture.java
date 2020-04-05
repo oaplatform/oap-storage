@@ -41,28 +41,25 @@ import java.util.regex.Pattern;
  */
 @Slf4j
 public class MongoFixture implements Fixture {
-    public static final int MONGO_PORT;
-    public static final String MONGO_HOST;
-    public static final String MONGO_DATABASE;
-    public static final String MONGO_SHELL;
+    public final int mongoPort;
+    public final String mongoHost;
+    public final String mongoDatabase;
 
-    public MongoClient mongoClient;
+    private MongoClient mongoClient;
 
-    static {
-        MONGO_PORT = 27017;
-        MONGO_HOST = Env.getEnvOrDefault( "MONGO_HOST", "localhost" );
-        MONGO_DATABASE = "db" + StringUtils.replaceChars( Teamcity.buildPrefix(), ".-", "_" ) + "_" + DateTimeUtils.currentTimeMillis();
-        MONGO_SHELL = Env.getEnvOrDefault( "MONGO_SHELL", "/usr/bin/mongo" ) ;
+    public MongoFixture() {
+        mongoPort = 27017;
+        mongoHost = Env.getEnvOrDefault( "MONGO_HOST", "localhost" );
+        mongoDatabase = "db" + StringUtils.replaceChars( Teamcity.buildPrefix(), ".-", "_" ) + "_" + DateTimeUtils.currentTimeMillis();
 
-        System.setProperty( "MONGO_HOST", MONGO_HOST );
-        System.setProperty( "MONGO_PORT", String.valueOf( MONGO_PORT ) );
-        System.setProperty( "MONGO_DATABASE", MONGO_DATABASE );
-        System.setProperty( "MONGO_SHELL", MONGO_SHELL );
+        System.setProperty( "MONGO_HOST", mongoHost );
+        System.setProperty( "MONGO_PORT", String.valueOf( mongoPort ) );
+        System.setProperty( "MONGO_DATABASE", mongoDatabase );
     }
 
-    public static void dropTestDatabases() {
+    public void dropTestDatabases() {
         final Pattern pattern = Pattern.compile( ".+_(\\d+)" );
-        try( com.mongodb.MongoClient mongoClient = new com.mongodb.MongoClient( MONGO_HOST, MONGO_PORT ) ) {
+        try( com.mongodb.MongoClient mongoClient = new com.mongodb.MongoClient( mongoHost, mongoPort ) ) {
             Consumer<String> drop = database -> {
                 Matcher matcher = pattern.matcher( database );
                 if( matcher.find() )
@@ -76,7 +73,7 @@ public class MongoFixture implements Fixture {
 
     @Override
     public void beforeMethod() {
-        mongoClient = new MongoClient( MONGO_HOST, MONGO_PORT, MONGO_DATABASE, Migration.NONE );
+        mongoClient = new MongoClient( mongoHost, mongoPort, mongoDatabase );
         mongoClient.database.drop();
         log.debug( "drop database {}", mongoClient.database.getName() );
     }

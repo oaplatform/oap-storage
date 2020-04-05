@@ -44,16 +44,16 @@ public class JsonCodec<I, M> implements Codec<M> {
     private final Class<M> clazz;
     private final Function<M, I> identifier;
     private Function<I, String> idToString;
-    private ObjectWriter fileWriter;
-    private ObjectReader fileReader;
+    private ObjectWriter writer;
+    private ObjectReader reader;
 
     public JsonCodec( TypeRef<M> ref, Function<M, I> identifier, Function<I, String> idToString ) {
         this.clazz = ref.clazz();
         this.identifier = identifier;
         this.idToString = idToString;
         this.documentCodec = new DocumentCodec();
-        this.fileReader = Binder.json.readerFor( ref );
-        this.fileWriter = Binder.json.writerFor( ref );
+        this.reader = Binder.json.readerFor( ref );
+        this.writer = Binder.json.writerFor( ref );
     }
 
     @SneakyThrows
@@ -62,13 +62,13 @@ public class JsonCodec<I, M> implements Codec<M> {
         var doc = documentCodec.decode( bsonReader, decoderContext );
         doc.remove( "_id" );
 
-        return fileReader.readValue( Binder.json.marshal( doc ) );
+        return reader.readValue( Binder.json.marshal( doc ) );
     }
 
     @SneakyThrows
     @Override
     public void encode( BsonWriter bsonWriter, M data, EncoderContext encoderContext ) {
-        var doc = Document.parse( fileWriter.writeValueAsString( data ) );
+        var doc = Document.parse( writer.writeValueAsString( data ) );
 
         var id = idToString.apply( identifier.apply( data ) );
 

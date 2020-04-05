@@ -24,10 +24,81 @@
 
 package oap.storage.mongo;
 
-import java.io.IOException;
+import com.google.common.collect.ListMultimap;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
+import oap.io.Resources;
+import oap.util.BiStream;
+import oap.util.Stream;
 
-public interface Migration {
-    Migration NONE = client -> {};
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 
-    void run( MongoClient client ) throws IOException;
+import static oap.util.Maps.Collectors.toListMultimap;
+import static oap.util.Pair.__;
+
+@ToString
+@EqualsAndHashCode
+@Slf4j
+public class Migration {
+    public final String database;
+    public final Version version;
+    public final List<String> scripts;
+    public final Set<String> includes;
+    public final Map<String, Object> params;
+
+    public Migration( String database, Version version, List<String> scripts, Set<String> includes, Map<String, Object> params ) {
+        this.database = database;
+        this.version = version;
+        this.scripts = scripts;
+        this.includes = includes;
+        this.params = params;
+    }
+
+    public static List<Migration> of( String database, List<MigrationConfig> configs ) {
+        ListMultimap<Version, MigrationConfig.Migration> migratons = Stream.of( configs )
+            .flatMap( config -> Stream.of( config.migrations ) )
+            .map( databases -> databases.getOrDefault( database, List.of() ) )
+            .flatMap( Stream::of )
+            .mapToPairs( m -> __( m.version, m ) )
+            .collect( toListMultimap() );
+        return BiStream.of( migratons.asMap() )
+            .sorted( Comparator.comparing( p -> p._1 ) )
+            .map( p -> new Migration( database, p._1,
+                Stream.of( p._2 ).map( m -> m.script ).toList(),
+                Stream.of( p._2 ).flatMap( m -> Stream.of( m.includes ) ).toSet(),
+                Stream.of( p._2 ).flatMap( m -> BiStream.of( m.parameters ) ).mapToPairs( Function.identity() ).toMap()
+            ) )
+            .toList();
+    }
+
+    public String toScript( String mongoHost, int mongoPort ) {
+        StringBuilder script = new StringBuilder();
+        script.append( "conn = new Mongo(\"" ).append( mongoHost ).append( ":" ).append( mongoPort ).append( "\");\n" );
+        script.append( "db = conn.getDB(\"" ).append( database ).append( "\");\n" );
+        script.append( "\n// ========== PARAMETERS ==========\n" );
+        params.forEach( ( n, v ) -> script.append( "var " ).append( n ).append( " = " )
+            .append( v instanceof String ? "\"" + v + "\"" : v ).append( ";\n" ) );
+        for( String include : includes ) {
+            script.append( "\n// ========== INCLUDE: " ).append( include ).append( " ==========\n" );
+            script.append( Resources.readStringOrThrow( getClass(), include ) );
+        }
+        for( String scr : scripts ) {
+            script.append( "\n// ========== SCRIPT: " ).append( scr ).append( " ==========\n" );
+            script.append( "(function() {\n" );
+            script.append( Resources.readStringOrThrow( getClass(), scr ) );
+            script.append( "})();\n" );
+        }
+        return script.toString();
+    }
+
+    public void execute( MongoShell shell, String mongoHost, int mongoPort ) {
+        String script = toScript( mongoHost, mongoPort );
+        log.debug( "executing migration of {} to {} with script\n{}", database, version, script );
+        shell.execute( mongoHost, mongoPort, database, script );
+    }
 }

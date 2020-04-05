@@ -1,0 +1,4 @@
+name: oap-storage-mongo
+services:
+  oap-storage-mongo-shell:
+    implementation: oap.storage.mongo.MongoShell

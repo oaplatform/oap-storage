@@ -94,10 +94,10 @@ public class MongoPersistence<I, T> implements Closeable, Runnable, OplogService
             CodecRegistries.fromCodecs( new JsonCodec<>( ref,
                 m -> this.storage.identifier.get( m.object ),
                 id -> this.storage.identifier.toString( id ) ) ),
-            mongoClient.database.getCodecRegistry()
+            mongoClient.getCodecRegistry()
         );
 
-        this.collection = mongoClient.database
+        this.collection = mongoClient
             .getCollection( table, ref.clazz() )
             .withCodecRegistry( codecRegistry );
         this.crashDumpPath = crashDumpPath.resolve( table );

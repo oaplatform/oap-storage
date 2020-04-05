@@ -29,6 +29,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.id.Identifier;
 import oap.io.Files;
+import oap.storage.mongo.MongoClient;
 import oap.storage.mongo.MongoFixture;
 import oap.testng.Env;
 import oap.testng.Fixtures;
@@ -72,8 +73,9 @@ public class MongoPersistenceTest extends Fixtures {
     @Test
     public void store() {
         var storage1 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-        try( var persistence = new MongoPersistence<>( mongoFixture.mongoClient, "test", 6000, storage1 ) ) {
-
+        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase );
+             var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage1 ) ) {
+            mongoClient.start();
             persistence.start();
             Bean bean1 = storage1.store( new Bean( "test1" ) );
             Bean bean2 = storage1.store( new Bean( "test2" ) );
@@ -89,7 +91,9 @@ public class MongoPersistenceTest extends Fixtures {
 
         // Make sure that for a new connection the objects still present in MongoDB
         var storage2 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-        try( var persistence = new MongoPersistence<>( mongoFixture.mongoClient, "test", 6000, storage2 ) ) {
+        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase );
+             var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage2 ) ) {
+            mongoClient.start();
             persistence.start();
             assertThat( storage2.select() ).containsOnly(
                 new Bean( "TST1", "test1" ),
@@ -103,7 +107,9 @@ public class MongoPersistenceTest extends Fixtures {
     @Test
     public void delete() {
         var storage = new MemoryStorage<>( beanIdentifierWithoutName, SERIALIZED );
-        try( var persistence = new MongoPersistence<>( mongoFixture.mongoClient, "test", 50, storage ) ) {
+        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase );
+             var persistence = new MongoPersistence<>( mongoClient, "test", 50, storage ) ) {
+            mongoClient.start();
             persistence.start();
             var bean1 = storage.store( new Bean() );
             storage.store( new Bean() );
@@ -119,7 +125,9 @@ public class MongoPersistenceTest extends Fixtures {
         var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
             .build(), SERIALIZED );
-        try( var persistence = new MongoPersistence<>( mongoFixture.mongoClient, "test", 6000, storage1 ) ) {
+        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase );
+             var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage1 ) ) {
+            mongoClient.start();
             persistence.start();
             storage1.store( new Bean( "111", "initialName" ) );
             storage1.update( "111", bean -> {
@@ -130,7 +138,9 @@ public class MongoPersistenceTest extends Fixtures {
         var storage2 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
             .build(), SERIALIZED );
-        try( var persistence = new MongoPersistence<>( mongoFixture.mongoClient, "test", 6000, storage2 ) ) {
+        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase );
+             var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage2 ) ) {
+            mongoClient.start();
             persistence.start();
             assertThat( storage2.select() )
                 .containsExactly( new Bean( "111", "newName" ) );
@@ -142,7 +152,9 @@ public class MongoPersistenceTest extends Fixtures {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
         Path crashDumpPath = Env.tmpPath( "failures" );
         String table = "test";
-        try( var persistence = new MongoPersistence<>( mongoFixture.mongoClient, table, 6000, storage, crashDumpPath ) ) {
+        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase );
+             var persistence = new MongoPersistence<>( mongoClient, table, 6000, storage, crashDumpPath ) ) {
+            mongoClient.start();
             persistence.start();
             storage.store( new Bean( "X".repeat( 16793600 + 1 ) ) );
         }

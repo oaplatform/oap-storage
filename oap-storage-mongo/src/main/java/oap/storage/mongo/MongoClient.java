@@ -26,49 +26,91 @@ package oap.storage.mongo;
 
 import com.mongodb.MongoClientOptions;
 import com.mongodb.ServerAddress;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.ReplaceOneModel;
+import com.mongodb.client.model.ReplaceOptions;
+import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
+import oap.reflect.TypeRef;
+import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistries;
+import org.bson.codecs.configuration.CodecRegistry;
 
 import java.io.Closeable;
-import java.io.IOException;
+import java.util.List;
 
-/**
- * Wrapper for the {@link com.mongodb.MongoClient}
- */
+import static com.mongodb.client.model.Filters.eq;
+import static oap.storage.mongo.MigrationConfig.CONFIGURATION;
+
+@Slf4j
+@ToString( exclude = { "migrations", "shell", "versionCollection", "mongoClient" } )
 public class MongoClient implements Closeable {
-    public final MongoDatabase database;
-    public final com.mongodb.MongoClient mongoClient;
+    final MongoDatabase database;
+    final com.mongodb.MongoClient mongoClient;
     public final String host;
     public final int port;
-    private final Migration migration;
-    public boolean dropDatabaseBeforeMigration = false;
+    private List<MigrationConfig> migrations;
+    public Version databaseVersion = Version.UNDEFINED;
+    private MongoCollection<Version> versionCollection;
+    private MongoShell shell = new MongoShell();
 
     public MongoClient( String host, int port, String database ) {
-        this( host, port, database, null );
+        this( host, port, database, CONFIGURATION.fromClassPath() );
     }
 
-    public MongoClient( String host, int port, String database, Migration migration ) {
+    public MongoClient( String host, int port, String database, List<MigrationConfig> migrations ) {
         this.host = host;
         this.port = port;
-        this.migration = migration;
-        var codecRegistry = CodecRegistries.fromRegistries(
-            CodecRegistries.fromCodecs( new JodaTimeCodec() ),
-            com.mongodb.MongoClient.getDefaultCodecRegistry() );
-
-        var options = MongoClientOptions.builder().codecRegistry( codecRegistry ).build();
-
-        mongoClient = new com.mongodb.MongoClient( new ServerAddress( host, port ), options );
+        this.migrations = migrations;
+        this.mongoClient = new com.mongodb.MongoClient( new ServerAddress( host, port ),
+            MongoClientOptions.builder().codecRegistry( CodecRegistries.fromRegistries(
+                CodecRegistries.fromCodecs(
+                    new JodaTimeCodec(),
+                    new JsonCodec<>( new TypeRef<Version>() {}, object -> "version", id -> id )
+                ),
+                com.mongodb.MongoClient.getDefaultCodecRegistry() ) ).build() );
         this.database = mongoClient.getDatabase( database );
+        fetchVersion();
     }
 
-    public void start() throws IOException {
-        if( dropDatabaseBeforeMigration ) this.database.drop();
+    private void fetchVersion() {
+        this.versionCollection = this.getCollection( "version", Version.class );
+        Version first = versionCollection.find().first();
+        this.databaseVersion = first != null ? first : Version.UNDEFINED;
+    }
 
-        if( migration != null ) migration.run( this );
+    public void start() {
+        ReplaceOptions options = new ReplaceOptions().upsert( true );
+        for( Migration migration : Migration.of( database.getName(), migrations ) ) {
+            log.debug( "executing migrator {}", migration );
+            log.debug( "current version is {}", databaseVersion );
+            migration.execute( shell, host, port );
+//            todo simplify this
+            versionCollection.bulkWrite( List.of( new ReplaceOneModel<>(
+                eq( "_id", "version" ),
+                migration.version,
+                options ) ) );
+            fetchVersion();
+        }
+        log.debug( "migration complete, current version is {}", databaseVersion );
+    }
+
+    public CodecRegistry getCodecRegistry() {
+        return database.getCodecRegistry();
+    }
+
+    public <T> MongoCollection<T> getCollection( String collection, Class<T> clazz ) {
+        return database.getCollection( collection, clazz );
+    }
+
+    public MongoCollection<Document> getCollection( String collection ) {
+        return database.getCollection( collection );
     }
 
     @Override
     public void close() {
         mongoClient.close();
     }
+
 }

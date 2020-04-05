@@ -74,7 +74,7 @@ public class OplogService implements Runnable, Closeable {
         log.debug( "starting oplog listening {} for {}", this, mongoClient.database.getName() );
         running = true;
         var oplogRs = mongoClient.mongoClient.getDatabase( "local" ).getCollection( "oplog.rs" );
-        final Bson filter = and(
+        Bson filter = and(
             in( "op", "i", "u", "d" ),
             gt( "ts", new BsonTimestamp( ( int ) ( DateTimeUtils.currentTimeMillis() / 1000 ), 0 ) ),
             regex( "ns", "^" + mongoClient.database.getName() + "\\." )
@@ -88,6 +88,7 @@ public class OplogService implements Runnable, Closeable {
 
         log.debug( "filter = {}", filter );
 
+        // make thread external
         thread = new Thread( this );
         thread.start();
     }
@@ -117,33 +118,30 @@ public class OplogService implements Runnable, Closeable {
                 var operation = document.getString( "op" ).charAt( 0 );
                 var tableName = getTableName( document );
                 switch( operation ) {
-                    case 'i': {
+                    case 'i' -> {
                         var objO = ( Document ) document.get( "o" );
                         var id = objO.get( "_id" ).toString();
                         var l = listeners.get( tableName );
                         l.forEach( ll -> ll.inserted( tableName, id ) );
-                        break;
                     }
-                    case 'u': {
+                    case 'u' -> {
                         var objO2 = ( Document ) document.get( "o2" );
                         var id = objO2.get( "_id" ).toString();
                         var l = listeners.get( tableName );
                         l.forEach( ll -> ll.updated( tableName, id ) );
-                        break;
                     }
-                    case 'd': {
+                    case 'd' -> {
                         var objO = ( Document ) document.get( "o" );
                         var id = objO.get( "_id" ).toString();
                         var l = listeners.get( tableName );
                         l.forEach( ll -> ll.deleted( tableName, id ) );
-                        break;
                     }
-                    default:
+                    default -> {
+                    }
                 }
             }
-        } catch( MongoInterruptedException ignored ) {
-        } catch( IllegalStateException ise ) {
-            log.debug( ise.getMessage() );
+        } catch( MongoInterruptedException | IllegalStateException e ) {
+            log.debug( e.getMessage(), e );
         }
     }
 
