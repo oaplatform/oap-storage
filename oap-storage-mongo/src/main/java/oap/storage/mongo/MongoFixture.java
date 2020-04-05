@@ -29,12 +29,15 @@ import oap.testng.Env;
 import oap.testng.Fixture;
 import oap.testng.Teamcity;
 import org.apache.commons.lang3.StringUtils;
+import org.bson.Document;
 import org.joda.time.DateTimeUtils;
 
 import java.util.Date;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static oap.testng.Asserts.contentOfTestResource;
 
 /**
  * Created by igor.petrenko on 09/20/2019.
@@ -70,6 +73,9 @@ public class MongoFixture implements Fixture {
         }
     }
 
+    public <T> void insertDocument( Class<?> contextClass, String collection, String resourceName ) {
+        mongoClient.getCollection( collection ).insertOne( Document.parse( contentOfTestResource( contextClass, resourceName ) ) );
+    }
 
     @Override
     public void beforeMethod() {
@@ -82,5 +88,9 @@ public class MongoFixture implements Fixture {
     public void afterMethod() {
         mongoClient.database.drop();
         mongoClient.close();
+    }
+
+    public void initializeVersion( Version version ) {
+        mongoClient.updateVersion( version );
     }
 }

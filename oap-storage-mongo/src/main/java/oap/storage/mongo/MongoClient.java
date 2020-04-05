@@ -28,23 +28,21 @@ import com.mongodb.MongoClientOptions;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReplaceOptions;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import oap.reflect.TypeRef;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 
 import java.io.Closeable;
 import java.util.List;
+import java.util.Map;
 
-import static com.mongodb.client.model.Filters.eq;
 import static oap.storage.mongo.MigrationConfig.CONFIGURATION;
 
 @Slf4j
-@ToString( exclude = { "migrations", "shell", "versionCollection", "mongoClient" } )
+@ToString( exclude = { "migrations", "shell", "mongoClient" } )
 public class MongoClient implements Closeable {
     final MongoDatabase database;
     final com.mongodb.MongoClient mongoClient;
@@ -52,7 +50,6 @@ public class MongoClient implements Closeable {
     public final int port;
     private List<MigrationConfig> migrations;
     public Version databaseVersion = Version.UNDEFINED;
-    private MongoCollection<Version> versionCollection;
     private MongoShell shell = new MongoShell();
 
     public MongoClient( String host, int port, String database ) {
@@ -65,19 +62,20 @@ public class MongoClient implements Closeable {
         this.migrations = migrations;
         this.mongoClient = new com.mongodb.MongoClient( new ServerAddress( host, port ),
             MongoClientOptions.builder().codecRegistry( CodecRegistries.fromRegistries(
-                CodecRegistries.fromCodecs(
-                    new JodaTimeCodec(),
-                    new JsonCodec<>( new TypeRef<Version>() {}, object -> "version", id -> id )
-                ),
+                CodecRegistries.fromCodecs( new JodaTimeCodec() ),
                 com.mongodb.MongoClient.getDefaultCodecRegistry() ) ).build() );
         this.database = mongoClient.getDatabase( database );
         fetchVersion();
     }
 
     private void fetchVersion() {
-        this.versionCollection = this.getCollection( "version", Version.class );
-        Version first = versionCollection.find().first();
-        this.databaseVersion = first != null ? first : Version.UNDEFINED;
+        MongoCollection<Document> collection = this.getCollection( "version" );
+        Document document = collection.find().first();
+        this.databaseVersion =
+            document != null ? new Version(
+                document.getInteger( "main", 0 ),
+                document.getInteger( "ext", 0 ) )
+                : Version.UNDEFINED;
     }
 
     public void start() {
@@ -86,11 +84,7 @@ public class MongoClient implements Closeable {
             log.debug( "executing migrator {}", migration );
             log.debug( "current version is {}", databaseVersion );
             migration.execute( shell, host, port );
-//            todo simplify this
-            versionCollection.bulkWrite( List.of( new ReplaceOneModel<>(
-                eq( "_id", "version" ),
-                migration.version,
-                options ) ) );
+            updateVersion( migration.version );
             fetchVersion();
         }
         log.debug( "migration complete, current version is {}", databaseVersion );
@@ -113,4 +107,9 @@ public class MongoClient implements Closeable {
         mongoClient.close();
     }
 
+    public void updateVersion( Version version ) {
+        this.getCollection( "version" ).replaceOne( new Document( "_id", "version" ),
+            new Document( Map.of( "main", version.main, "ext", version.ext ) ),
+            new ReplaceOptions().upsert( true ) );
+    }
 }

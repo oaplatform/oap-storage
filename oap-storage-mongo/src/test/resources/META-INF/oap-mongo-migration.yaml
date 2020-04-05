@@ -1,0 +1,5 @@
+migrations:
+  ${DATABASE}:
+    - version:
+        main: 2
+      script: /oap/storage/MongoPersistenceTest/migration/2.migration.js

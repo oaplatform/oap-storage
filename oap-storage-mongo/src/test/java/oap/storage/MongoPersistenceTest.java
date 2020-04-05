@@ -29,8 +29,11 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.id.Identifier;
 import oap.io.Files;
+import oap.io.Resources;
+import oap.storage.mongo.MigrationConfig;
 import oap.storage.mongo.MongoClient;
 import oap.storage.mongo.MongoFixture;
+import oap.storage.mongo.Version;
 import oap.testng.Env;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectory;
@@ -38,8 +41,12 @@ import org.bson.types.ObjectId;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 
+import static oap.json.Binder.Format.YAML;
 import static oap.storage.Storage.Lock.SERIALIZED;
+import static oap.storage.mongo.MigrationConfig.CONFIGURATION;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -159,6 +166,26 @@ public class MongoPersistenceTest extends Fixtures {
             storage.store( new Bean( "X".repeat( 16793600 + 1 ) ) );
         }
         assertThat( Files.wildcard( crashDumpPath.resolve( table ), "*.json.gz" ) ).hasSize( 1 );
+    }
+
+    @Test
+    public void migration() {
+        String table = "beans";
+        mongoFixture.insertDocument( getClass(), table, "migration/1.json" );
+        mongoFixture.insertDocument( getClass(), table, "migration/2.json" );
+        mongoFixture.initializeVersion( new Version( 1 ) );
+        var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+        List<MigrationConfig> configs = List.of( CONFIGURATION.fromString(
+            Resources.readStringOrThrow( getClass(), "/META-INF/oap-mongo-migration.yaml" ),
+            YAML, Map.of( "DATABASE", mongoFixture.mongoDatabase ) ) );
+        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase, configs );
+             var persistence = new MongoPersistence<>( mongoClient, table, 6000, storage ) ) {
+            mongoClient.start();
+            persistence.start();
+            assertThat( storage.list() ).containsOnly( new Bean( "1", "name" ), new Bean( "2", "name" ) );
+            assertThat( mongoClient.databaseVersion ).isEqualTo( new Version( 2 ) );
+        }
+
     }
 
     @ToString
