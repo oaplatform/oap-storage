@@ -45,30 +45,28 @@ import static oap.util.Pair.__;
 @EqualsAndHashCode
 @Slf4j
 public class Migration {
-    public final String database;
     public final Version version;
     public final List<String> scripts;
     public final Set<String> includes;
     public final Map<String, Object> params;
 
-    public Migration( String database, Version version, List<String> scripts, Set<String> includes, Map<String, Object> params ) {
-        this.database = database;
+    public Migration( Version version, List<String> scripts, Set<String> includes, Map<String, Object> params ) {
         this.version = version;
         this.scripts = scripts;
         this.includes = includes;
         this.params = params;
     }
 
-    public static List<Migration> of( String database, List<MigrationConfig> configs ) {
+    public static List<Migration> of( String databaseAlias, List<MigrationConfig> configs ) {
         ListMultimap<Version, MigrationConfig.Migration> migratons = Stream.of( configs )
             .flatMap( config -> Stream.of( config.migrations ) )
-            .map( databases -> databases.getOrDefault( database, List.of() ) )
+            .map( databases -> databases.getOrDefault( databaseAlias, List.of() ) )
             .flatMap( Stream::of )
             .mapToPairs( m -> __( m.version, m ) )
             .collect( toListMultimap() );
         return BiStream.of( migratons.asMap() )
             .sorted( Comparator.comparing( p -> p._1 ) )
-            .map( p -> new Migration( database, p._1,
+            .map( p -> new Migration( p._1,
                 Stream.of( p._2 ).map( m -> m.script ).toList(),
                 Stream.of( p._2 ).flatMap( m -> Stream.of( m.includes ) ).toSet(),
                 Stream.of( p._2 ).flatMap( m -> BiStream.of( m.parameters ) ).mapToPairs( Function.identity() ).toMap()
@@ -76,7 +74,7 @@ public class Migration {
             .toList();
     }
 
-    public String toScript( String mongoHost, int mongoPort ) {
+    public String toScript( String mongoHost, int mongoPort, String database ) {
         StringBuilder script = new StringBuilder();
         script.append( "conn = new Mongo(\"" ).append( mongoHost ).append( ":" ).append( mongoPort ).append( "\");\n" );
         script.append( "db = conn.getDB(\"" ).append( database ).append( "\");\n" );
@@ -96,8 +94,8 @@ public class Migration {
         return script.toString();
     }
 
-    public void execute( MongoShell shell, String mongoHost, int mongoPort ) {
-        String script = toScript( mongoHost, mongoPort );
+    public void execute( MongoShell shell, String mongoHost, int mongoPort, String database ) {
+        String script = toScript( mongoHost, mongoPort, database );
         log.debug( "executing migration of {} to {} with script\n{}", database, version, script );
         shell.execute( mongoHost, mongoPort, database, script );
     }

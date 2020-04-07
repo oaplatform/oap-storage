@@ -40,13 +40,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class MigrationTest {
     @Test
-    public void migrator() {
+    public void of() {
         List<MigrationConfig> configs = List.of(
             CONFIGURATION.fromUrl( urlOfTestResource( getClass(), "config1.yaml" ) ),
             CONFIGURATION.fromUrl( urlOfTestResource( getClass(), "config2.yaml" ) )
         );
         assertThat( Migration.of( "testdb", configs ) ).containsExactly(
-            new Migration( "testdb", new Version( 666 ),
+            new Migration( new Version( 666 ),
                 List.of( "/testdb-666.migration.js", "/testdb-666-1.migration.js" ),
                 Set.of( "/common.migration.js", "/common2.migration.js" ),
                 Map.of(
@@ -56,14 +56,14 @@ public class MigrationTest {
                     "param4", "string2"
                 )
             ),
-            new Migration( "testdb", new Version( 666, 2 ),
+            new Migration( new Version( 666, 2 ),
                 List.of( "/testdb-666-2.migration.js" ),
                 Set.of( "/common.migration.js", "/common2.migration.js" ),
                 Map.of(
                     "param1", false,
                     "param2", "ext 2" )
             ),
-            new Migration( "testdb", new Version( 777 ),
+            new Migration( new Version( 777 ),
                 List.of( "/testdb-777.migration.js" ),
                 Set.of(),
                 Map.of()
@@ -73,7 +73,7 @@ public class MigrationTest {
 
     @Test
     public void toScript() {
-        Migration migration = new Migration( "testdb", new Version( 666 ),
+        Migration migration = new Migration( new Version( 666 ),
             List.of( "/oap/storage/mongo/MigrationTest/s1.migration.js", "/oap/storage/mongo/MigrationTest/s2.migration.js" ),
             Set.of( "/oap/storage/mongo/MigrationTest/lib.migration.js" ),
             Maps.of(
@@ -83,6 +83,6 @@ public class MigrationTest {
                 __( "param4", "string2" )
             )
         );
-        assertString( migration.toScript( "localhost", 27017 ) ).isEqualTo( contentOfTestResource( getClass(), "result.js" ) );
+        assertString( migration.toScript( "localhost", 27017, "testdb" ) ).isEqualTo( contentOfTestResource( getClass(), "result.js" ) );
     }
 }

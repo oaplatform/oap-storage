@@ -28,13 +28,11 @@ import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
 import java.util.List;
-import java.util.Map;
 
 import static com.mongodb.client.model.Filters.eq;
-import static oap.json.Binder.Format.YAML;
 import static oap.storage.mongo.MigrationConfig.CONFIGURATION;
 import static oap.storage.mongo.Version.UNDEFINED;
-import static oap.testng.Asserts.contentOfTestResource;
+import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MongoClientTest extends Fixtures {
@@ -48,12 +46,12 @@ public class MongoClientTest extends Fixtures {
     @Test
     public void migration() {
         List<MigrationConfig> configs = List.of(
-            CONFIGURATION.fromString( contentOfTestResource( getClass(), "2/config2.yaml", Map.of( "DATABASE", mongoFixture.mongoDatabase ) ), YAML ),
-            CONFIGURATION.fromString( contentOfTestResource( getClass(), "9/config9.yaml", Map.of( "DATABASE", mongoFixture.mongoDatabase ) ), YAML ),
-            CONFIGURATION.fromString( contentOfTestResource( getClass(), "10/config10.yaml", Map.of( "DATABASE", mongoFixture.mongoDatabase ) ), YAML )
+            CONFIGURATION.fromUrl( urlOfTestResource( getClass(), "2/config2.yaml" ) ),
+            CONFIGURATION.fromUrl( urlOfTestResource( getClass(), "9/config9.yaml" ) ),
+            CONFIGURATION.fromUrl( urlOfTestResource( getClass(), "10/config10.yaml" ) )
         );
 
-        try( MongoClient client = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase, configs ) ) {
+        try( MongoClient client = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase, "testdb", configs ) ) {
             assertThat( client.databaseVersion ).isEqualTo( UNDEFINED );
             client.start();
             assertThat( client.databaseVersion ).isEqualTo( new Version( 10 ) );

@@ -44,29 +44,35 @@ import static oap.storage.mongo.MigrationConfig.CONFIGURATION;
 @Slf4j
 @ToString( exclude = { "migrations", "shell", "mongoClient", "database" } )
 public class MongoClient implements Closeable {
-    final MongoDatabase database;
+    private final MongoDatabase database;
     final com.mongodb.MongoClient mongoClient;
     public final String host;
     public final int port;
-    private String databaseName;
+    public final String databaseName;
+    public final String databaseAlias;
     private List<MigrationConfig> migrations;
     public Version databaseVersion = Version.UNDEFINED;
     private MongoShell shell = new MongoShell();
 
-    public MongoClient( String host, int port, String database ) {
-        this( host, port, database, CONFIGURATION.fromClassPath() );
+    public MongoClient( String host, int port, String databaseName ) {
+        this( host, port, databaseName, databaseName );
     }
 
-    public MongoClient( String host, int port, String database, List<MigrationConfig> migrations ) {
+    public MongoClient( String host, int port, String databaseName, String databaseAlias ) {
+        this( host, port, databaseName, databaseAlias, CONFIGURATION.fromClassPath() );
+    }
+
+    public MongoClient( String host, int port, String databaseName, String databaseAlias, List<MigrationConfig> migrations ) {
         this.host = host;
         this.port = port;
-        this.databaseName = database;
+        this.databaseName = databaseName;
+        this.databaseAlias = databaseAlias;
         this.migrations = migrations;
         this.mongoClient = new com.mongodb.MongoClient( new ServerAddress( host, port ),
             MongoClientOptions.builder().codecRegistry( CodecRegistries.fromRegistries(
                 CodecRegistries.fromCodecs( new JodaTimeCodec() ),
                 com.mongodb.MongoClient.getDefaultCodecRegistry() ) ).build() );
-        this.database = mongoClient.getDatabase( database );
+        this.database = mongoClient.getDatabase( databaseName );
         fetchVersion();
     }
 
@@ -82,14 +88,13 @@ public class MongoClient implements Closeable {
 
     public void start() {
         log.debug( "starting mongo client {}", this );
-        for( Migration migration : Migration.of( database.getName(), migrations ) ) {
-            log.debug( "executing migrator {}", migration );
-            log.debug( "current version is {}", databaseVersion );
-            migration.execute( shell, host, port );
+        for( Migration migration : Migration.of( databaseAlias, migrations ) ) {
+            log.debug( "executing migration {} for {}", migration, databaseVersion );
+            migration.execute( shell, host, port, databaseName );
             updateVersion( migration.version );
             fetchVersion();
         }
-        log.debug( "migration complete, current version is {}", databaseVersion );
+        log.debug( "migration complete, database is {}", databaseVersion );
     }
 
     public CodecRegistry getCodecRegistry() {
@@ -113,5 +118,9 @@ public class MongoClient implements Closeable {
         this.getCollection( "version" ).replaceOne( new Document( "_id", "version" ),
             new Document( Map.of( "main", version.main, "ext", version.ext ) ),
             new ReplaceOptions().upsert( true ) );
+    }
+
+    public void dropDatabase() {
+        this.database.drop();
     }
 }

@@ -29,8 +29,6 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.id.Identifier;
 import oap.io.Files;
-import oap.io.Resources;
-import oap.storage.mongo.MigrationConfig;
 import oap.storage.mongo.MongoClient;
 import oap.storage.mongo.MongoFixture;
 import oap.storage.mongo.Version;
@@ -41,12 +39,8 @@ import org.bson.types.ObjectId;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
 
-import static oap.json.Binder.Format.YAML;
 import static oap.storage.Storage.Lock.SERIALIZED;
-import static oap.storage.mongo.MigrationConfig.CONFIGURATION;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -114,7 +108,7 @@ public class MongoPersistenceTest extends Fixtures {
     @Test
     public void delete() {
         var storage = new MemoryStorage<>( beanIdentifierWithoutName, SERIALIZED );
-        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase );
+        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase, mongoFixture.mongoDatabase );
              var persistence = new MongoPersistence<>( mongoClient, "test", 50, storage ) ) {
             mongoClient.start();
             persistence.start();
@@ -132,7 +126,7 @@ public class MongoPersistenceTest extends Fixtures {
         var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
             .build(), SERIALIZED );
-        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase );
+        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase, mongoFixture.mongoDatabase );
              var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage1 ) ) {
             mongoClient.start();
             persistence.start();
@@ -175,10 +169,7 @@ public class MongoPersistenceTest extends Fixtures {
         mongoFixture.insertDocument( getClass(), table, "migration/2.json" );
         mongoFixture.initializeVersion( new Version( 1 ) );
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-        List<MigrationConfig> configs = List.of( CONFIGURATION.fromString(
-            Resources.readStringOrThrow( getClass(), "/META-INF/oap-mongo-migration.yaml" ),
-            YAML, Map.of( "DATABASE", mongoFixture.mongoDatabase ) ) );
-        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase, configs );
+        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase, "beans" );
              var persistence = new MongoPersistence<>( mongoClient, table, 6000, storage ) ) {
             mongoClient.start();
             persistence.start();

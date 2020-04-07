@@ -1,5 +1,5 @@
 migrations:
-  ${DATABASE}:
+  testdb:
     - version:
         main: 10
       script: /oap/storage/mongo/MongoClientTest/10/10.migration.js

@@ -71,13 +71,13 @@ public class OplogService implements Runnable, Closeable {
      * Starts Mongo OpLog Service
      */
     public synchronized void start() {
-        log.debug( "starting oplog listening {} for {}", this, mongoClient.database.getName() );
+        log.debug( "starting oplog listening {} for {}", this, mongoClient );
         running = true;
         var oplogRs = mongoClient.mongoClient.getDatabase( "local" ).getCollection( "oplog.rs" );
         Bson filter = and(
             in( "op", "i", "u", "d" ),
             gt( "ts", new BsonTimestamp( ( int ) ( DateTimeUtils.currentTimeMillis() / 1000 ), 0 ) ),
-            regex( "ns", "^" + mongoClient.database.getName() + "\\." )
+            regex( "ns", "^" + mongoClient.databaseName + "\\." )
         );
         cursor = oplogRs
             .find( filter )
@@ -99,7 +99,7 @@ public class OplogService implements Runnable, Closeable {
     }
 
     public synchronized void stop() {
-        log.debug( "stopping oplog listening {} for {}", this, mongoClient.database.getName() );
+        log.debug( "stopping oplog listening {} for {}", this, mongoClient );
         if( thread != null ) {
             thread.interrupt();
             running = false;
