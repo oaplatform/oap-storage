@@ -71,7 +71,6 @@ public class MongoPersistence<I, T> implements Closeable, Runnable, OplogService
 
     final MongoCollection<Metadata<T>> collection;
     private final Lock lock = new ReentrantLock();
-    public OplogService oplogService;
     public int batchSize = 100;
     private final String table;
     private final long delay;
@@ -112,7 +111,6 @@ public class MongoPersistence<I, T> implements Closeable, Runnable, OplogService
         Threads.synchronously( lock, () -> {
             this.load();
             this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), delay, this::fsync );
-            if( oplogService != null ) oplogService.addListener( collection.getNamespace().getCollectionName(), this );
         } );
     }
 
@@ -174,18 +172,23 @@ public class MongoPersistence<I, T> implements Closeable, Runnable, OplogService
     }
 
     @Override
-    public void updated( String table, String mongoId ) {
+    public void updated( String mongoId ) {
         refresh( mongoId );
     }
 
     @Override
-    public void deleted( String table, String mongoId ) {
+    public void deleted( String mongoId ) {
         storage.delete( storage.identifier.fromString( mongoId ) );
     }
 
     @Override
-    public void inserted( String table, String mongoId ) {
+    public void inserted( String mongoId ) {
         refresh( mongoId );
+    }
+
+    @Override
+    public String collectionName() {
+        return collection.getNamespace().getCollectionName();
     }
 
     private void refresh( String mongoId ) {

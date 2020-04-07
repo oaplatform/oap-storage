@@ -55,20 +55,25 @@ public class OplogServiceTest extends Fixtures {
             var listener = new StringBuilder();
 
             String collection = "test_OplogServiceTest";
-            oplogService.addListener( collection, new OplogService.OplogListener() {
+            oplogService.addOplogListener( new OplogService.OplogListener() {
                 @Override
-                public void updated( String table, String mongoId ) {
+                public void updated( String mongoId ) {
                     listener.append( 'u' );
                 }
 
                 @Override
-                public void deleted( String table, String mongoId ) {
+                public void deleted( String mongoId ) {
                     listener.append( 'd' );
                 }
 
                 @Override
-                public void inserted( String table, String mongoId ) {
+                public void inserted( String mongoId ) {
                     listener.append( 'i' );
+                }
+
+                @Override
+                public String collectionName() {
+                    return collection;
                 }
             } );
 

@@ -59,8 +59,8 @@ public class OplogService implements Runnable, Closeable {
         this.mongoClient = mongoClient;
     }
 
-    public synchronized void addListener( String table, OplogListener listener ) {
-        listeners.put( table, listener );
+    public synchronized void addOplogListener( OplogListener listener ) {
+        listeners.put( listener.collectionName(), listener );
         if( cursor != null ) {
             close();
             start();
@@ -122,19 +122,19 @@ public class OplogService implements Runnable, Closeable {
                         var objO = ( Document ) document.get( "o" );
                         var id = objO.get( "_id" ).toString();
                         var l = listeners.get( tableName );
-                        l.forEach( ll -> ll.inserted( tableName, id ) );
+                        l.forEach( ll -> ll.inserted( id ) );
                     }
                     case 'u' -> {
                         var objO2 = ( Document ) document.get( "o2" );
                         var id = objO2.get( "_id" ).toString();
                         var l = listeners.get( tableName );
-                        l.forEach( ll -> ll.updated( tableName, id ) );
+                        l.forEach( ll -> ll.updated( id ) );
                     }
                     case 'd' -> {
                         var objO = ( Document ) document.get( "o" );
                         var id = objO.get( "_id" ).toString();
                         var l = listeners.get( tableName );
-                        l.forEach( ll -> ll.deleted( tableName, id ) );
+                        l.forEach( ll -> ll.deleted( id ) );
                     }
                     default -> {
                     }
@@ -157,10 +157,12 @@ public class OplogService implements Runnable, Closeable {
      * insert) in the other storages, for example internal {@link oap.storage.MemoryStorage}
      */
     public interface OplogListener {
-        void updated( String table, String mongoId );
+        void updated( String mongoId );
 
-        void deleted( String table, String mongoId );
+        void deleted( String mongoId );
 
-        void inserted( String table, String mongoId );
+        void inserted( String mongoId );
+
+        String collectionName();
     }
 }
