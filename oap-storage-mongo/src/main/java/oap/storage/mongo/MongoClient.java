@@ -42,12 +42,13 @@ import java.util.Map;
 import static oap.storage.mongo.MigrationConfig.CONFIGURATION;
 
 @Slf4j
-@ToString( exclude = { "migrations", "shell", "mongoClient" } )
+@ToString( exclude = { "migrations", "shell", "mongoClient", "database" } )
 public class MongoClient implements Closeable {
     final MongoDatabase database;
     final com.mongodb.MongoClient mongoClient;
     public final String host;
     public final int port;
+    private String databaseName;
     private List<MigrationConfig> migrations;
     public Version databaseVersion = Version.UNDEFINED;
     private MongoShell shell = new MongoShell();
@@ -59,6 +60,7 @@ public class MongoClient implements Closeable {
     public MongoClient( String host, int port, String database, List<MigrationConfig> migrations ) {
         this.host = host;
         this.port = port;
+        this.databaseName = database;
         this.migrations = migrations;
         this.mongoClient = new com.mongodb.MongoClient( new ServerAddress( host, port ),
             MongoClientOptions.builder().codecRegistry( CodecRegistries.fromRegistries(
@@ -79,7 +81,7 @@ public class MongoClient implements Closeable {
     }
 
     public void start() {
-        ReplaceOptions options = new ReplaceOptions().upsert( true );
+        log.debug( "starting mongo client {}", this );
         for( Migration migration : Migration.of( database.getName(), migrations ) ) {
             log.debug( "executing migrator {}", migration );
             log.debug( "current version is {}", databaseVersion );
