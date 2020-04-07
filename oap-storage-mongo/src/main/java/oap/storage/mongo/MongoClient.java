@@ -121,6 +121,7 @@ public class MongoClient implements Closeable {
     }
 
     public void dropDatabase() {
+        log.debug( "droppping database {}", this );
         this.database.drop();
     }
 }
