@@ -108,7 +108,7 @@ public class MongoPersistenceTest extends Fixtures {
     @Test
     public void delete() {
         var storage = new MemoryStorage<>( beanIdentifierWithoutName, SERIALIZED );
-        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase, mongoFixture.mongoDatabase );
+        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase );
              var persistence = new MongoPersistence<>( mongoClient, "test", 50, storage ) ) {
             mongoClient.start();
             persistence.start();
@@ -126,7 +126,7 @@ public class MongoPersistenceTest extends Fixtures {
         var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
             .build(), SERIALIZED );
-        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase, mongoFixture.mongoDatabase );
+        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase );
              var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage1 ) ) {
             mongoClient.start();
             persistence.start();
@@ -169,7 +169,7 @@ public class MongoPersistenceTest extends Fixtures {
         mongoFixture.insertDocument( getClass(), table, "migration/2.json" );
         mongoFixture.initializeVersion( new Version( 1 ) );
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase, "beans" );
+        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, "beans", mongoFixture.mongoDatabase );
              var persistence = new MongoPersistence<>( mongoClient, table, 6000, storage ) ) {
             mongoClient.start();
             persistence.start();

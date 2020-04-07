@@ -49,30 +49,30 @@ public class MongoClient implements Closeable {
     public final String host;
     public final int port;
     public final String databaseName;
-    public final String databaseAlias;
+    public final String physicalDatabase;
     private List<MigrationConfig> migrations;
     public Version databaseVersion = Version.UNDEFINED;
     private MongoShell shell = new MongoShell();
 
-    public MongoClient( String host, int port, String databaseName ) {
-        this( host, port, databaseName, databaseName );
+    public MongoClient( String host, int port, String database ) {
+        this( host, port, database, database );
     }
 
-    public MongoClient( String host, int port, String databaseName, String databaseAlias ) {
-        this( host, port, databaseName, databaseAlias, CONFIGURATION.fromClassPath() );
+    public MongoClient( String host, int port, String database, String physicalDatabase ) {
+        this( host, port, database, physicalDatabase, CONFIGURATION.fromClassPath() );
     }
 
-    public MongoClient( String host, int port, String databaseName, String databaseAlias, List<MigrationConfig> migrations ) {
+    public MongoClient( String host, int port, String database, String physicalDatabase, List<MigrationConfig> migrations ) {
         this.host = host;
         this.port = port;
-        this.databaseName = databaseName;
-        this.databaseAlias = databaseAlias;
+        this.databaseName = database;
+        this.physicalDatabase = physicalDatabase;
         this.migrations = migrations;
         this.mongoClient = new com.mongodb.MongoClient( new ServerAddress( host, port ),
             MongoClientOptions.builder().codecRegistry( CodecRegistries.fromRegistries(
                 CodecRegistries.fromCodecs( new JodaTimeCodec() ),
                 com.mongodb.MongoClient.getDefaultCodecRegistry() ) ).build() );
-        this.database = mongoClient.getDatabase( databaseName );
+        this.database = mongoClient.getDatabase( physicalDatabase );
         fetchVersion();
     }
 
@@ -88,9 +88,9 @@ public class MongoClient implements Closeable {
 
     public void start() {
         log.debug( "starting mongo client {}", this );
-        for( Migration migration : Migration.of( databaseAlias, migrations ) ) {
+        for( Migration migration : Migration.of( databaseName, migrations ) ) {
             log.debug( "executing migration {} for {}", migration, databaseVersion );
-            migration.execute( shell, host, port, databaseName );
+            migration.execute( shell, host, port, physicalDatabase );
             updateVersion( migration.version );
             fetchVersion();
         }
