@@ -174,7 +174,7 @@ public class MongoPersistenceTest extends Fixtures {
             mongoClient.start();
             persistence.start();
             assertThat( storage.list() ).containsOnly( new Bean( "1", "name" ), new Bean( "2", "name" ) );
-            assertThat( mongoClient.databaseVersion ).isEqualTo( new Version( 2 ) );
+            assertThat( mongoClient.databaseVersion() ).isEqualTo( new Version( 2 ) );
         }
 
     }

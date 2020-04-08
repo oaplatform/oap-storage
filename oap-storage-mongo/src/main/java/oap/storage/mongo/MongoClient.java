@@ -51,7 +51,6 @@ public class MongoClient implements Closeable {
     public final String databaseName;
     public final String physicalDatabase;
     private List<MigrationConfig> migrations;
-    public Version databaseVersion = Version.UNDEFINED;
     private MongoShell shell = new MongoShell();
 
     public MongoClient( String host, int port, String database ) {
@@ -73,28 +72,26 @@ public class MongoClient implements Closeable {
                 CodecRegistries.fromCodecs( new JodaTimeCodec() ),
                 com.mongodb.MongoClient.getDefaultCodecRegistry() ) ).build() );
         this.database = mongoClient.getDatabase( physicalDatabase );
-        fetchVersion();
+        databaseVersion();
     }
 
-    private void fetchVersion() {
+    public Version databaseVersion() {
         MongoCollection<Document> collection = this.getCollection( "version" );
         Document document = collection.find().first();
-        this.databaseVersion =
-            document != null ? new Version(
-                document.getInteger( "main", 0 ),
-                document.getInteger( "ext", 0 ) )
-                : Version.UNDEFINED;
+        return document != null ? new Version(
+            document.getInteger( "main", 0 ),
+            document.getInteger( "ext", 0 ) )
+            : Version.UNDEFINED;
     }
 
     public void start() {
         log.debug( "starting mongo client {}", this );
-        for( Migration migration : Migration.of( databaseName, migrations ) ) {
-            log.debug( "executing migration {} for {}", migration, databaseVersion );
+        for( Migration migration : Migration.of( databaseName, databaseVersion(), migrations ) ) {
+            log.debug( "executing migration {} for {}", migration, databaseVersion() );
             migration.execute( shell, host, port, physicalDatabase );
             updateVersion( migration.version );
-            fetchVersion();
         }
-        log.debug( "migration complete, database is {}", databaseVersion );
+        log.debug( "migration complete, database is {}", databaseVersion() );
     }
 
     public CodecRegistry getCodecRegistry() {

@@ -24,32 +24,15 @@
 
 package oap.storage.mongo;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import org.testng.annotations.Test;
 
-@ToString
-@EqualsAndHashCode
-public class Version implements Comparable<Version> {
-    public static final Version UNDEFINED = new Version( 0, 0 );
-    public final int main;
-    public final int ext;
+import static org.assertj.core.api.Assertions.assertThat;
 
-    public Version( int main ) {
-        this( main, 0 );
-    }
-
-    public Version( int main, int ext ) {
-        this.main = main;
-        this.ext = ext;
-    }
-
-    @Override
-    public int compareTo( Version other ) {
-        int result = Integer.compare( main, other.main );
-        return result == 0 ? Integer.compare( ext, other.ext ) : result;
-    }
-
-    public boolean before( Version version ) {
-        return compareTo( version ) < 0;
+public class VersionTest {
+    @Test
+    public void before() {
+        assertThat( new Version( 666 ).before( new Version( 666, 2 ) ) ).isTrue();
+        assertThat( new Version( 666 ).before( new Version( 777 ) ) ).isTrue();
+        assertThat( new Version( 777 ).before( new Version( 777 ) ) ).isFalse();
     }
 }

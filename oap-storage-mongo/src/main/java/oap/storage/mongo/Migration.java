@@ -57,15 +57,16 @@ public class Migration {
         this.params = params;
     }
 
-    public static List<Migration> of( String databaseAlias, List<MigrationConfig> configs ) {
+    public static List<Migration> of( String database, Version version, List<MigrationConfig> configs ) {
         ListMultimap<Version, MigrationConfig.Migration> migratons = Stream.of( configs )
             .flatMap( config -> Stream.of( config.migrations ) )
-            .map( databases -> databases.getOrDefault( databaseAlias, List.of() ) )
+            .map( databases -> databases.getOrDefault( database, List.of() ) )
             .flatMap( Stream::of )
             .mapToPairs( m -> __( m.version, m ) )
             .collect( toListMultimap() );
         return BiStream.of( migratons.asMap() )
             .sorted( Comparator.comparing( p -> p._1 ) )
+            .filter( p -> version.before( p._1 ) )
             .map( p -> new Migration( p._1,
                 Stream.of( p._2 ).map( m -> m.script ).toList(),
                 Stream.of( p._2 ).flatMap( m -> Stream.of( m.includes ) ).toSet(),

@@ -45,7 +45,7 @@ public class MigrationTest {
             CONFIGURATION.fromUrl( urlOfTestResource( getClass(), "config1.yaml" ) ),
             CONFIGURATION.fromUrl( urlOfTestResource( getClass(), "config2.yaml" ) )
         );
-        assertThat( Migration.of( "testdb", configs ) ).containsExactly(
+        assertThat( Migration.of( "testdb", Version.UNDEFINED, configs ) ).containsExactly(
             new Migration( new Version( 666 ),
                 List.of( "/testdb-666.migration.js", "/testdb-666-1.migration.js" ),
                 Set.of( "/common.migration.js", "/common2.migration.js" ),
@@ -56,6 +56,29 @@ public class MigrationTest {
                     "param4", "string2"
                 )
             ),
+            new Migration( new Version( 666, 2 ),
+                List.of( "/testdb-666-2.migration.js" ),
+                Set.of( "/common.migration.js", "/common2.migration.js" ),
+                Map.of(
+                    "param1", false,
+                    "param2", "ext 2" )
+            ),
+            new Migration( new Version( 777 ),
+                List.of( "/testdb-777.migration.js" ),
+                Set.of(),
+                Map.of()
+            )
+        );
+    }
+
+    @Test
+    public void ofVersion() {
+        List<MigrationConfig> configs = List.of(
+            CONFIGURATION.fromUrl( urlOfTestResource( getClass(), "config1.yaml" ) ),
+            CONFIGURATION.fromUrl( urlOfTestResource( getClass(), "config2.yaml" ) )
+        );
+        Version version = new Version( 666 );
+        assertThat( Migration.of( "testdb", version, configs ) ).containsExactly(
             new Migration( new Version( 666, 2 ),
                 List.of( "/testdb-666-2.migration.js" ),
                 Set.of( "/common.migration.js", "/common2.migration.js" ),
