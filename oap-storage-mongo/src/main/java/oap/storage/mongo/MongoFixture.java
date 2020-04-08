@@ -57,10 +57,6 @@ public class MongoFixture implements Fixture {
 
     private MongoClient mongoClient;
 
-    public MongoFixture() {
-        log.debug( "DEBUGFIXTURE", new Exception() );
-    }
-
     public void dropTestDatabases() {
         final Pattern pattern = Pattern.compile( ".+_(\\d+)" );
         try( com.mongodb.MongoClient mongoClient = new com.mongodb.MongoClient( mongoHost, mongoPort ) ) {
