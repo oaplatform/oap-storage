@@ -44,21 +44,21 @@ import static oap.testng.Asserts.contentOfTestResource;
  */
 @Slf4j
 public class MongoFixture implements Fixture {
-    public final int mongoPort;
-    public final String mongoHost;
-    public final String mongoDatabase;
+    public static final int mongoPort = 27017;
+    public static final String mongoHost = Env.getEnvOrDefault( "MONGO_HOST", "localhost" );
+    public static final String mongoDatabase = "db" + StringUtils.replaceChars( Teamcity.buildPrefix(), ".-", "_" ) + "_" + DateTimeUtils.currentTimeMillis();
+
+    static {
+        System.setProperty( "MONGO_HOST", mongoHost );
+        System.setProperty( "MONGO_PORT", String.valueOf( mongoPort ) );
+        System.setProperty( "MONGO_DATABASE", mongoDatabase );
+        log.debug( "binding MONGO_DATABASE to {}", mongoDatabase );
+    }
 
     private MongoClient mongoClient;
 
     public MongoFixture() {
-        mongoPort = 27017;
-        mongoHost = Env.getEnvOrDefault( "MONGO_HOST", "localhost" );
-        mongoDatabase = "db" + StringUtils.replaceChars( Teamcity.buildPrefix(), ".-", "_" ) + "_" + DateTimeUtils.currentTimeMillis();
-
-        System.setProperty( "MONGO_HOST", mongoHost );
-        System.setProperty( "MONGO_PORT", String.valueOf( mongoPort ) );
-        System.setProperty( "MONGO_DATABASE", mongoDatabase );
-        log.debug( "binding MONGO_DATABASE to {} by {}", mongoDatabase, this );
+        log.debug( "DEBUGFIXTURE", new Exception() );
     }
 
     public void dropTestDatabases() {
