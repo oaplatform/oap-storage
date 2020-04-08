@@ -58,6 +58,7 @@ public class MongoFixture implements Fixture {
         System.setProperty( "MONGO_HOST", mongoHost );
         System.setProperty( "MONGO_PORT", String.valueOf( mongoPort ) );
         System.setProperty( "MONGO_DATABASE", mongoDatabase );
+        log.debug( "binding MONGO_DATABASE to {} by {}", mongoDatabase, this );
     }
 
     public void dropTestDatabases() {

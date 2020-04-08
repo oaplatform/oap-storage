@@ -72,7 +72,7 @@ public class MongoClient implements Closeable {
                 CodecRegistries.fromCodecs( new JodaTimeCodec() ),
                 com.mongodb.MongoClient.getDefaultCodecRegistry() ) ).build() );
         this.database = mongoClient.getDatabase( physicalDatabase );
-        databaseVersion();
+        log.debug( "creating mongo client {}", this );
     }
 
     public Version databaseVersion() {
@@ -85,7 +85,7 @@ public class MongoClient implements Closeable {
     }
 
     public void start() {
-        log.debug( "starting mongo client {}", this );
+        log.debug( "starting mongo client {}, version {}", this, databaseVersion() );
         for( Migration migration : Migration.of( databaseName, databaseVersion(), migrations ) ) {
             log.debug( "executing migration {} for {}", migration, databaseVersion() );
             migration.execute( shell, host, port, physicalDatabase );
@@ -118,7 +118,7 @@ public class MongoClient implements Closeable {
     }
 
     public void dropDatabase() {
-        log.debug( "droppping database {}", this );
+        log.debug( "dropping database {}", this );
         this.database.drop();
     }
 }
