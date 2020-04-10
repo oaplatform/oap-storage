@@ -70,6 +70,10 @@ public class MongoFixture implements Fixture {
         }
     }
 
+    public MongoClient getMongoClient() {
+        return mongoClient;
+    }
+
     public <T> void insertDocument( Class<?> contextClass, String collection, String resourceName ) {
         mongoClient.getCollection( collection ).insertOne( Document.parse( contentOfTestResource( contextClass, resourceName ) ) );
     }
