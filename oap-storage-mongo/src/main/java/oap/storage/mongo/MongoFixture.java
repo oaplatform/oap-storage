@@ -81,6 +81,8 @@ public class MongoFixture implements Fixture {
     @Override
     public void beforeMethod() {
         mongoClient = new MongoClient( mongoHost, mongoPort, mongoDatabase, mongoDatabase );
+
+        mongoClient.dropDatabase();
     }
 
     @Override
