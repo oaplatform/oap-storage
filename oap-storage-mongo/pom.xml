@@ -64,6 +64,11 @@
             <artifactId>netty-common</artifactId>
             <version>${oap.deps.netty.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-buffer</artifactId>
+            <version>${oap.deps.netty.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>
