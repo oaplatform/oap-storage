@@ -2,3 +2,11 @@ name: oap-storage-mongo
 services:
   oap-storage-mongo-shell:
     implementation: oap.storage.mongo.MongoShell
+
+  mongo-server-mock:
+    profile: mongo-mock
+    implementation: oap.storage.mongo.MongoServerMock
+    parameters:
+      port: <change me>
+    supervision:
+      supervise: true

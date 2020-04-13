@@ -55,6 +55,12 @@
         </dependency>
 
         <dependency>
+            <groupId>de.bwaldvogel</groupId>
+            <artifactId>mongo-java-server</artifactId>
+            <version>${oap.deps.mongo-java-server.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${oap.deps.lombok.version}</version>
