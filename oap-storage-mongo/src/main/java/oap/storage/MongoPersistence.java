@@ -63,7 +63,7 @@ import static oap.util.Dates.FORMAT_MILLIS;
 import static oap.util.Pair.__;
 
 @Slf4j
-@ToString( of = { "table", "delay" } )
+@ToString( of = { "collectionName", "delay" } )
 public class MongoPersistence<I, T> implements Closeable, Runnable, OplogService.OplogListener {
 
     private static final ReplaceOptions REPLACE_OPTIONS_UPSERT = new ReplaceOptions().upsert( true );
@@ -71,19 +71,19 @@ public class MongoPersistence<I, T> implements Closeable, Runnable, OplogService
 
     final MongoCollection<Metadata<T>> collection;
     private final Lock lock = new ReentrantLock();
-    public int batchSize = 100;
-    private final String table;
+    protected int batchSize = 100;
+    private final String collectionName;
     private final long delay;
-    private MemoryStorage<I, T> storage;
+    private final MemoryStorage<I, T> storage;
     private PeriodicScheduled scheduled;
     private final Path crashDumpPath;
 
-    public MongoPersistence( MongoClient mongoClient, String table, long delay, MemoryStorage<I, T> storage ) {
-        this( mongoClient, table, delay, storage, DEFAULT_CRASH_DUMP_PATH );
+    public MongoPersistence( MongoClient mongoClient, String collectionName, long delay, MemoryStorage<I, T> storage ) {
+        this( mongoClient, collectionName, delay, storage, DEFAULT_CRASH_DUMP_PATH );
     }
 
-    public MongoPersistence( MongoClient mongoClient, String table, long delay, MemoryStorage<I, T> storage, Path crashDumpPath ) {
-        this.table = table;
+    public MongoPersistence( MongoClient mongoClient, String collectionName, long delay, MemoryStorage<I, T> storage, Path crashDumpPath ) {
+        this.collectionName = collectionName;
         this.delay = delay;
         this.storage = storage;
 
@@ -92,14 +92,14 @@ public class MongoPersistence<I, T> implements Closeable, Runnable, OplogService
         CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
             CodecRegistries.fromCodecs( new JsonCodec<>( ref,
                 m -> this.storage.identifier.get( m.object ),
-                id -> this.storage.identifier.toString( id ) ) ),
+                this.storage.identifier::toString ) ),
             mongoClient.getCodecRegistry()
         );
 
         this.collection = mongoClient
-            .getCollection( table, ref.clazz() )
+            .getCollection( collectionName, ref.clazz() )
             .withCodecRegistry( codecRegistry );
-        this.crashDumpPath = crashDumpPath.resolve( table );
+        this.crashDumpPath = crashDumpPath.resolve( collectionName );
     }
 
     @Override

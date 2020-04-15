@@ -48,7 +48,7 @@ public class FilePersistence<I, T> implements Closeable {
     private final Lock lock = new ReentrantLock();
     private final Logger log;
     private PeriodicScheduled scheduled;
-    private Path path;
+    private final Path path;
 
 
     public FilePersistence( Path path, long fsync, MemoryStorage<I, T> storage ) {

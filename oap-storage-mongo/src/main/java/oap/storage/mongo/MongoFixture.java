@@ -25,12 +25,11 @@
 package oap.storage.mongo;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.testng.Env;
+import oap.system.Env;
 import oap.testng.Fixture;
-import oap.testng.Teamcity;
+import oap.testng.Suite;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
-import org.joda.time.DateTimeUtils;
 
 import java.util.Date;
 import java.util.function.Consumer;
@@ -39,14 +38,12 @@ import java.util.regex.Pattern;
 
 import static oap.testng.Asserts.contentOfTestResource;
 
-/**
- * Created by igor.petrenko on 09/20/2019.
- */
+
 @Slf4j
 public class MongoFixture implements Fixture {
     public static final int mongoPort = 27017;
-    public static final String mongoHost = Env.getEnvOrDefault( "MONGO_HOST", "localhost" );
-    public static final String mongoDatabase = "db" + StringUtils.replaceChars( Teamcity.buildPrefix(), ".-", "_" ) + "_" + DateTimeUtils.currentTimeMillis();
+    public static final String mongoHost = Env.env( "MONGO_HOST", "localhost" );
+    public static final String mongoDatabase = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" );
 
     static {
         System.setProperty( "MONGO_HOST", mongoHost );
@@ -74,15 +71,13 @@ public class MongoFixture implements Fixture {
         return mongoClient;
     }
 
-    public <T> void insertDocument( Class<?> contextClass, String collection, String resourceName ) {
+    public void insertDocument( Class<?> contextClass, String collection, String resourceName ) {
         mongoClient.getCollection( collection ).insertOne( Document.parse( contentOfTestResource( contextClass, resourceName ) ) );
     }
 
     @Override
     public void beforeMethod() {
         mongoClient = new MongoClient( mongoHost, mongoPort, mongoDatabase, mongoDatabase );
-
-        mongoClient.dropDatabase();
     }
 
     @Override

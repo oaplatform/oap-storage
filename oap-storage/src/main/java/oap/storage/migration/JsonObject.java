@@ -86,9 +86,7 @@ public class JsonObject extends Json<Map<String, Object>> {
             final boolean equals = oldFirst.equals( newFirst ) && root == parent;
 
             final Optional<Json<?>> v = parent.field( oldFirst );
-            if( !v.isPresent() ) {
-                return false;
-            }
+            if( v.isEmpty() ) return false;
 
             final Json<?> json = v.get();
 
@@ -153,14 +151,14 @@ public class JsonObject extends Json<Map<String, Object>> {
     }
 
     public JsonObject deleteField( String field ) {
-        final Optional<Json<?>> f = field( field );
+        Optional<Json<?>> f = field( field );
         f.ifPresent( ff -> underlying.remove( field ) );
         return this;
     }
 
     @SuppressWarnings( "unchecked" )
-    public <TIn extends Json, TOut extends Json> JsonObject map( String field, Function<TIn, TOut> func ) {
-        field( field ).ifPresent( in -> underlying.put( field, func.apply( ( TIn ) in ).underlying ) );
+    public <I extends Json, O extends Json> JsonObject map( String field, Function<I, O> func ) {
+        field( field ).ifPresent( in -> underlying.put( field, func.apply( ( I ) in ).underlying ) );
 
         return this;
     }

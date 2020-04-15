@@ -1,30 +1,36 @@
 package oap.storage;
 
-import oap.io.Files;
-import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectoryFixture;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Asserts.assertFile;
+import static oap.testng.TestDirectoryFixture.deployTestData;
+import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ChunkedStorageTest {
+public class ChunkedStorageTest extends Fixtures {
 
+    {
+        fixture( TestDirectoryFixture.FIXTURE );
+    }
 
     @BeforeMethod
     public void beforeMethod() {
-        Files.delete( Env.tmpRoot );
-        Env.deployTestData( this.getClass() );
+        deployTestData( this.getClass() );
     }
 
     @Test
     public void putGetStream() {
-        ChunkedStorage<String> storage = new ChunkedStorage<>( s -> s, Env.tmpRoot.resolve( "audience-chunks" ) );
+        Path path = testPath( "chunks" );
+        ChunkedStorage<String> storage = new ChunkedStorage<>( s -> s, path );
 
         List<String> all = new ArrayList<>();
         for( int i = 0; i < 5; i++ ) {
@@ -39,11 +45,11 @@ public class ChunkedStorageTest {
         }
 
         assertEventually( 100, 20, () -> {
-            assertFile( Env.tmpRoot.resolve( "audience-chunks" ).resolve( "chunk0.gz" ) ).exists();
-            assertFile( Env.tmpRoot.resolve( "audience-chunks" ).resolve( "chunk1.gz" ) ).exists();
-            assertFile( Env.tmpRoot.resolve( "audience-chunks" ).resolve( "chunk2.gz" ) ).exists();
-            assertFile( Env.tmpRoot.resolve( "audience-chunks" ).resolve( "chunk3.gz" ) ).exists();
-            assertFile( Env.tmpRoot.resolve( "audience-chunks" ).resolve( "chunk4.gz" ) ).exists();
+            assertFile( path.resolve( "chunk0.gz" ) ).exists();
+            assertFile( path.resolve( "chunk1.gz" ) ).exists();
+            assertFile( path.resolve( "chunk2.gz" ) ).exists();
+            assertFile( path.resolve( "chunk3.gz" ) ).exists();
+            assertFile( path.resolve( "chunk4.gz" ) ).exists();
 
             assertThat( storage.stream().toList() ).containsAll( all );
         } );

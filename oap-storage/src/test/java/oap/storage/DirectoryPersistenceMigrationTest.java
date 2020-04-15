@@ -29,9 +29,8 @@ import oap.id.Identifier;
 import oap.json.TypeIdFactory;
 import oap.storage.migration.JsonMetadata;
 import oap.storage.migration.Migration;
-import oap.testng.Env;
 import oap.testng.Fixtures;
-import oap.testng.TestDirectory;
+import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
 import org.testng.annotations.Test;
 
@@ -39,12 +38,14 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
+import static oap.testng.TestDirectoryFixture.deployTestData;
+import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class DirectoryPersistenceMigrationTest extends Fixtures {
     {
-        fixture( TestDirectory.FIXTURE );
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
     static {
@@ -53,7 +54,7 @@ public class DirectoryPersistenceMigrationTest extends Fixtures {
 
     @Test
     public void migration() {
-        Path path = Env.deployTestData( getClass() );
+        Path path = deployTestData( getClass() );
         var storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( var persistence = new DirectoryPersistence<>( path, 10, 2, List.of(
             new MigrationV1(),
@@ -76,7 +77,7 @@ public class DirectoryPersistenceMigrationTest extends Fixtures {
 
     @Test
     public void storeWithVersion() {
-        Path path = Env.tmpPath( "data" );
+        Path path = testPath( "data" );
         var storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( var persistence = new DirectoryPersistence<>( path, 10, 10, Lists.empty(), storage ) ) {
             persistence.start();

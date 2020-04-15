@@ -52,7 +52,7 @@ public abstract class Json<T> {
 
     public String getPath() {
         final String parentPath = parent.map( p -> getPath() ).orElse( "" );
-        return parentPath.length() > 0 ? parentPath + "." + field.get() : "";
+        return parentPath.length() > 0 ? parentPath + "." + field.orElseThrow() : "";
     }
 
     @SuppressWarnings( "unchecked" )

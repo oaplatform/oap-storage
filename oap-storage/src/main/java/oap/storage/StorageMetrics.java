@@ -35,8 +35,8 @@ import java.util.function.Function;
 
 public class StorageMetrics<I, T> {
     private final String storageName;
-    private Storage<I, T> storage;
-    private Map<String, Gauge<I, T>> metrics = new HashMap<>();
+    private final Storage<I, T> storage;
+    private final Map<String, Gauge<I, T>> metrics = new HashMap<>();
 
     public StorageMetrics( Storage<I, T> storage, String name ) {
         this.storage = storage;

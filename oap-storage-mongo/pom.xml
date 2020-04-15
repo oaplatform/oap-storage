@@ -39,10 +39,14 @@
     <dependencies>
         <dependency>
             <groupId>oap</groupId>
+            <artifactId>oap-stdlib</artifactId>
+            <version>${oap.deps.oap.version}</version>
+        </dependency>
+       <dependency>
+            <groupId>oap</groupId>
             <artifactId>oap-storage</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongo-java-driver</artifactId>
@@ -53,7 +57,6 @@
             <artifactId>commons-exec</artifactId>
             <version>${oap.deps.apache.exec.version}</version>
         </dependency>
-
         <dependency>
             <groupId>de.bwaldvogel</groupId>
             <artifactId>mongo-java-server</artifactId>
@@ -69,7 +72,11 @@
             <artifactId>netty-buffer</artifactId>
             <version>${oap.deps.netty.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${oap.deps.slf4j.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

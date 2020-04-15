@@ -103,18 +103,16 @@ public class MemoryStorageTest {
                 .options( FILL )
                 .build(),
             SERIALIZED );
-        Benchmark.benchmark( "insert-failure", 1000, () -> {
-            storage.store( new Bean( null, "BBBBB" ) );
-        } ).inThreads( 100 ).experiments( 1 ).run();
+        Benchmark.benchmark( "insert-failure", 1000, () -> storage.store( new Bean( null, "BBBBB" ) ) )
+            .inThreads( 100 )
+            .experiments( 1 )
+            .run();
         assertThat( storage.list().size() ).isEqualTo( 2000 );
     }
 
     @Test
     public void intId() {
-        var storage = new MemoryStorage<>(
-            IntIdentifier.<IntBean>forId( b -> b.id, ( b, id ) -> b.id = id )
-                .build(),
-            SERIALIZED );
+        var storage = new MemoryStorage<>( IntIdentifier.<IntBean>forId( b -> b.id, ( b, id ) -> b.id = id ).build(), SERIALIZED );
         var a = new IntBean( null, "a" );
         var b = new IntBean( 2, "b" );
         var c = new IntBean( null, "c" );

@@ -54,7 +54,7 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
     protected final Lock lock;
     protected final List<DataListener<I, T>> dataListeners = new CopyOnWriteArrayList<>();
     protected final Memory<T, I> memory;
-    private Predicate<I> conflict = Identifier.toConflict( this::get );
+    private final Predicate<I> conflict = Identifier.toConflict( this::get );
 
     public MemoryStorage( Identifier<I, T> identifier, Lock lock ) {
         this.identifier = identifier;

@@ -17,7 +17,7 @@ public class ChunkedStorage<T> {
     private static final String pattern = "chunk*.gz";
 
     private final Function<T, String> identify;
-    private Path dataLocation;
+    private final Path dataLocation;
 
     public ChunkedStorage( Function<T, String> identify, Path dataLocation ) {
         this.dataLocation = dataLocation;
@@ -41,7 +41,14 @@ public class ChunkedStorage<T> {
     }
 
     private static class Chunk {
-        private Map<String, Object> records = new HashMap<>();
+        private final Map<String, Object> records = new HashMap<>();
+
+        public Chunk( Map<String, Object> records ) {
+            this.records.putAll( records );
+        }
+
+        public Chunk() {
+        }
     }
 
 }

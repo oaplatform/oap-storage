@@ -39,15 +39,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Testing and Development</a>
  */
 public class OplogServiceTest extends Fixtures {
-    private final MongoFixture mongoFixture;
 
     public OplogServiceTest() {
-        fixture( this.mongoFixture = new MongoFixture() );
+        fixture( new MongoFixture() );
     }
 
     @Test
     public void oplog() {
-        try( var mongoClient = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, mongoFixture.mongoDatabase );
+        try( var mongoClient = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, MongoFixture.mongoDatabase );
              var oplogService = new OplogService( mongoClient ) ) {
 
             mongoClient.start();

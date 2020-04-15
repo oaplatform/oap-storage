@@ -50,8 +50,8 @@ public class MongoClient implements Closeable {
     public final int port;
     public final String databaseName;
     public final String physicalDatabase;
-    private List<MigrationConfig> migrations;
-    private MongoShell shell = new MongoShell();
+    private final List<MigrationConfig> migrations;
+    protected MongoShell shell = new MongoShell();
 
     public MongoClient( String host, int port, String database ) {
         this( host, port, database, database );

@@ -1,8 +1,0 @@
-name: mongo-mock-test
-services:
-  mongo-client:
-    implementation: oap.storage.mongo.MongoClient
-    parameters:
-      host: localhost
-      port: <change me>
-      database: test

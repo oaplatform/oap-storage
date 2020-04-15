@@ -41,7 +41,7 @@ import java.util.Optional;
 
 @Slf4j
 public class LazyFileStorage<T> extends MemoryStorage<String, T> implements AutoCloseable {
-    private Path path;
+    private final Path path;
     private boolean closed = true;
 
     public LazyFileStorage( Path path, Identifier<String, T> identifier, Lock lock ) {

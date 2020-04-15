@@ -63,8 +63,8 @@ public class DirectoryPersistence<I, T> implements Closeable {
     private final List<Migration> migrations;
     private final Logger log;
     private final Lock lock = new ReentrantLock();
-    private long fsync;
-    private MemoryStorage<I, T> storage;
+    protected long fsync;
+    private final MemoryStorage<I, T> storage;
     private PeriodicScheduled scheduled;
 
     public DirectoryPersistence( Path path, long fsync, int version, List<Migration> migrations, MemoryStorage<I, T> storage ) {
@@ -137,21 +137,19 @@ public class DirectoryPersistence<I, T> implements Closeable {
 
             log.debug( "migration {}", fn );
 
-            var migration = Lists.find2( migrations, m -> m.fromVersion() == fn.version );
-            if( migration == null )
-                throw new MigrationException( "migration from version " + fn + " not found" );
+            var migration = Lists.find( migrations, m -> m.fromVersion() == fn.version )
+                .orElseThrow( () -> new MigrationException( "migration from version " + fn + " not found" ) );
 
 
             Path name = fn.toVersion( migration.fromVersion() + 1 );
             JsonMetadata newV = migration.run( oldV );
 
             long writeLen = -1;
-            while( name.toFile().length() != writeLen ) {
+            while( name.toFile().length() != writeLen )
                 try( var out = new CountingOutputStream( IoStreams.out( name, PLAIN, DEFAULT_BUFFER, false, true ) ) ) {
                     Binder.json.marshal( out, newV.underlying );
                     writeLen = out.getCount();
                 }
-            }
 
             Files.delete( path );
             return name;

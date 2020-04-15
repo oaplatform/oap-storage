@@ -37,10 +37,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class MongoClientTest extends Fixtures {
 
-    private final MongoFixture mongoFixture;
-
     public MongoClientTest() {
-        fixture( mongoFixture = new MongoFixture() );
+        fixture( new MongoFixture() );
     }
 
     @Test
@@ -51,18 +49,18 @@ public class MongoClientTest extends Fixtures {
             CONFIGURATION.fromUrl( urlOfTestResource( getClass(), "10/config10.yaml" ) )
         );
 
-        try( MongoClient client = new MongoClient( mongoFixture.mongoHost, mongoFixture.mongoPort, "testdb", mongoFixture.mongoDatabase, configs ) ) {
+        try( MongoClient client = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, "testdb", MongoFixture.mongoDatabase, configs ) ) {
             assertThat( client.databaseVersion() ).isEqualTo( UNDEFINED );
             client.start();
             assertThat( client.databaseVersion() ).isEqualTo( new Version( 10 ) );
 
-            assertThat( getDocumentField( client, "test", "test", "c" ) ).isEqualTo( 17 );
-            assertThat( getDocumentField( client, "test", "test3", "v" ) ).isEqualTo( 1 );
+            assertThat( getDocumentField( client, "test", "c" ) ).isEqualTo( 17 );
+            assertThat( getDocumentField( client, "test3", "v" ) ).isEqualTo( 1 );
         }
     }
 
-    private static Integer getDocumentField( MongoClient mongoClient, String collection, String id, String field ) {
-        return mongoClient.getCollection( collection ).find( eq( "_id", id ) )
+    private static Integer getDocumentField( MongoClient mongoClient, String id, String field ) {
+        return mongoClient.getCollection( "test" ).find( eq( "_id", id ) )
             .first()
             .getInteger( field );
     }

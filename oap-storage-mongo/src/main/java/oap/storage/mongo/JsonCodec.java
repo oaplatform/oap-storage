@@ -43,9 +43,9 @@ public class JsonCodec<I, M> implements Codec<M> {
     private final DocumentCodec documentCodec;
     private final Class<M> clazz;
     private final Function<M, I> identifier;
-    private Function<I, String> idToString;
-    private ObjectWriter writer;
-    private ObjectReader reader;
+    private final Function<I, String> idToString;
+    private final ObjectWriter writer;
+    private final ObjectReader reader;
 
     public JsonCodec( TypeRef<M> ref, Function<M, I> identifier, Function<I, String> idToString ) {
         this.clazz = ref.clazz();
