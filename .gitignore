@@ -17,3 +17,4 @@ kotlinc.xml
 
 # Default ignored files
 shelf
+/.idea/jarRepositories.xml
