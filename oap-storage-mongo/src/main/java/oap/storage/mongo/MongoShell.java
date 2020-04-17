@@ -35,13 +35,20 @@ import org.apache.commons.exec.PumpStreamHandler;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 @Slf4j
 public class MongoShell {
+    public static final String[] SHELL_LOCATIONS = {
+        "/usr/bin/mongo",
+        "/usr/local/bin/mongo",
+        "/usr/local/opt/mongodb-community/bin/mongo"
+    };
     private final Path path;
 
     public MongoShell() {
-        this( Path.of( "/usr/bin/mongo" ) );
+        this( Files.resolve( SHELL_LOCATIONS )
+            .orElseThrow( () -> new IllegalArgumentException( "can't find mongo shell at " + Arrays.toString( SHELL_LOCATIONS ) ) ) );
     }
 
     public MongoShell( Path path ) {
