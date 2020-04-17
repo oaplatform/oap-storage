@@ -28,14 +28,12 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import lombok.EqualsAndHashCode;
-import lombok.ToString;
 import oap.json.TypeIdFactory;
 import org.joda.time.DateTimeUtils;
 
 import java.io.Serializable;
 
-@EqualsAndHashCode( exclude = "object" )
-@ToString( exclude = "object" )
+@EqualsAndHashCode
 public class Metadata<T> implements Serializable {
     public long modified = DateTimeUtils.currentTimeMillis();
     public long hash = 0;
@@ -82,5 +80,15 @@ public class Metadata<T> implements Serializable {
 
     public boolean looksUnmodified( Metadata<T> metadata ) {
         return modified == metadata.modified && hash == metadata.hash;
+    }
+
+    @Override
+    public String toString() {
+        return "Metadata("
+            + "modified=" + modified
+            + ", hash=" + hash
+            + ", object=" + object
+            + ", deleted=" + deleted
+            + ')';
     }
 }

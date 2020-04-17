@@ -25,6 +25,7 @@
 package oap.storage;
 
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import oap.benchmark.Benchmark;
 import oap.id.Identifier;
 import oap.id.IntIdentifier;
@@ -127,6 +128,7 @@ public class MemoryStorageTest {
     }
 
     @EqualsAndHashCode
+    @ToString
     static class IntBean {
         Integer id;
         String name;
