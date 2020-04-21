@@ -44,29 +44,42 @@ import static oap.storage.mongo.MigrationConfig.CONFIGURATION;
 @Slf4j
 @ToString( exclude = { "migrations", "shell", "mongoClient", "database" } )
 public class MongoClient implements Closeable {
-    private final MongoDatabase database;
-    final com.mongodb.MongoClient mongoClient;
     public final String host;
     public final int port;
     public final String databaseName;
     public final String physicalDatabase;
+    protected final MongoShell shell;
+    final com.mongodb.MongoClient mongoClient;
+    private final MongoDatabase database;
     private final List<MigrationConfig> migrations;
-    protected MongoShell shell = new MongoShell();
 
     public MongoClient( String host, int port, String database ) {
-        this( host, port, database, database );
+        this( host, port, database, new MongoShell() );
+    }
+
+    public MongoClient( String host, int port, String database, MongoShell shell ) {
+        this( host, port, database, database, shell );
+    }
+
+    public MongoClient( String host, int port, String database, String physicalDatabase, MongoShell shell ) {
+        this( host, port, database, physicalDatabase, CONFIGURATION.fromClassPath(), shell );
     }
 
     public MongoClient( String host, int port, String database, String physicalDatabase ) {
-        this( host, port, database, physicalDatabase, CONFIGURATION.fromClassPath() );
+        this( host, port, database, physicalDatabase, new MongoShell() );
     }
 
     public MongoClient( String host, int port, String database, String physicalDatabase, List<MigrationConfig> migrations ) {
+        this( host, port, database, physicalDatabase, migrations, new MongoShell() );
+    }
+
+    public MongoClient( String host, int port, String database, String physicalDatabase, List<MigrationConfig> migrations, MongoShell shell ) {
         this.host = host;
         this.port = port;
         this.databaseName = database;
         this.physicalDatabase = physicalDatabase;
         this.migrations = migrations;
+        this.shell = shell;
         this.mongoClient = new com.mongodb.MongoClient( new ServerAddress( host, port ),
             MongoClientOptions.builder().codecRegistry( CodecRegistries.fromRegistries(
                 CodecRegistries.fromCodecs( new JodaTimeCodec() ),
