@@ -31,7 +31,6 @@ import oap.testng.Suite;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 
-import java.nio.file.Paths;
 import java.util.Date;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -80,7 +79,7 @@ public class MongoFixture implements Fixture {
     public void beforeMethod() {
         var mongoClientPath = Env.env( "MONGO_CLIENT_PATH" ).orElse( null );
         mongoClient = new MongoClient( mongoHost, mongoPort, mongoDatabase, mongoDatabase,
-            mongoClientPath != null ? new MongoShell( Paths.get( mongoClientPath ) ) : new MongoShell() );
+            mongoClientPath != null ? new MongoShell( mongoClientPath ) : new MongoShell() );
     }
 
     @Override

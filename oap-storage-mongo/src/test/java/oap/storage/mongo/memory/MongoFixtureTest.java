@@ -25,6 +25,7 @@
 package oap.storage.mongo.memory;
 
 import oap.id.Identifier;
+import oap.storage.Bean;
 import oap.storage.MemoryStorage;
 import oap.storage.MongoPersistence;
 import oap.storage.MongoPersistenceTest;
@@ -38,8 +39,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class MongoFixtureTest extends Fixtures {
     private final MongoFixture mongoFixture;
-    private final Identifier<String, MongoPersistenceTest.Bean> beanIdentifier =
-        Identifier.<MongoPersistenceTest.Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
+    private final Identifier<String, Bean> beanIdentifier =
+        Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
             .build();
 
@@ -60,8 +61,8 @@ public class MongoFixtureTest extends Fixtures {
             mongoClient.start();
             persistence.start();
             assertThat( storage.list() ).containsOnly(
-                new MongoPersistenceTest.Bean( "1", "name" ),
-                new MongoPersistenceTest.Bean( "2", "name" ) );
+                new Bean( "1", "name" ),
+                new Bean( "2", "name" ) );
             assertThat( mongoClient.databaseVersion() ).isEqualTo( new Version( 2 ) );
         }
 
