@@ -24,9 +24,11 @@
 
 package oap.storage;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import oap.id.Id;
 import oap.id.Identifier;
 import oap.io.Files;
 import oap.storage.mongo.MongoClient;
@@ -172,23 +174,59 @@ public class MongoPersistenceTest extends Fixtures {
 
     }
 
-    @ToString
+    /**
+     * this test works because of {@link oap.json.TypeIdFactory}
+     */
+    @Test
+    public void accidentalPolymorphism() {
+
+        MemoryStorage<String, Object> storage1 = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
+        try( var mongoClient = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, MongoFixture.mongoDatabase );
+             var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage1 ) ) {
+            mongoClient.start();
+            persistence.start();
+            PolyBeanA bean1 = ( PolyBeanA ) storage1.store( new PolyBeanA( "test1" ) );
+            PolyBeanB bean2 = ( PolyBeanB ) storage1.store( new PolyBeanB( "test2" ) );
+
+            log.debug( "bean1 = {}", bean1 );
+            log.debug( "bean2 = {}", bean2 );
+        }
+
+        MemoryStorage<String, Object> storage2 = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
+        try( var mongoClient = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, MongoFixture.mongoDatabase );
+             var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage2 ) ) {
+            mongoClient.start();
+            persistence.start();
+            assertThat( storage2.select() ).containsOnly(
+                new PolyBeanA( "test1" ),
+                new PolyBeanB( "test2" )
+            );
+            assertThat( persistence.collection.countDocuments() ).isEqualTo( 2 );
+        }
+
+    }
+
     @EqualsAndHashCode
-    public static class Bean {
-        public String id;
-        public String name;
-        public int c;
+    @ToString
+    public static class PolyBeanA {
+        @Id
+        String a;
 
-        public Bean( String id, String name ) {
-            this( name );
-            this.id = id;
+        @JsonCreator
+        public PolyBeanA( String a ) {
+            this.a = a;
         }
+    }
 
-        Bean( String name ) {
-            this.name = name;
-        }
+    @EqualsAndHashCode
+    @ToString
+    public static class PolyBeanB {
+        @Id
+        String b;
 
-        Bean() {
+        @JsonCreator
+        public PolyBeanB( String b ) {
+            this.b = b;
         }
     }
 }

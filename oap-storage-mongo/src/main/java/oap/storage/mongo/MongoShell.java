@@ -43,13 +43,19 @@ public class MongoShell {
         "/usr/local/bin/mongo",
         "/usr/local/opt/mongodb-community/bin/mongo"
     };
-    private final Path path;
+    private final String path;
 
     public MongoShell() {
-        this( Files.resolve( SHELL_LOCATIONS ).orElse( Path.of( SHELL_LOCATIONS[0] ) ) );
+        this( Files.resolve( SHELL_LOCATIONS )
+            .map( Path::toString )
+            .orElseGet( () -> {
+                log.warn( "can't find mongo shell at " + Arrays.toString( SHELL_LOCATIONS ) );
+                log.warn( "defaulting to mongo executable" );
+                return "mongo";
+            } ) );
     }
 
-    public MongoShell( Path path ) {
+    public MongoShell( String path ) {
         this.path = path;
     }
 
@@ -64,11 +70,11 @@ public class MongoShell {
 
     @SneakyThrows
     public void execute( String host, int port, String database, Path scriptFile ) {
-        var commandline = new CommandLine( path.toFile() );
-        commandline.addArgument( "--verbose" );
-        commandline.addArgument( host + ":" + port + "/" + database );
-        commandline.addArgument( scriptFile.toString() );
-        log.debug( "executing {}", commandline );
+        var cmd = new CommandLine( path );
+        cmd.addArgument( "--verbose" );
+        cmd.addArgument( host + ":" + port + "/" + database );
+        cmd.addArgument( scriptFile.toString() );
+        log.debug( "executing {}", cmd );
         var executor = new DefaultExecutor();
         var los = new LogOutputStream( 1 ) {
             @Override
@@ -78,10 +84,8 @@ public class MongoShell {
         };
         executor.setStreamHandler( new PumpStreamHandler( los, los ) );
         executor.setExitValues( null );
-        var exitCode = executor.execute( commandline );
+        var exitCode = executor.execute( cmd );
 
-        if( exitCode != 0 ) throw new IOException( " migration failed with code: " + exitCode );
-
+        if( exitCode != 0 ) throw new IOException( cmd + " exited with code " + exitCode );
     }
 }
-
