@@ -55,7 +55,7 @@
     </repositories>
 
     <properties>
-        <oap.storage.project.version>6.8.3</oap.storage.project.version>
+        <oap.storage.project.version>6.8.4</oap.storage.project.version>
 
         <oap.deps.oap.version>6.8.13</oap.deps.oap.version>
         <oap.deps.assertj.version>3.15.0</oap.deps.assertj.version>

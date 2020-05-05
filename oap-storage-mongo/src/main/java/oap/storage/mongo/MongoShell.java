@@ -35,7 +35,6 @@ import org.apache.commons.exec.PumpStreamHandler;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 
 @Slf4j
 public class MongoShell {
@@ -47,8 +46,7 @@ public class MongoShell {
     private final Path path;
 
     public MongoShell() {
-        this( Files.resolve( SHELL_LOCATIONS )
-            .orElseThrow( () -> new IllegalArgumentException( "can't find mongo shell at " + Arrays.toString( SHELL_LOCATIONS ) ) ) );
+        this( Files.resolve( SHELL_LOCATIONS ).orElse( Path.of( SHELL_LOCATIONS[0] ) ) );
     }
 
     public MongoShell( Path path ) {
