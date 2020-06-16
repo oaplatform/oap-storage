@@ -29,14 +29,15 @@ import io.micrometer.core.instrument.Tags;
 import oap.util.MemoryMeter;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.function.DoubleSupplier;
-import java.util.function.Function;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
-public class StorageMetrics<I, T> {
+public class StorageMetrics<I, T> implements Storage.DataListener<I, T> {
     private final String storageName;
     private final Storage<I, T> storage;
-    private final Map<String, Gauge<I, T>> metrics = new HashMap<>();
+    private final Map<String, Meter<I, T>> metrics = new HashMap<>();
 
     public StorageMetrics( Storage<I, T> storage, String name ) {
         this.storage = storage;
@@ -46,34 +47,63 @@ public class StorageMetrics<I, T> {
     }
 
     public void start() {
-        metrics.forEach( ( name, metric ) ->
-            Metrics.gauge( name, Tags.of( "storage", storageName ), storage, storage -> metric.apply( storage ).getAsDouble() ) );
+        refresh();
+
+        this.metrics.forEach( ( mname, metric ) ->
+            Metrics.gauge( mname, Tags.of( "storage", storageName ), metric, ( m ) -> ( double ) m.value() ) );
     }
 
-    public interface Gauge<I, T> extends Function<Storage<I, T>, DoubleSupplier> {
+    @Override
+    public void added( List<IdObject<I, T>> idObjects ) {
+        refresh();
     }
 
-    public static class Count<I, T> implements Gauge<I, T> {
+    private void refresh() {
+        metrics.forEach( ( name, metric ) -> metric.accept( storage ) );
+    }
+
+    @Override
+    public void updated( List<IdObject<I, T>> idObjects ) {
+        refresh();
+    }
+
+    @Override
+    public void deleted( List<IdObject<I, T>> idObjects ) {
+        refresh();
+    }
+
+    public interface Meter<I, T> extends Consumer<Storage<I, T>> {
+        long value();
+    }
+
+    public static class Count<I, T> implements Meter<I, T> {
+        private final AtomicLong count = new AtomicLong();
+
         @Override
-        public DoubleSupplier apply( Storage<I, T> storage ) {
-            return storage::size;
+        public void accept( Storage<I, T> storage ) {
+            count.set( storage.size() );
+        }
+
+        @Override
+        public long value() {
+            return count.get();
         }
     }
 
-    public static class Memory<I, T> implements Gauge<I, T> {
-
-        private final MemoryMeter memoryMeter;
-
-        public Memory() {
-            memoryMeter = MemoryMeter.get();
-        }
+    public static class Memory<I, T> implements Meter<I, T> {
+        private final AtomicLong size = new AtomicLong();
 
         @Override
-        public DoubleSupplier apply( Storage<I, T> storage ) {
+        public void accept( Storage<I, T> storage ) {
             if( storage instanceof MemoryStorage<?, ?> )
-                return () -> memoryMeter.measureDeep( ( ( MemoryStorage<I, T> ) storage ).memory.data );
+                size.set( MemoryMeter.get().measureDeep( ( ( MemoryStorage<I, T> ) storage ).memory.data ) );
+            else
+                size.set( 0 );
+        }
 
-            return () -> 0d;
+        @Override
+        public long value() {
+            return size.get();
         }
     }
 }
