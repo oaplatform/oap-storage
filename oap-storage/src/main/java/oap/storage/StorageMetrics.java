@@ -26,6 +26,7 @@ package oap.storage;
 
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
+import lombok.ToString;
 import oap.util.MemoryMeter;
 
 import java.util.HashMap;
@@ -34,6 +35,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
+@ToString
 public class StorageMetrics<I, T> implements Storage.DataListener<I, T> {
     private final String storageName;
     private final Storage<I, T> storage;
@@ -49,6 +51,8 @@ public class StorageMetrics<I, T> implements Storage.DataListener<I, T> {
     public void start() {
         refresh();
 
+        storage.addDataListener( this );
+        
         this.metrics.forEach( ( mname, metric ) ->
             Metrics.gauge( mname, Tags.of( "storage", storageName ), metric, ( m ) -> ( double ) m.value() ) );
     }
