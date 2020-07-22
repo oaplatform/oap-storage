@@ -36,6 +36,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import static java.util.Arrays.asList;
+
 @Slf4j
 public class MongoShell {
     public static final String[] SHELL_LOCATIONS = {
@@ -49,7 +51,7 @@ public class MongoShell {
         this( Files.resolve( SHELL_LOCATIONS )
             .map( Path::toString )
             .orElseGet( () -> {
-                log.warn( "can't find mongo shell at " + Arrays.toString( SHELL_LOCATIONS ) );
+                log.warn( "can't find mongo shell at " + asList( SHELL_LOCATIONS ) );
                 log.warn( "defaulting to mongo executable" );
                 return "mongo";
             } ) );
