@@ -46,7 +46,7 @@ import static oap.storage.Storage.DataListener.IdObject.__io;
 public class Replicator<I, T> implements Closeable {
     private final MemoryStorage<I, T> slave;
     private final ReplicationMaster<I, T> master;
-    private final Scheduled scheduled;
+    private Scheduled scheduled;
 
     public Replicator( MemoryStorage<I, T> slave, ReplicationMaster<I, T> master, long interval, long safeModificationTime ) {
         this.slave = slave;
@@ -102,6 +102,11 @@ public class Replicator<I, T> implements Closeable {
 
     }
 
+    public void preStop() {
+        Scheduled.cancel( scheduled );
+        scheduled = null;
+    }
+    
     @Override
     public void close() {
         Scheduled.cancel( scheduled );
