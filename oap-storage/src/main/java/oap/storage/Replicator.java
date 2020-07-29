@@ -25,11 +25,13 @@
 package oap.storage;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.application.remote.RemoteInvocationException;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.storage.Storage.DataListener.IdObject;
 
 import java.io.Closeable;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -70,6 +72,12 @@ public class Replicator<I, T> implements Closeable {
             log.trace( "replicate {} to {} last: {}", master, slave, last );
             newUpdates = updates.collect( toList() );
             log.trace( "updated objects {}", newUpdates.size() );
+        } catch( RemoteInvocationException e ) {
+            if( e.getCause() instanceof SocketException ) {
+                log.error( e.getCause().getMessage() );
+                return;
+            }
+            throw e;
         }
 
         List<IdObject<I, T>> added = new ArrayList<>();
@@ -106,7 +114,7 @@ public class Replicator<I, T> implements Closeable {
         Scheduled.cancel( scheduled );
         scheduled = null;
     }
-    
+
     @Override
     public void close() {
         Scheduled.cancel( scheduled );
