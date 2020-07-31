@@ -80,13 +80,13 @@ public class Replicator<I, T> implements Closeable {
             throw e;
         }
 
-        List<IdObject<I, T>> added = new ArrayList<>();
-        List<IdObject<I, T>> updated = new ArrayList<>();
+        var added = new ArrayList<IdObject<I, T>>();
+        var updated = new ArrayList<IdObject<I, T>>();
 
-        for( Metadata<T> metadata : newUpdates ) {
+        for( var metadata : newUpdates ) {
             log.trace( "replicate {}", metadata );
             var id = slave.identifier.get( metadata.object );
-            boolean unmodified = slave.memory.get( id ).map( m -> m.looksUnmodified( metadata ) ).orElse( false );
+            var unmodified = slave.memory.get( id ).map( m -> m.looksUnmodified( metadata ) ).orElse( false );
             if( unmodified ) {
                 log.trace( "skipping unmodified {}", id );
                 continue;

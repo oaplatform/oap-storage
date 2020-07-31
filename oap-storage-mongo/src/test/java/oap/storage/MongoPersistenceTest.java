@@ -40,6 +40,10 @@ import org.testng.annotations.Test;
 
 import java.nio.file.Path;
 
+import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Updates.combine;
+import static com.mongodb.client.model.Updates.inc;
+import static com.mongodb.client.model.Updates.set;
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
 import static oap.testng.TestDirectoryFixture.testPath;
@@ -64,6 +68,25 @@ public class MongoPersistenceTest extends Fixtures {
     public MongoPersistenceTest() {
         fixture( mongoFixture = new MongoFixture() );
         fixture( TestDirectoryFixture.FIXTURE );
+    }
+
+    @Test
+    public void testWatch() {
+        var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+
+        try( var mongoClient = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, MongoFixture.mongoDatabase );
+             var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage ) ) {
+            persistence.watch = true;
+
+            mongoClient.start();
+            persistence.start();
+
+            persistence.collection.insertOne( new Metadata<>( new Bean( "id", "test1" ) ) );
+            assertEventually( 500, 10, () -> assertThat( storage ).containsExactly( new Bean( "id", "test1" ) ) );
+
+            persistence.collection.updateOne( eq( "_id", "id" ), combine( set( "object.name", "newname" ), inc( "modified", 1 ) ) );
+            assertEventually( 500, 10, () -> assertThat( storage ).containsExactly( new Bean( "id", "newname" ) ) );
+        }
     }
 
     @Test

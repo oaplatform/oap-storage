@@ -31,18 +31,19 @@ import com.mongodb.client.model.DeleteOneModel;
 import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.WriteModel;
+import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Threads;
 import oap.concurrent.scheduler.PeriodicScheduled;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
+import oap.io.Closeables;
 import oap.io.Files;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
 import oap.storage.mongo.JsonCodec;
 import oap.storage.mongo.MongoClient;
-import oap.storage.mongo.OplogService;
 import oap.util.Pair;
 import oap.util.Stream;
 import org.bson.codecs.configuration.CodecRegistries;
@@ -53,6 +54,8 @@ import java.io.Closeable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -64,19 +67,20 @@ import static oap.util.Pair.__;
 
 @Slf4j
 @ToString( of = { "collectionName", "delay" } )
-public class MongoPersistence<I, T> implements Closeable, Runnable, OplogService.OplogListener {
+public class MongoPersistence<I, T> implements Closeable, Runnable {
 
-    private static final ReplaceOptions REPLACE_OPTIONS_UPSERT = new ReplaceOptions().upsert( true );
     public static final Path DEFAULT_CRASH_DUMP_PATH = Path.of( "/tmp/mongo-persistance-crash-dump" );
-
+    private static final ReplaceOptions REPLACE_OPTIONS_UPSERT = new ReplaceOptions().upsert( true );
     final MongoCollection<Metadata<T>> collection;
     private final Lock lock = new ReentrantLock();
-    protected int batchSize = 100;
     private final String collectionName;
     private final long delay;
     private final MemoryStorage<I, T> storage;
-    private PeriodicScheduled scheduled;
     private final Path crashDumpPath;
+    public boolean watch = false;
+    protected int batchSize = 100;
+    private PeriodicScheduled scheduled;
+    private ExecutorService watchExecutor;
 
     public MongoPersistence( MongoClient mongoClient, String collectionName, long delay, MemoryStorage<I, T> storage ) {
         this( mongoClient, collectionName, delay, storage, DEFAULT_CRASH_DUMP_PATH );
@@ -108,6 +112,22 @@ public class MongoPersistence<I, T> implements Closeable, Runnable, OplogService
     }
 
     public void start() {
+        if( watch ) {
+            watchExecutor = Executors.newSingleThreadExecutor();
+
+            watchExecutor.execute( () -> {
+                collection.watch().forEach( ( Consumer<? super ChangeStreamDocument<Metadata<T>>> ) csd -> {
+                    var op = csd.getOperationType();
+                    var key = csd.getDocumentKey();
+                    var id = key.getString( "_id" ).getValue();
+                    switch( op ) {
+                        case DELETE -> storage.delete( storage.identifier.fromString( id ) );
+                        case INSERT, UPDATE -> refresh( id );
+                    }
+                } );
+            } );
+        }
+
         Threads.synchronously( lock, () -> {
             this.load();
             this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), delay, this::fsync );
@@ -169,26 +189,8 @@ public class MongoPersistence<I, T> implements Closeable, Runnable, OplogService
                 log.debug( "closed {}...", this );
             } );
         } else log.debug( "this {} was't started or already closed", this );
-    }
 
-    @Override
-    public void updated( String mongoId ) {
-        refresh( mongoId );
-    }
-
-    @Override
-    public void deleted( String mongoId ) {
-        storage.delete( storage.identifier.fromString( mongoId ) );
-    }
-
-    @Override
-    public void inserted( String mongoId ) {
-        refresh( mongoId );
-    }
-
-    @Override
-    public String collectionName() {
-        return collection.getNamespace().getCollectionName();
+        Closeables.close( watchExecutor );
     }
 
     private void refresh( String mongoId ) {
