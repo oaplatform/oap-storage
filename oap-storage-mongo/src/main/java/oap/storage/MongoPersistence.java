@@ -117,9 +117,15 @@ public class MongoPersistence<I, T> implements Closeable, Runnable {
 
             watchExecutor.execute( () -> {
                 collection.watch().forEach( ( Consumer<? super ChangeStreamDocument<Metadata<T>>> ) csd -> {
+                    log.trace( "mongo notification: {} ", csd );
                     var op = csd.getOperationType();
                     var key = csd.getDocumentKey();
-                    var id = key.getString( "_id" ).getValue();
+                    if( key == null ) return;
+
+                    var bid = key.getString( "_id" );
+                    if( bid == null ) return;
+
+                    var id = bid.getValue();
                     switch( op ) {
                         case DELETE -> storage.delete( storage.identifier.fromString( id ) );
                         case INSERT, UPDATE -> refresh( id );
