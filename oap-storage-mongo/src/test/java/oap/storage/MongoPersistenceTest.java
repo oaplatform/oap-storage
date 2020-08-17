@@ -38,8 +38,6 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
-import java.nio.file.Path;
-
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Updates.combine;
 import static com.mongodb.client.model.Updates.inc;
@@ -169,7 +167,7 @@ public class MongoPersistenceTest extends Fixtures {
     @Test
     public void storeTooBig() {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-        Path crashDumpPath = testPath( "failures" );
+        var crashDumpPath = testPath( "failures" );
         String table = "test";
         try( var mongoClient = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, MongoFixture.mongoDatabase );
              var persistence = new MongoPersistence<>( mongoClient, table, 6000, storage, crashDumpPath ) ) {

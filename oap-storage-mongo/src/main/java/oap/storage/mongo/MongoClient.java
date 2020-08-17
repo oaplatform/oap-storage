@@ -25,6 +25,7 @@
 package oap.storage.mongo;
 
 import com.mongodb.MongoClientOptions;
+import com.mongodb.ReadConcern;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -89,8 +90,8 @@ public class MongoClient implements Closeable {
     }
 
     public Version databaseVersion() {
-        MongoCollection<Document> collection = this.getCollection( "version" );
-        Document document = collection.find().first();
+        var collection = this.getCollection( "version" );
+        var document = collection.find().first();
         return document != null ? new Version(
             document.getInteger( "main", 0 ),
             document.getInteger( "ext", 0 ) )
@@ -99,7 +100,7 @@ public class MongoClient implements Closeable {
 
     public void start() {
         log.debug( "starting mongo client {}, version {}", this, databaseVersion() );
-        for( Migration migration : Migration.of( databaseName, databaseVersion(), migrations ) ) {
+        for( var migration : Migration.of( databaseName, databaseVersion(), migrations ) ) {
             log.debug( "executing migration {} for {}", migration, databaseVersion() );
             migration.execute( shell, host, port, physicalDatabase );
             updateVersion( migration.version );

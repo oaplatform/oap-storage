@@ -25,6 +25,7 @@
 package oap.storage;
 
 import com.mongodb.MongoNamespace;
+import com.mongodb.ReadConcern;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.BulkWriteOptions;
 import com.mongodb.client.model.DeleteOneModel;
@@ -44,8 +45,10 @@ import oap.json.Binder;
 import oap.reflect.TypeRef;
 import oap.storage.mongo.JsonCodec;
 import oap.storage.mongo.MongoClient;
+import oap.util.Dates;
 import oap.util.Pair;
 import oap.util.Stream;
+import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.joda.time.DateTimeUtils;
@@ -54,6 +57,7 @@ import java.io.Closeable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
@@ -73,6 +77,7 @@ public class MongoPersistence<I, T> implements Closeable, Runnable {
     private static final ReplaceOptions REPLACE_OPTIONS_UPSERT = new ReplaceOptions().upsert( true );
     final MongoCollection<Metadata<T>> collection;
     private final Lock lock = new ReentrantLock();
+    private final MongoClient mongoClient;
     private final String collectionName;
     private final long delay;
     private final MemoryStorage<I, T> storage;
@@ -87,6 +92,7 @@ public class MongoPersistence<I, T> implements Closeable, Runnable {
     }
 
     public MongoPersistence( MongoClient mongoClient, String collectionName, long delay, MemoryStorage<I, T> storage, Path crashDumpPath ) {
+        this.mongoClient = mongoClient;
         this.collectionName = collectionName;
         this.delay = delay;
         this.storage = storage;
@@ -102,6 +108,7 @@ public class MongoPersistence<I, T> implements Closeable, Runnable {
 
         this.collection = mongoClient
             .getCollection( collectionName, ref.clazz() )
+            .withReadConcern( ReadConcern.MAJORITY )
             .withCodecRegistry( codecRegistry );
         this.crashDumpPath = crashDumpPath.resolve( collectionName );
     }
@@ -112,11 +119,23 @@ public class MongoPersistence<I, T> implements Closeable, Runnable {
     }
 
     public void start() {
+        log.info( "collection = {}, fsync delay = {}, watch = {}, crashDumpPath = {}",
+            collectionName, Dates.durationToString( delay ), watch, crashDumpPath );
+
+        Threads.synchronously( lock, () -> {
+            this.load();
+            this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), delay, this::fsync );
+        } );
+
         if( watch ) {
             watchExecutor = Executors.newSingleThreadExecutor();
 
             watchExecutor.execute( () -> {
-                collection.watch().forEach( ( Consumer<? super ChangeStreamDocument<Metadata<T>>> ) csd -> {
+                var changeStreamDocuments = mongoClient.getCollection( collectionName ).withReadConcern( ReadConcern.MAJORITY ).watch();
+
+                Threads.notifyAllFor( watchExecutor );
+
+                changeStreamDocuments.forEach( ( Consumer<? super ChangeStreamDocument<Document>> ) csd -> {
                     log.trace( "mongo notification: {} ", csd );
                     var op = csd.getOperationType();
                     var key = csd.getDocumentKey();
@@ -127,17 +146,18 @@ public class MongoPersistence<I, T> implements Closeable, Runnable {
 
                     var id = bid.getValue();
                     switch( op ) {
-                        case DELETE -> storage.delete( storage.identifier.fromString( id ) );
-                        case INSERT, UPDATE -> refresh( id );
+                        case DELETE -> deleteById( id );
+                        case INSERT, UPDATE -> refreshById( id );
                     }
                 } );
             } );
-        }
 
-        Threads.synchronously( lock, () -> {
-            this.load();
-            this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), delay, this::fsync );
-        } );
+            Threads.waitFor( watchExecutor );
+        }
+    }
+
+    private Optional<T> deleteById( String id ) {
+        return storage.delete( storage.identifier.fromString( id ) );
     }
 
     private void load() {
@@ -196,10 +216,12 @@ public class MongoPersistence<I, T> implements Closeable, Runnable {
             } );
         } else log.debug( "this {} was't started or already closed", this );
 
-        Closeables.close( watchExecutor );
+        if( watch ) {
+            Closeables.close( watchExecutor );
+        }
     }
 
-    private void refresh( String mongoId ) {
+    private void refreshById( String mongoId ) {
         var m = collection.find( eq( "_id", mongoId ) ).first();
         if( m != null ) {
             storage.lock.synchronizedOn( mongoId, () -> {
