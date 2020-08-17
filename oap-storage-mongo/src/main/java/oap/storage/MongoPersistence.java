@@ -108,7 +108,6 @@ public class MongoPersistence<I, T> implements Closeable, Runnable {
 
         this.collection = mongoClient
             .getCollection( collectionName, ref.clazz() )
-            .withReadConcern( ReadConcern.MAJORITY )
             .withCodecRegistry( codecRegistry );
         this.crashDumpPath = crashDumpPath.resolve( collectionName );
     }
