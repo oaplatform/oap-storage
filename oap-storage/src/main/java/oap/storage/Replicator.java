@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static java.lang.Long.max;
 import static java.util.stream.Collectors.toList;
 import static oap.storage.Storage.DataListener.IdObject.__io;
 
@@ -49,11 +50,14 @@ public class Replicator<I, T> implements Closeable {
     private final MemoryStorage<I, T> slave;
     private final ReplicationMaster<I, T> master;
     private Scheduled scheduled;
+    transient private long lastModified = -1;
 
     public Replicator( MemoryStorage<I, T> slave, ReplicationMaster<I, T> master, long interval, long safeModificationTime ) {
         this.slave = slave;
         this.master = master;
-        this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, safeModificationTime, this::replicate );
+        this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, safeModificationTime, ( i ) -> {
+            lastModified = replicate( lastModified ) - safeModificationTime;
+        } );
     }
 
     public Replicator( MemoryStorage<I, T> slave, ReplicationMaster<I, T> master, long interval ) {
@@ -65,8 +69,15 @@ public class Replicator<I, T> implements Closeable {
         scheduled.triggerNow();
     }
 
-    public synchronized void replicate( long last ) {
+    public void replicateAllNow() {
+        lastModified = -1;
+        replicateNow();
+    }
+
+    public synchronized long replicate( long last ) {
         List<Metadata<T>> newUpdates;
+
+        long lastUpdate = -1;
 
         try( var updates = master.updatedSince( last ) ) {
             log.trace( "replicate {} to {} last: {}", master, slave, last );
@@ -75,7 +86,7 @@ public class Replicator<I, T> implements Closeable {
         } catch( RemoteInvocationException e ) {
             if( e.getCause() instanceof SocketException ) {
                 log.error( e.getCause().getMessage() );
-                return;
+                return last;
             }
             throw e;
         }
@@ -85,6 +96,8 @@ public class Replicator<I, T> implements Closeable {
 
         for( var metadata : newUpdates ) {
             log.trace( "replicate {}", metadata );
+            lastUpdate = max( lastUpdate, metadata.modified );
+
             var id = slave.identifier.get( metadata.object );
             var unmodified = slave.memory.get( id ).map( m -> m.looksUnmodified( metadata ) ).orElse( false );
             if( unmodified ) {
@@ -108,6 +121,7 @@ public class Replicator<I, T> implements Closeable {
         log.trace( "deleted {}", deleted );
         slave.fireDeleted( deleted );
 
+        return lastUpdate;
     }
 
     public void preStop() {
