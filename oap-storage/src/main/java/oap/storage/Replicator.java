@@ -112,6 +112,7 @@ public class Replicator<I, T> implements Closeable {
 
         var ids = master.ids();
         log.trace( "master ids {}", ids );
+        if( ids.isEmpty() ) lastModified = -1;
         List<IdObject<I, T>> deleted = slave.memory.selectLiveIds()
             .filter( id -> !ids.contains( id ) )
             .map( id -> slave.memory.removePermanently( id ).map( m -> __io( id, m.object ) ) )
