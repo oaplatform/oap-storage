@@ -117,7 +117,7 @@ public class MongoPersistence<I, T> implements Closeable, Runnable {
         fsync( scheduled.lastExecuted() );
     }
 
-    public void start() {
+    public void preStart() {
         log.info( "collection = {}, fsync delay = {}, watch = {}, crashDumpPath = {}",
             collectionName, Dates.durationToString( delay ), watch, crashDumpPath );
 

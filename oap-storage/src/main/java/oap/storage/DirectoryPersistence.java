@@ -90,7 +90,7 @@ public class DirectoryPersistence<I, T> implements Closeable {
         return ( p, object ) -> p;
     }
 
-    public void start() {
+    public void preStart() {
         Threads.synchronously( lock, () -> {
             this.load();
             this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), fsync, this::fsync );

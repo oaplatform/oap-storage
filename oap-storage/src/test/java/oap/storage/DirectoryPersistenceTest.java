@@ -58,7 +58,7 @@ public class DirectoryPersistenceTest extends Fixtures {
             .suggestion( o -> o.s )
             .build(), SERIALIZED );
         try( var persistence = new DirectoryPersistence<>( path, storage ) ) {
-            persistence.start();
+            persistence.preStart();
             assertThat( storage.select() )
                 .containsExactly( new Bean( "t1" ), new Bean( "t2" ) );
         }
@@ -71,7 +71,7 @@ public class DirectoryPersistenceTest extends Fixtures {
             .suggestion( o -> o.s )
             .build(), SERIALIZED );
         try( var persistence = new DirectoryPersistence<>( path, storage1 ) ) {
-            persistence.start();
+            persistence.preStart();
             storage1.store( new Bean( "1" ) );
             storage1.store( new Bean( "2" ) );
         }
@@ -80,7 +80,7 @@ public class DirectoryPersistenceTest extends Fixtures {
             .suggestion( o -> o.s )
             .build(), SERIALIZED );
         try( var persistence = new DirectoryPersistence<>( path, storage2 ) ) {
-            persistence.start();
+            persistence.preStart();
             assertThat( storage2.select() )
                 .containsExactly( new Bean( "1" ), new Bean( "2" ) );
         }
@@ -94,7 +94,7 @@ public class DirectoryPersistenceTest extends Fixtures {
             .suggestion( o -> o.s )
             .build(), SERIALIZED );
         try( var persistence = new DirectoryPersistence<>( path, fsResolve, 50, 0, empty(), storage1 ) ) {
-            persistence.start();
+            persistence.preStart();
             storage1.store( new Bean( "1" ) );
             storage1.store( new Bean( "2" ) );
         }
@@ -106,7 +106,7 @@ public class DirectoryPersistenceTest extends Fixtures {
             .suggestion( o -> o.s )
             .build(), SERIALIZED );
         try( var persistence = new DirectoryPersistence<>( path, fsResolve, 50, 0, empty(), storage ) ) {
-            persistence.start();
+            persistence.preStart();
             assertThat( storage.select() )
                 .containsExactly( new Bean( "1" ), new Bean( "2" ) );
         }
@@ -120,7 +120,7 @@ public class DirectoryPersistenceTest extends Fixtures {
             .suggestion( o -> o.s )
             .build(), SERIALIZED );
         try( var persistence = new DirectoryPersistence<>( path, storage1 ) ) {
-            persistence.start();
+            persistence.preStart();
             storage1.store( new Bean( "1", "aaa" ) );
             storage1.store( new Bean( "2", "bbb" ) );
         }
@@ -136,7 +136,7 @@ public class DirectoryPersistenceTest extends Fixtures {
             .build(), SERIALIZED );
         try( var persistence =
                  new DirectoryPersistence<>( path, ( p, s ) -> p.resolve( s.s ), 50, 0, empty(), storage2 ) ) {
-            persistence.start();
+            persistence.preStart();
 
             assertThat( storage2.select() ).containsExactly( new Bean( "1", "aaa" ), new Bean( "2", "bbb" ) );
 
@@ -155,7 +155,7 @@ public class DirectoryPersistenceTest extends Fixtures {
             .suggestion( o -> o.s )
             .build(), SERIALIZED );
         try( var persistence = new DirectoryPersistence<>( path, storage1 ) ) {
-            persistence.start();
+            persistence.preStart();
             storage1.store( new Bean( "111" ) );
             storage1.update( "111", u -> {
                 u.s = "bbb";
@@ -167,7 +167,7 @@ public class DirectoryPersistenceTest extends Fixtures {
             .suggestion( o -> o.s )
             .build(), SERIALIZED );
         try( var persistence = new DirectoryPersistence<>( path, storage2 ) ) {
-            persistence.start();
+            persistence.preStart();
             assertThat( storage2.select() )
                 .containsExactly( new Bean( "111", "bbb" ) );
         }
@@ -180,7 +180,7 @@ public class DirectoryPersistenceTest extends Fixtures {
             .suggestion( o -> o.s )
             .build(), SERIALIZED );
         try( var persistence = new DirectoryPersistence<>( path, 50, 0, empty(), storage ) ) {
-            persistence.start();
+            persistence.preStart();
             storage.store( new Bean( "111" ) );
             assertEventually( 200, 10, () -> {
                 log.debug( "going to assert existence of {}", path.resolve( "111.json" ) );
@@ -199,7 +199,7 @@ public class DirectoryPersistenceTest extends Fixtures {
             .suggestion( o -> o.s )
             .build(), SERIALIZED );
         try( var persistence = new DirectoryPersistence<>( path, 50, 1, empty(), storage ) ) {
-            persistence.start();
+            persistence.preStart();
             storage.store( new Bean( "111" ) );
             assertEventually( 100, 100, () -> assertThat( path.resolve( "111.v1.json" ) ).exists() );
             storage.delete( "111" );

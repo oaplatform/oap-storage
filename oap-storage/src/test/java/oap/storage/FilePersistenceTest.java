@@ -51,7 +51,7 @@ public class FilePersistenceTest extends Fixtures {
         Path path = testPath( "storage.json.gz" );
         var storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( var persistence = new FilePersistence<>( path, 10, storage ) ) {
-            persistence.start();
+            persistence.preStart();
             storage.store( new Bean( "123" ) );
 
             assertEventually( 10, 200, () -> assertThat( path ).exists() );
@@ -63,13 +63,13 @@ public class FilePersistenceTest extends Fixtures {
         Path path = testPath( "storage.json.gz" );
         var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( var persistence = new FilePersistence<>( path, 10, storage1 ) ) {
-            persistence.start();
+            persistence.preStart();
             storage1.store( new Bean( "123" ) );
         }
 
         var storage2 = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( var persistence = new FilePersistence<>( path, 10, storage2 ) ) {
-            persistence.start();
+            persistence.preStart();
             assertThat( storage2.select() ).containsExactly( new Bean( "123" ) );
         }
     }

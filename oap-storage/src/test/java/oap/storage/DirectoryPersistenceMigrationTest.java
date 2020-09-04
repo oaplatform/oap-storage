@@ -60,7 +60,7 @@ public class DirectoryPersistenceMigrationTest extends Fixtures {
             new MigrationV1(),
             new MigrationV2()
         ), storage ) ) {
-            persistence.start();
+            persistence.preStart();
             assertThat( storage.select() ).containsExactly( new Bean( "11" ), new Bean( "21" ) );
         }
         log.info( "DirectoryPersistence#close" );
@@ -80,7 +80,7 @@ public class DirectoryPersistenceMigrationTest extends Fixtures {
         Path path = testPath( "data" );
         var storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( var persistence = new DirectoryPersistence<>( path, 10, 10, Lists.empty(), storage ) ) {
-            persistence.start();
+            persistence.preStart();
             storage.store( new Bean( "1" ) );
         }
 

@@ -77,7 +77,7 @@ public class MongoPersistenceTest extends Fixtures {
             persistence.watch = true;
 
             mongoClient.start();
-            persistence.start();
+            persistence.preStart();
 
             persistence.collection.insertOne( new Metadata<>( new Bean( "id", "test1" ) ) );
             assertEventually( 500, 10, () -> assertThat( storage ).containsExactly( new Bean( "id", "test1" ) ) );
@@ -93,7 +93,7 @@ public class MongoPersistenceTest extends Fixtures {
         try( var mongoClient = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, MongoFixture.mongoDatabase );
              var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage1 ) ) {
             mongoClient.start();
-            persistence.start();
+            persistence.preStart();
             Bean bean1 = storage1.store( new Bean( "test1" ) );
             Bean bean2 = storage1.store( new Bean( "test2" ) );
             // rewrite bean2 'test2' with 'test3' name
@@ -111,7 +111,7 @@ public class MongoPersistenceTest extends Fixtures {
         try( var mongoClient = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, MongoFixture.mongoDatabase );
              var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage2 ) ) {
             mongoClient.start();
-            persistence.start();
+            persistence.preStart();
             assertThat( storage2.select() ).containsOnly(
                 new Bean( "TST1", "test1" ),
                 new Bean( "TST2", "test3" )
@@ -127,7 +127,7 @@ public class MongoPersistenceTest extends Fixtures {
         try( var mongoClient = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, MongoFixture.mongoDatabase );
              var persistence = new MongoPersistence<>( mongoClient, "test", 50, storage ) ) {
             mongoClient.start();
-            persistence.start();
+            persistence.preStart();
             var bean1 = storage.store( new Bean( "test1" ) );
             storage.store( new Bean( "test2" ) );
 
@@ -145,7 +145,7 @@ public class MongoPersistenceTest extends Fixtures {
         try( var mongoClient = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, MongoFixture.mongoDatabase );
              var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage1 ) ) {
             mongoClient.start();
-            persistence.start();
+            persistence.preStart();
             storage1.store( new Bean( "111", "initialName" ) );
             storage1.update( "111", bean -> {
                 bean.name = "newName";
@@ -158,7 +158,7 @@ public class MongoPersistenceTest extends Fixtures {
         try( var mongoClient = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, MongoFixture.mongoDatabase );
              var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage2 ) ) {
             mongoClient.start();
-            persistence.start();
+            persistence.preStart();
             assertThat( storage2.select() )
                 .containsExactly( new Bean( "111", "newName" ) );
         }
@@ -172,7 +172,7 @@ public class MongoPersistenceTest extends Fixtures {
         try( var mongoClient = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, MongoFixture.mongoDatabase );
              var persistence = new MongoPersistence<>( mongoClient, table, 6000, storage, crashDumpPath ) ) {
             mongoClient.start();
-            persistence.start();
+            persistence.preStart();
             storage.store( new Bean( "X".repeat( 16793600 + 1 ) ) );
         }
         assertThat( Files.wildcard( crashDumpPath.resolve( table ), "*.json.gz" ) ).hasSize( 1 );
@@ -188,7 +188,7 @@ public class MongoPersistenceTest extends Fixtures {
         try( var mongoClient = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, "beans", MongoFixture.mongoDatabase );
              var persistence = new MongoPersistence<>( mongoClient, table, 6000, storage ) ) {
             mongoClient.start();
-            persistence.start();
+            persistence.preStart();
             assertThat( storage.list() ).containsOnly( new Bean( "1", "name" ), new Bean( "2", "name" ) );
             assertThat( mongoClient.databaseVersion() ).isEqualTo( new Version( 2 ) );
         }
@@ -205,7 +205,7 @@ public class MongoPersistenceTest extends Fixtures {
         try( var mongoClient = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, MongoFixture.mongoDatabase );
              var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage1 ) ) {
             mongoClient.start();
-            persistence.start();
+            persistence.preStart();
             PolyBeanA bean1 = ( PolyBeanA ) storage1.store( new PolyBeanA( "test1" ) );
             PolyBeanB bean2 = ( PolyBeanB ) storage1.store( new PolyBeanB( "test2" ) );
 
@@ -217,7 +217,7 @@ public class MongoPersistenceTest extends Fixtures {
         try( var mongoClient = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, MongoFixture.mongoDatabase );
              var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage2 ) ) {
             mongoClient.start();
-            persistence.start();
+            persistence.preStart();
             assertThat( storage2.select() ).containsOnly(
                 new PolyBeanA( "test1" ),
                 new PolyBeanB( "test2" )

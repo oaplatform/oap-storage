@@ -58,7 +58,7 @@ public class FilePersistence<I, T> implements Closeable {
         this.log = getLogger( toString() );
     }
 
-    public void start() {
+    public void preStart() {
         load();
         this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), fsync, this::fsync );
     }
