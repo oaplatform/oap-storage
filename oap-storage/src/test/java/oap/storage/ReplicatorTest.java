@@ -26,6 +26,7 @@ package oap.storage;
 
 import oap.id.Identifier;
 import oap.json.TypeIdFactory;
+import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -44,7 +45,7 @@ public class ReplicatorTest {
     public void masterSlave() {
         var slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         var master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        try( var ignored = new Replicator<>( slave, master, 50, 0 ) ) {
+        try( var ignored = new Replicator<>( slave, master, 50 ) ) {
 
             var updates = new AtomicInteger();
             var addons = new AtomicInteger();
@@ -101,11 +102,53 @@ public class ReplicatorTest {
     public void replicateNow() {
         var slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         var master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        try( var replicator = new Replicator<>( slave, master, 5000, 0 ) ) {
+        try( var replicator = new Replicator<>( slave, master, 5000 ) ) {
             master.store( new Bean( "1" ) );
             master.store( new Bean( "2" ) );
             replicator.replicateNow();
             assertThat( slave.list() ).containsOnly( new Bean( "1" ), new Bean( "2" ) );
         }
+    }
+
+    @Test
+    public void testSyncSafe() {
+        var slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        var master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        try( var replicator = new Replicator<>( slave, master, 5000 ) ) {
+            DateTimeUtils.setCurrentMillisFixed( 1 );
+
+            master.store( new Bean( "1" ) );
+            replicator.replicateNow();
+
+            assertCounter( 1L, 0L );
+
+            DateTimeUtils.setCurrentMillisFixed( 2 );
+            master.store( new Bean( "2" ) );
+            replicator.replicateNow();
+            assertCounter( 3L, 0L );
+
+            master.store( new Bean( "3" ) );
+
+            replicator.replicateNow();
+            assertCounter( 5L, 0L );
+
+            replicator.replicateNow();
+            assertCounter( 5L, 0L );
+
+            replicator.replicateNow();
+            assertCounter( 5L, 0L );
+
+            DateTimeUtils.setCurrentMillisFixed( 3 );
+            master.store( new Bean( "4" ) );
+            replicator.replicateNow();
+            assertCounter( 6L, 0L );
+
+            assertThat( slave.list() ).containsOnly( new Bean( "1" ), new Bean( "2" ), new Bean( "3" ), new Bean( "4" ) );
+        }
+    }
+
+    private void assertCounter( long stored, long deleted ) {
+        assertThat( Replicator.stored.longValue() ).isEqualTo( stored );
+        assertThat( Replicator.deleted.longValue() ).isEqualTo( deleted );
     }
 }
