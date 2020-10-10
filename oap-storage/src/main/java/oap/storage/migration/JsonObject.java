@@ -24,16 +24,10 @@
 
 package oap.storage.migration;
 
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,27 +50,6 @@ public class JsonObject extends Json<Map<String, Object>> {
     public Optional<Json<?>> field( String name ) {
         final Object o = underlying.get( name );
         return map( Optional.of( name ), o, Optional.of( this ) );
-    }
-
-    public JsonObject mapScript( String javascript ) throws ScriptException {
-        ScriptEngine engine = new ScriptEngineManager().getEngineByName( "nashorn" );
-        engine.put( "obj", underlying );
-
-        engine.eval( javascript );
-
-        return this;
-    }
-
-    @SneakyThrows
-    public JsonObject mapScriptFromResource( String resource ) {
-        ScriptEngine engine = new ScriptEngineManager().getEngineByName( "nashorn" );
-        engine.put( "obj", underlying );
-
-        try( InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream( resource ) ) {
-            engine.eval( new InputStreamReader( inputStream ) );
-        }
-
-        return this;
     }
 
     private boolean rename( JsonObject root, JsonObject parent, List<String> oldName, List<String> newName ) {

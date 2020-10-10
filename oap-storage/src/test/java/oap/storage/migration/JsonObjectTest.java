@@ -76,22 +76,4 @@ public class JsonObjectTest {
             .underlying )
             .isEqualTo( map( "{obj = [{newObj {newfield1 = v1, newfield2 = v1}}, {newObj {newfield1 = v2, newfield2 = v2}}]}" ) );
     }
-
-    @Test
-    public void mapScript() throws ScriptException {
-        JsonObject obj = new JsonObject( empty(), empty(), map( "{obj = [{field1 = v1, field2 = v1}, {field1 = v2, field3 = v2}]}" ) );
-
-        assertThat( obj.mapScript( ""
-            + "for each (var el in obj.obj) {"
-            + "  if(el.field2 == 'v1') el.field1 = 'new';"
-            + "}" ).underlying ).isEqualTo( map( "{obj = [{field1 = new, field2 = v1}, {field1 = v2, field3 = v2}]}" ) );
-    }
-
-    @Test
-    public void mapScriptFromResource() {
-        JsonObject obj = new JsonObject( empty(), empty(), map( "{obj = [{field1 = v1, field2 = v1}, {field1 = v2, field3 = v2}]}" ) );
-
-        assertThat( obj.mapScriptFromResource( "test/jsonobj.js" ).underlying )
-            .isEqualTo( map( "{obj = [{field1 = new, field2 = v1}, {field1 = v2, field3 = v2}]}" ) );
-    }
 }
