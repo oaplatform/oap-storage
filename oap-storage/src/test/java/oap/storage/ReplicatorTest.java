@@ -27,6 +27,7 @@ package oap.storage;
 import oap.id.Identifier;
 import oap.json.TypeIdFactory;
 import org.joda.time.DateTimeUtils;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -41,6 +42,11 @@ public class ReplicatorTest {
         TypeIdFactory.register( Bean.class, Bean.class.getName() );
     }
 
+    @BeforeMethod
+    public void beforeMethod() {
+        Replicator.reset();
+    }
+    
     @Test
     public void masterSlave() {
         var slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );

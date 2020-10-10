@@ -160,6 +160,11 @@ public class Replicator<I, T> implements Closeable {
         scheduled = null;
     }
 
+    public static void reset() {
+        stored.set( 0 );
+        deleted.set( 0 );
+    }
+
     @Override
     public void close() {
         Scheduled.cancel( scheduled );
