@@ -160,7 +160,7 @@ public class DirectoryPersistence<I, T> implements Closeable {
     private void fsync( long last ) {
         Threads.synchronously( lock, () -> {
             log.trace( "fsyncing, last: {}, objects in storage: {}", last, storage.size() );
-            storage.memory.selectUpdatedSince( last ).forEach( this::persist );
+            storage.memory.selectUpdatedSince( last - 1 ).forEach( this::persist );
         } );
     }
 

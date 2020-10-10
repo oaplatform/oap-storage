@@ -25,6 +25,7 @@
 package oap.storage;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.Threads;
 import oap.id.Identifier;
 import oap.json.TypeIdFactory;
 import oap.testng.Fixtures;
@@ -43,12 +44,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class DirectoryPersistenceTest extends Fixtures {
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
-    }
-
     static {
         TypeIdFactory.register( Bean.class, Bean.class.getName() );
+    }
+
+    {
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
     @Test
