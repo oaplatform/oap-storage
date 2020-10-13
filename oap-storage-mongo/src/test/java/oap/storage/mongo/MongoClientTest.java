@@ -51,7 +51,7 @@ public class MongoClientTest extends Fixtures {
 
         try( MongoClient client = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, "testdb", MongoFixture.mongoDatabase, configs ) ) {
             assertThat( client.databaseVersion() ).isEqualTo( UNDEFINED );
-            client.start();
+            client.preStart();
             assertThat( client.databaseVersion() ).isEqualTo( new Version( 10 ) );
 
             assertThat( getDocumentField( client, "test", "c" ) ).isEqualTo( 17 );

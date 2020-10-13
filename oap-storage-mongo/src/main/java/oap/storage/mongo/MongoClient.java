@@ -98,7 +98,7 @@ public class MongoClient implements Closeable {
             : Version.UNDEFINED;
     }
 
-    public void start() {
+    public void preStart() {
         log.debug( "starting mongo client {}, version {}", this, databaseVersion() );
         for( var migration : Migration.of( databaseName, databaseVersion(), migrations ) ) {
             log.debug( "executing migration {} for {}", migration, databaseVersion() );

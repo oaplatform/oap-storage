@@ -58,7 +58,7 @@ public class MongoFixtureTest extends Fixtures {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
         try( var mongoClient = new MongoClient( "localhost", mongoFixture.port, "beans", mongoFixture.database );
              var persistence = new MongoPersistence<>( mongoClient, collection, 6000, storage ) ) {
-            mongoClient.start();
+            mongoClient.preStart();
             persistence.preStart();
             assertThat( storage.list() ).containsOnly(
                 new Bean( "1", "name" ),
