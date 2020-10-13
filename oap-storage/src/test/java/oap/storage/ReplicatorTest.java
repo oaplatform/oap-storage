@@ -59,17 +59,17 @@ public class ReplicatorTest {
             slave.addDataListener( new Storage.DataListener<>() {
                 @Override
                 public void added( List<IdObject<String, Bean>> objects ) {
-                    addons.set( objects.size() );
+                    addons.getAndAdd( objects.size() );
                 }
 
                 @Override
                 public void updated( List<IdObject<String, Bean>> objects ) {
-                    updates.set( objects.size() );
+                    updates.getAndAdd( objects.size() );
                 }
 
                 @Override
                 public void deleted( List<IdObject<String, Bean>> objects ) {
-                    deletions.set( objects.size() );
+                    deletions.getAndAdd( objects.size() );
                 }
             } );
 
