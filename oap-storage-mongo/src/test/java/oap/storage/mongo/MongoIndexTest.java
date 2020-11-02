@@ -27,14 +27,13 @@ package oap.storage.mongo;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.Map;
-
 import static java.util.List.of;
 import static oap.storage.mongo.MongoIndex.IndexInfo.Direction.ASC;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 
 /**
  * Created by igor.petrenko on 2020-11-02.
@@ -54,12 +53,18 @@ public class MongoIndexTest extends Fixtures {
             mongoIndex.update( "idx1", of( "a", "b" ), true, null );
             mongoIndex.update( "idx1", of( "a", "b" ), true, null );
             mongoIndex.update( "idx1", of( "a", "b" ), false, null );
-            mongoIndex.update( "idx1", of( "a", "b" ), false, 11L );
+
+            mongoIndex.update( "idx2", of( "c" ), false, 1L );
+            mongoIndex.update( "idx2", of( "c" ), false, 11L );
 
             var info = mongoIndex.getInfo( "idx1" );
             assertNotNull( info );
             assertFalse( info.unique );
-            assertThat( info.keys ).containsExactlyEntriesOf( Map.of( "a", ASC, "b", ASC ) );
+            assertThat( info.keys ).containsExactly( entry( "a", ASC ), entry( "b", ASC ) );
+            assertNull( info.expireAfterSeconds );
+
+            info = mongoIndex.getInfo( "idx2" );
+            assertNotNull( info );
             assertThat( info.expireAfterSeconds ).isEqualTo( 11L );
         }
     }
