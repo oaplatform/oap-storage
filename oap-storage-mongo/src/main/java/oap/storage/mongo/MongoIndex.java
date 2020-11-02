@@ -33,7 +33,7 @@ import oap.util.Dates;
 import org.bson.Document;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class MongoIndex {
     private final MongoCollection<?> collection;
-    private final HashMap<String, IndexInfo> indexes = new HashMap<>();
+    private final LinkedHashMap<String, IndexInfo> indexes = new LinkedHashMap<>();
 
     public MongoIndex( MongoCollection<?> collection ) {
         this.collection = collection;
@@ -100,7 +100,7 @@ public class MongoIndex {
         public final String name;
         public final boolean unique;
         public final Long expireAfterSeconds;
-        public final HashMap<String, Direction> keys = new HashMap<>();
+        public final LinkedHashMap<String, Direction> keys = new LinkedHashMap<>();
 
         public IndexInfo( Document document ) {
             name = document.getString( "name" );
