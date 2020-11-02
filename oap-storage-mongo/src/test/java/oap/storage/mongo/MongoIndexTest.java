@@ -49,15 +49,17 @@ public class MongoIndexTest extends Fixtures {
             var collection = client.getCollection( "test" );
             var mongoIndex = new MongoIndex( collection );
 
-            mongoIndex.update( "idx1", of( "a" ), true );
-            mongoIndex.update( "idx1", of( "a", "b" ), true );
-            mongoIndex.update( "idx1", of( "a", "b" ), true );
-            mongoIndex.update( "idx1", of( "a", "b" ), false );
+            mongoIndex.update( "idx1", of( "a" ), true, 10L );
+            mongoIndex.update( "idx1", of( "a", "b" ), true, null );
+            mongoIndex.update( "idx1", of( "a", "b" ), true, null );
+            mongoIndex.update( "idx1", of( "a", "b" ), false, null );
+            mongoIndex.update( "idx1", of( "a", "b" ), false, 11L );
 
             var info = mongoIndex.getInfo( "idx1" );
             assertNotNull( info );
             assertFalse( info.unique );
             assertThat( info.keys ).containsExactlyEntriesOf( Map.of( "a", ASC, "b", ASC ) );
+            assertThat( info.expireAfterSeconds ).isEqualTo( 11L );
         }
     }
 }
