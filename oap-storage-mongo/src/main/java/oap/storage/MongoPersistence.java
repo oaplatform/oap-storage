@@ -35,10 +35,9 @@ import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import oap.application.ServiceName;
 import oap.concurrent.Threads;
-import oap.concurrent.scheduler.PeriodicScheduled;
-import oap.concurrent.scheduler.Scheduled;
-import oap.concurrent.scheduler.Scheduler;
+import oap.concurrent.scheduler.ScheduledExecutorService;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.json.Binder;
@@ -60,6 +59,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -71,7 +71,7 @@ import static oap.util.Pair.__;
 
 @Slf4j
 @ToString( of = { "collectionName", "delay" } )
-public class MongoPersistence<I, T> implements Closeable, Runnable {
+public class MongoPersistence<I, T> implements Closeable {
 
     public static final Path DEFAULT_CRASH_DUMP_PATH = Path.of( "/tmp/mongo-persistance-crash-dump" );
     private static final ReplaceOptions REPLACE_OPTIONS_UPSERT = new ReplaceOptions().upsert( true );
@@ -82,10 +82,13 @@ public class MongoPersistence<I, T> implements Closeable, Runnable {
     private final long delay;
     private final MemoryStorage<I, T> storage;
     private final Path crashDumpPath;
+    @ServiceName
+    public String serviceName;
     public boolean watch = false;
     protected int batchSize = 100;
-    private PeriodicScheduled scheduled;
     private ExecutorService watchExecutor;
+    private ScheduledExecutorService scheduler;
+    volatile private long lastExecuted = -1;
 
     public MongoPersistence( MongoClient mongoClient, String collectionName, long delay, MemoryStorage<I, T> storage ) {
         this( mongoClient, collectionName, delay, storage, DEFAULT_CRASH_DUMP_PATH );
@@ -112,18 +115,15 @@ public class MongoPersistence<I, T> implements Closeable, Runnable {
         this.crashDumpPath = crashDumpPath.resolve( collectionName );
     }
 
-    @Override
-    public void run() {
-        fsync( scheduled.lastExecuted() );
-    }
-
     public void preStart() {
         log.info( "collection = {}, fsync delay = {}, watch = {}, crashDumpPath = {}",
             collectionName, Dates.durationToString( delay ), watch, crashDumpPath );
 
         Threads.synchronously( lock, () -> {
             this.load();
-            this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), delay, this::fsync );
+
+            scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, serviceName );
+            scheduler.scheduleWithFixedDelay( this::fsync, delay, delay, TimeUnit.MILLISECONDS );
         } );
 
         if( watch ) {
@@ -168,12 +168,14 @@ public class MongoPersistence<I, T> implements Closeable, Runnable {
         log.info( storage.size() + " object(s) loaded." );
     }
 
-    private void fsync( long last ) {
+    private void fsync() {
+        var time = DateTimeUtils.currentTimeMillis();
+
         Threads.synchronously( lock, () -> {
-            log.trace( "fsyncing, last: {}, objects in storage: {}", last, storage.size() );
+            log.trace( "fsyncing, last: {}, objects in storage: {}", lastExecuted, storage.size() );
             var list = new ArrayList<WriteModel<Metadata<T>>>( batchSize );
             var deletedIds = new ArrayList<I>( batchSize );
-            storage.memory.selectUpdatedSince( last ).forEach( ( id, m ) -> {
+            storage.memory.selectUpdatedSince( lastExecuted ).forEach( ( id, m ) -> {
                 if( m.isDeleted() ) {
                     deletedIds.add( id );
                     list.add( new DeleteOneModel<>( eq( "_id", id ) ) );
@@ -181,6 +183,8 @@ public class MongoPersistence<I, T> implements Closeable, Runnable {
                 if( list.size() >= batchSize ) persist( deletedIds, list );
             } );
             persist( deletedIds, list );
+
+            lastExecuted = time;
         } );
     }
 
@@ -206,10 +210,10 @@ public class MongoPersistence<I, T> implements Closeable, Runnable {
     @Override
     public void close() {
         log.debug( "closing {}...", this );
-        if( scheduled != null && storage != null ) {
+        if( scheduler != null && storage != null ) {
             Threads.synchronously( lock, () -> {
-                Scheduled.cancel( scheduled );
-                fsync( scheduled.lastExecuted() );
+                Closeables.close( scheduler );
+                fsync();
 
                 log.debug( "closed {}...", this );
             } );
