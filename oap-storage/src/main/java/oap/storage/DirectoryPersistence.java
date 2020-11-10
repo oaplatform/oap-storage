@@ -27,10 +27,10 @@ package oap.storage;
 import com.google.common.io.CountingOutputStream;
 import lombok.SneakyThrows;
 import lombok.ToString;
+import oap.application.ServiceName;
 import oap.concurrent.Threads;
-import oap.concurrent.scheduler.PeriodicScheduled;
-import oap.concurrent.scheduler.Scheduled;
-import oap.concurrent.scheduler.Scheduler;
+import oap.concurrent.scheduler.ScheduledExecutorService;
+import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.json.Binder;
@@ -39,6 +39,7 @@ import oap.storage.migration.JsonMetadata;
 import oap.storage.migration.Migration;
 import oap.storage.migration.MigrationException;
 import oap.util.Lists;
+import org.joda.time.DateTimeUtils;
 import org.slf4j.Logger;
 
 import java.io.Closeable;
@@ -46,6 +47,7 @@ import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
@@ -63,9 +65,12 @@ public class DirectoryPersistence<I, T> implements Closeable {
     private final List<Migration> migrations;
     private final Logger log;
     private final Lock lock = new ReentrantLock();
-    protected long fsync;
     private final MemoryStorage<I, T> storage;
-    private PeriodicScheduled scheduled;
+    @ServiceName
+    public String serviceName;
+    protected long fsync;
+    private ScheduledExecutorService scheduler;
+    volatile private long lastExecuted = -1;
 
     public DirectoryPersistence( Path path, long fsync, int version, List<Migration> migrations, MemoryStorage<I, T> storage ) {
         this( path, plainResolve(), fsync, version, migrations, storage );
@@ -93,7 +98,9 @@ public class DirectoryPersistence<I, T> implements Closeable {
     public void preStart() {
         Threads.synchronously( lock, () -> {
             this.load();
-            this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), fsync, this::fsync );
+
+            scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, serviceName );
+            scheduler.scheduleWithFixedDelay( this::fsync, fsync, fsync, TimeUnit.MILLISECONDS );
         } );
     }
 
@@ -157,10 +164,14 @@ public class DirectoryPersistence<I, T> implements Closeable {
 
     }
 
-    private void fsync( long last ) {
+    private void fsync() {
         Threads.synchronously( lock, () -> {
-            log.trace( "fsyncing, last: {}, objects in storage: {}", last, storage.size() );
-            storage.memory.selectUpdatedSince( last - 1 ).forEach( this::persist );
+            var time = DateTimeUtils.currentTimeMillis();
+
+            log.trace( "fsyncing, last: {}, objects in storage: {}", lastExecuted, storage.size() );
+            storage.memory.selectUpdatedSince( lastExecuted - 1 ).forEach( this::persist );
+
+            lastExecuted = time;
         } );
     }
 
@@ -181,10 +192,10 @@ public class DirectoryPersistence<I, T> implements Closeable {
     @Override
     public void close() {
         log.debug( "closing {}...", this );
-        if( scheduled != null && storage != null ) {
+        if( scheduler != null && storage != null ) {
             Threads.synchronously( lock, () -> {
-                Scheduled.cancel( scheduled );
-                fsync( scheduled.lastExecuted() );
+                Closeables.close( scheduler );
+                fsync();
             } );
         } else {
             log.debug( "This {} was't started or already closed", this );
