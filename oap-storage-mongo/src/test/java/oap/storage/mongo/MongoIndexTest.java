@@ -28,7 +28,8 @@ import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
 import static java.util.List.of;
-import static oap.storage.mongo.MongoIndex.IndexInfo.Direction.ASC;
+import static oap.storage.mongo.MongoIndex.IndexConfiguration.Direction.ASC;
+import static oap.storage.mongo.MongoIndex.IndexConfiguration.Direction.DESC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.testng.Assert.assertFalse;
@@ -66,6 +67,26 @@ public class MongoIndexTest extends Fixtures {
             info = mongoIndex.getInfo( "idx2" );
             assertNotNull( info );
             assertThat( info.expireAfterSeconds ).isEqualTo( 11L );
+        }
+    }
+
+    @Test
+    public void testSync() {
+        try( MongoClient client = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, "testdb", MongoFixture.mongoDatabase ) ) {
+            var collection = client.getCollection( "test" );
+            var mongoIndex = new MongoIndex( collection );
+
+            mongoIndex.update( "idx1", of( "a" ), true, null );
+            mongoIndex.update( "idx2", of( "b" ), true, 10L );
+
+
+            mongoIndex.update( new MongoIndex.IndexConfiguration( "idx1", of( "c", "d" ), false, 1L ) );
+
+            assertNull( mongoIndex.getInfo( "idx2" ) );
+            assertNotNull( mongoIndex.getInfo( "idx1" ) );
+            assertFalse( mongoIndex.getInfo( "idx1" ).unique );
+            assertThat( mongoIndex.getInfo( "idx1" ).expireAfterSeconds ).isEqualTo( 1L );
+            assertThat( mongoIndex.getInfo( "idx1" ).keys ).containsExactly( entry( "c", ASC ), entry( "d", ASC ) );
         }
     }
 }

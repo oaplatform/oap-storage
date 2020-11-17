@@ -35,7 +35,10 @@ import org.bson.Document;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Created by igor.petrenko on 2020-11-02.
@@ -43,7 +46,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class MongoIndex {
     private final MongoCollection<?> collection;
-    private final LinkedHashMap<String, IndexInfo> indexes = new LinkedHashMap<>();
+    private final LinkedHashMap<String, IndexConfiguration> indexes = new LinkedHashMap<>();
 
     public MongoIndex( MongoCollection<?> collection ) {
         this.collection = collection;
@@ -60,49 +63,87 @@ public class MongoIndex {
         this.indexes.clear();
 
         for( var indexDoc : indexes ) {
-            var info = new IndexInfo( indexDoc );
+            var info = new IndexConfiguration( indexDoc );
             this.indexes.put( info.name, info );
         }
 
         log.debug( "indexes = {}", this.indexes );
     }
 
-    public void update( String indexName, List<String> keys, boolean unique, Long expireAfterSeconds ) {
-        log.info( "Creating index {}, keys={}, unique={}, expireAfterSeconds={}...",
-            indexName, keys, unique, expireAfterSeconds != null ? Dates.durationToString( expireAfterSeconds ) : "-" );
-        var info = this.indexes.get( indexName );
-        if( info != null ) {
-            if( info.equals( keys, unique, expireAfterSeconds ) ) {
-                log.info( "Creating index {}, keys={}, unique={}, expireAfterSeconds={}...... Already exists",
-                    indexName, keys, unique,
-                    expireAfterSeconds != null ? Dates.durationToString( expireAfterSeconds ) : "-" );
-                return;
-            } else {
-                log.info( "Delete old index {}", info );
-                collection.dropIndex( indexName );
-            }
-        }
-        var indexOptions = new IndexOptions().name( indexName ).unique( unique );
-        if( expireAfterSeconds != null ) indexOptions.expireAfter( expireAfterSeconds, TimeUnit.SECONDS );
-        collection.createIndex( Indexes.ascending( keys ), indexOptions );
-        log.info( "Creating index {}, keys={}, unique={}, expireAfterSeconds={}...... Done",
-            indexName, keys, unique, expireAfterSeconds != null ? Dates.durationToString( expireAfterSeconds ) : "-" );
+    public void update( IndexConfiguration... indexConfigurations ) {
+        try {
+            var expected = List.of( indexConfigurations )
+                .stream()
+                .map( ic -> ic.name )
+                .collect( toSet() );
 
-        refresh();
+            for( var name : new ArrayList<>( indexes.keySet() ) ) {
+                if( !"_id_".equals( name ) && !expected.contains( name ) ) {
+                    collection.dropIndex( name );
+                    this.indexes.remove( name );
+                }
+            }
+
+            for( var ic : indexConfigurations ) {
+                update( ic.name, new ArrayList<>( ic.keys.keySet() ), ic.unique, ic.expireAfterSeconds, false );
+            }
+        } finally {
+            refresh();
+        }
     }
 
-    public IndexInfo getInfo( String indexName ) {
+    public void update( String indexName, List<String> keys, boolean unique, Long expireAfterSeconds ) {
+        update( indexName, keys, unique, expireAfterSeconds, true );
+    }
+
+    private void update( String indexName, List<String> keys, boolean unique, Long expireAfterSeconds, boolean refresh ) {
+        try {
+            log.info( "Creating index {}, keys={}, unique={}, expireAfterSeconds={}...",
+                indexName, keys, unique,
+                expireAfterSeconds != null ? Dates.durationToString( expireAfterSeconds ) : "-" );
+            var info = this.indexes.get( indexName );
+            if( info != null ) {
+                if( info.equals( keys, unique, expireAfterSeconds ) ) {
+                    log.info( "Creating index {}, keys={}, unique={}, expireAfterSeconds={}...... Already exists",
+                        indexName, keys, unique,
+                        expireAfterSeconds != null ? Dates.durationToString( expireAfterSeconds ) : "-" );
+                    return;
+                } else {
+                    log.info( "Delete old index {}", info );
+                    collection.dropIndex( indexName );
+                }
+            }
+            var indexOptions = new IndexOptions().name( indexName ).unique( unique );
+            if( expireAfterSeconds != null ) indexOptions.expireAfter( expireAfterSeconds, TimeUnit.SECONDS );
+            collection.createIndex( Indexes.ascending( keys ), indexOptions );
+            log.info( "Creating index {}, keys={}, unique={}, expireAfterSeconds={}...... Done",
+                indexName, keys, unique,
+                expireAfterSeconds != null ? Dates.durationToString( expireAfterSeconds ) : "-" );
+        } finally {
+            if( refresh ) refresh();
+        }
+    }
+
+    public IndexConfiguration getInfo( String indexName ) {
         return indexes.get( indexName );
     }
 
     @ToString
-    public static class IndexInfo {
+    public static class IndexConfiguration {
         public final String name;
         public final boolean unique;
         public final Long expireAfterSeconds;
         public final LinkedHashMap<String, Direction> keys = new LinkedHashMap<>();
 
-        public IndexInfo( Document document ) {
+
+        public IndexConfiguration( String name, List<String> keys, boolean unique, Long expireAfterSeconds ) {
+            this.name = name;
+            for( var key : keys ) this.keys.put( key, Direction.ASC );
+            this.unique = unique;
+            this.expireAfterSeconds = expireAfterSeconds;
+        }
+
+        public IndexConfiguration( Document document ) {
             name = document.getString( "name" );
             unique = document.getBoolean( "unique", false );
             expireAfterSeconds = document.getLong( "expireAfterSeconds" );
@@ -118,10 +159,11 @@ public class MongoIndex {
 
             if( this.keys.size() != keys.size() ) return false;
 
+            if( !Objects.equals( this.expireAfterSeconds, expireAfterSeconds ) ) return false;
+
             for( var key : keys ) {
                 var d = this.keys.get( key );
-                if( d != Direction.DESC ) return false;
-                if( expireAfterSeconds != this.expireAfterSeconds ) return false;
+                if( d != Direction.ASC ) return false;
             }
 
             return true;
