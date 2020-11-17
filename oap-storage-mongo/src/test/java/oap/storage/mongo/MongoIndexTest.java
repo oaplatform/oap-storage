@@ -76,16 +76,16 @@ public class MongoIndexTest extends Fixtures {
             var collection = client.getCollection( "test" );
             var mongoIndex = new MongoIndex( collection );
 
-            mongoIndex.update( "idx1", of( "a" ), true, null );
+            mongoIndex.update( "idx1", of( "a" ), true, 1L );
             mongoIndex.update( "idx2", of( "b" ), true, 10L );
 
 
-            mongoIndex.update( new MongoIndex.IndexConfiguration( "idx1", of( "c", "d" ), false, 1L ) );
+            mongoIndex.update( new MongoIndex.IndexConfiguration( "idx1", of( "c", "d" ), false, null ) );
 
             assertNull( mongoIndex.getInfo( "idx2" ) );
             assertNotNull( mongoIndex.getInfo( "idx1" ) );
             assertFalse( mongoIndex.getInfo( "idx1" ).unique );
-            assertThat( mongoIndex.getInfo( "idx1" ).expireAfterSeconds ).isEqualTo( 1L );
+            assertNull( mongoIndex.getInfo( "idx1" ).expireAfterSeconds );
             assertThat( mongoIndex.getInfo( "idx1" ).keys ).containsExactly( entry( "c", ASC ), entry( "d", ASC ) );
         }
     }
