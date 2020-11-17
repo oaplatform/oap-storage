@@ -24,9 +24,11 @@
 
 package oap.storage.mongo;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Dates;
@@ -129,6 +131,7 @@ public class MongoIndex {
     }
 
     @ToString
+    @EqualsAndHashCode
     public static class IndexConfiguration {
         public final String name;
         public final boolean unique;
@@ -136,6 +139,11 @@ public class MongoIndex {
         public final LinkedHashMap<String, Direction> keys = new LinkedHashMap<>();
 
 
+        public IndexConfiguration( String name, List<String> keys, boolean unique ) {
+            this( name, keys, unique, null );
+        }
+
+        @JsonCreator
         public IndexConfiguration( String name, List<String> keys, boolean unique, Long expireAfterSeconds ) {
             this.name = name;
             for( var key : keys ) this.keys.put( key, Direction.ASC );
