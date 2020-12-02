@@ -69,7 +69,7 @@ public class MongoPersistenceTest extends Fixtures {
     }
 
     @Test
-    public void testWatch() {
+    public void watch() {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
 
         try( var mongoClient = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, MongoFixture.mongoDatabase );

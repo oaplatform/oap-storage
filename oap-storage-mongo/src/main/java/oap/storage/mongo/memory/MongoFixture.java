@@ -29,7 +29,6 @@ import de.bwaldvogel.mongo.backend.memory.MemoryBackend;
 import lombok.extern.slf4j.Slf4j;
 import oap.storage.mongo.MongoClient;
 import oap.storage.mongo.Version;
-import oap.testng.Env;
 import oap.testng.EnvFixture;
 import oap.testng.Suite;
 import org.apache.commons.lang3.StringUtils;
@@ -45,7 +44,7 @@ public class MongoFixture extends EnvFixture {
     private MongoServer server;
 
     public MongoFixture() {
-        define( "MONGO_PORT", port = Env.port( "MONGO_PORT" ) );
+        define( "MONGO_PORT", port = portFor( "MONGO_PORT" ) );
         define( "MONGO_DATABASE", database = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" ) );
     }
 

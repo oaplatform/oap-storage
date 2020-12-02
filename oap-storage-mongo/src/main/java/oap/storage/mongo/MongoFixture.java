@@ -26,7 +26,7 @@ package oap.storage.mongo;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.system.Env;
-import oap.testng.Fixture;
+import oap.testng.EnvFixture;
 import oap.testng.Suite;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -40,15 +40,15 @@ import static oap.testng.Asserts.contentOfTestResource;
 
 
 @Slf4j
-public class MongoFixture implements Fixture {
+public class MongoFixture extends EnvFixture {
     public static final int mongoPort = 27017;
-    public static final String mongoHost = Env.env( "MONGO_HOST", "localhost" );
+    public static final String mongoHost = Env.get( "MONGO_HOST", "localhost" );
     public static final String mongoDatabase = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" );
 
-    static {
-        System.setProperty( "MONGO_HOST", mongoHost );
-        System.setProperty( "MONGO_PORT", String.valueOf( mongoPort ) );
-        System.setProperty( "MONGO_DATABASE", mongoDatabase );
+    {
+        define( "MONGO_HOST", mongoHost );
+        define( "MONGO_PORT", String.valueOf( mongoPort ) );
+        define( "MONGO_DATABASE", mongoDatabase );
         log.debug( "binding MONGO_DATABASE to {}", mongoDatabase );
     }
 
@@ -77,7 +77,7 @@ public class MongoFixture implements Fixture {
 
     @Override
     public void beforeMethod() {
-        var mongoClientPath = Env.env( "MONGO_CLIENT_PATH" ).orElse( null );
+        var mongoClientPath = Env.get( "MONGO_CLIENT_PATH" ).orElse( null );
         mongoClient = new MongoClient( mongoHost, mongoPort, mongoDatabase, mongoDatabase,
             mongoClientPath != null ? new MongoShell( mongoClientPath ) : new MongoShell() );
     }

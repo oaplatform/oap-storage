@@ -25,7 +25,6 @@
 package oap.storage.mongo;
 
 import com.mongodb.MongoClientOptions;
-import com.mongodb.ReadConcern;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
