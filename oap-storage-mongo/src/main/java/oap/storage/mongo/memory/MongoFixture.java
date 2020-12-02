@@ -40,11 +40,13 @@ import static oap.testng.Asserts.contentOfTestResource;
 public class MongoFixture extends EnvFixture {
     public final int port;
     public final String database;
+    public final String host;
     private MongoClient mongoClient;
     private MongoServer server;
 
     public MongoFixture() {
         define( "MONGO_PORT", port = portFor( "MONGO_PORT" ) );
+        define( "MONGO_HOST", host = "localhost" );
         define( "MONGO_DATABASE", database = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" ) );
     }
 
@@ -53,8 +55,8 @@ public class MongoFixture extends EnvFixture {
         super.beforeMethod();
         this.server = new MongoServer( new MemoryBackend() );
         log.info( "mongo port = {}", port );
-        this.server.bind( "localhost", port );
-        this.mongoClient = new MongoClient( "localhost", port, database, database );
+        this.server.bind( host, port );
+        this.mongoClient = new MongoClient( host, port, database, database );
     }
 
     @Override
