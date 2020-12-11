@@ -34,6 +34,8 @@ import oap.testng.Suite;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 
+import java.util.function.Consumer;
+
 import static oap.testng.Asserts.contentOfTestResource;
 
 @Slf4j
@@ -43,6 +45,7 @@ public class MongoFixture extends EnvFixture {
     public final String host;
     private MongoClient mongoClient;
     private MongoServer server;
+    private Consumer<MongoFixture> databaseInitializer = mf -> {};
 
     public MongoFixture() {
         define( "MONGO_PORT", port = portFor( "MONGO_PORT" ) );
@@ -57,6 +60,7 @@ public class MongoFixture extends EnvFixture {
         log.info( "mongo port = {}", port );
         this.server.bind( host, port );
         this.mongoClient = new MongoClient( host, port, database, database );
+        this.databaseInitializer.accept( this );
     }
 
     @Override
@@ -76,5 +80,10 @@ public class MongoFixture extends EnvFixture {
 
     public MongoClient client() {
         return mongoClient;
+    }
+
+    public MongoFixture withDatabaseInitializer( Consumer<MongoFixture> initializer ) {
+        this.databaseInitializer = initializer;
+        return this;
     }
 }
