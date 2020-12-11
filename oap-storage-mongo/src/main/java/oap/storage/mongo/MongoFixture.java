@@ -44,6 +44,7 @@ public class MongoFixture extends EnvFixture {
     public static final int mongoPort = 27017;
     public static final String mongoHost = Env.get( "MONGO_HOST", "localhost" );
     public static final String mongoDatabase = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" );
+    private Consumer<MongoFixture> databaseInitializer = mf -> {};
 
     {
         define( "MONGO_HOST", mongoHost );
@@ -80,6 +81,7 @@ public class MongoFixture extends EnvFixture {
         var mongoClientPath = Env.get( "MONGO_CLIENT_PATH" ).orElse( null );
         mongoClient = new MongoClient( mongoHost, mongoPort, mongoDatabase, mongoDatabase,
             mongoClientPath != null ? new MongoShell( mongoClientPath ) : new MongoShell() );
+        databaseInitializer.accept( this );
     }
 
     @Override
@@ -91,4 +93,10 @@ public class MongoFixture extends EnvFixture {
     public void initializeVersion( Version version ) {
         mongoClient.updateVersion( version );
     }
+
+    public MongoFixture withDatabaseInitializer( Consumer<MongoFixture> initializer ) {
+        this.databaseInitializer = initializer;
+        return this;
+    }
+
 }
