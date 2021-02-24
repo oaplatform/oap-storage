@@ -27,6 +27,7 @@ package oap.storage.mongo.memory;
 import de.bwaldvogel.mongo.MongoServer;
 import de.bwaldvogel.mongo.backend.memory.MemoryBackend;
 import lombok.extern.slf4j.Slf4j;
+import oap.application.testng.KernelFixture;
 import oap.storage.mongo.MongoClient;
 import oap.storage.mongo.Version;
 import oap.testng.EnvFixture;
@@ -53,9 +54,34 @@ public class MongoFixture extends EnvFixture {
         define( "MONGO_DATABASE", database = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" ) );
     }
 
+    public MongoFixture withScope( Scope scope) {
+        this.scope = scope;
+        
+        return this;
+    }
+
     @Override
     public void beforeMethod() {
         super.beforeMethod();
+        init( Scope.METHOD );
+    }
+
+    @Override
+    public void beforeClass() {
+        super.beforeClass();
+        init( Scope.CLASS );
+    }
+
+    @Override
+    public void beforeSuite() {
+        super.beforeSuite();
+
+        init( Scope.SUITE );
+    }
+
+    private void init( Scope scope ) {
+        if( this.scope != scope ) return;
+
         this.server = new MongoServer( new MemoryBackend() );
         log.info( "mongo port = {}", port );
         this.server.bind( host, port );
@@ -65,9 +91,29 @@ public class MongoFixture extends EnvFixture {
 
     @Override
     public void afterMethod() {
+        done( Scope.METHOD );
+        super.afterMethod();
+    }
+
+    @Override
+    public void afterClass() {
+        done( Scope.CLASS );
+
+        super.afterClass();
+    }
+
+    @Override
+    public void afterSuite() {
+        done( Scope.SUITE );
+        
+        super.afterSuite();
+    }
+
+    private void done( Scope scope ) {
+        if( this.scope != scope ) return;
+
         this.mongoClient.close();
         this.server.shutdownNow();
-        super.afterMethod();
     }
 
     public void insertDocument( Class<?> contextClass, String collection, String resourceName ) {
