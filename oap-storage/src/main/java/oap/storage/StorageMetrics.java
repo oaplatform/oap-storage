@@ -52,9 +52,9 @@ public class StorageMetrics<I, T> implements Storage.DataListener<I, T> {
         refresh();
 
         storage.addDataListener( this );
-        
+
         this.metrics.forEach( ( mname, metric ) ->
-            Metrics.gauge( mname, Tags.of( "storage", storageName ), metric, ( m ) -> ( double ) m.value() ) );
+            Metrics.gauge( mname, Tags.of( "storage", storageName ), metric, m -> ( double ) m.value() ) );
     }
 
     @Override

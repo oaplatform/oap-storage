@@ -88,7 +88,7 @@ public class MongoPersistence<I, T> implements Closeable {
     protected int batchSize = 100;
     private ExecutorService watchExecutor;
     private ScheduledExecutorService scheduler;
-    volatile private long lastExecuted = -1;
+    private volatile long lastExecuted = -1;
 
     public MongoPersistence( MongoClient mongoClient, String collectionName, long delay, MemoryStorage<I, T> storage ) {
         this( mongoClient, collectionName, delay, storage, DEFAULT_CRASH_DUMP_PATH );

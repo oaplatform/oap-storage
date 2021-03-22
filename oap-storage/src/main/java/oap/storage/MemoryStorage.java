@@ -148,14 +148,14 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
             dataListener.added( List.of( __io( id, object ) ) );
     }
 
-    protected void fireUpdated( I id, T object ) {
-        for( DataListener<I, T> dataListener : this.dataListeners )
-            dataListener.updated( List.of( __io( id, object ) ) );
-    }
-
     protected void fireAdded( List<IdObject<I, T>> objects ) {
         if( !objects.isEmpty() )
             for( DataListener<I, T> dataListener : this.dataListeners ) dataListener.added( objects );
+    }
+
+    protected void fireUpdated( I id, T object ) {
+        for( DataListener<I, T> dataListener : this.dataListeners )
+            dataListener.updated( List.of( __io( id, object ) ) );
     }
 
     protected void fireUpdated( List<IdObject<I, T>> objects ) {

@@ -30,6 +30,7 @@ import oap.id.Identifier;
 import oap.util.Stream;
 
 import javax.annotation.Nonnull;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
@@ -80,6 +81,7 @@ public interface Storage<I, T> extends Iterable<T> {
         @ToString
         @EqualsAndHashCode
         class IdObject<DI, D> implements Serializable {
+            @Serial
             private static final long serialVersionUID = -5793630001926149000L;
 
             public final DI id;
@@ -90,7 +92,7 @@ public interface Storage<I, T> extends Iterable<T> {
                 this.object = object;
             }
 
-            @SuppressWarnings( "CheckStyle" )
+            @SuppressWarnings( "checkstyle:MethodName" )
             public static <DI, D> IdObject<DI, D> __io( DI id, D object ) {
                 return new IdObject<>( id, object );
             }
@@ -113,7 +115,7 @@ public interface Storage<I, T> extends Iterable<T> {
 
         <R> R synchronizedOn( Object id, Supplier<R> run );
 
-        final class ConcurrentLock implements Lock {
+        class ConcurrentLock implements Lock {
             @Override
             public final void synchronizedOn( Object id, Runnable run ) {
                 run.run();
@@ -125,7 +127,7 @@ public interface Storage<I, T> extends Iterable<T> {
             }
         }
 
-        final class SerializedLock implements Lock {
+        class SerializedLock implements Lock {
             @Override
             public final void synchronizedOn( Object id, Runnable run ) {
                 Threads.synchronizedOn( id, run );

@@ -70,7 +70,7 @@ public class DirectoryPersistence<I, T> implements Closeable {
     public String serviceName;
     protected long fsync;
     private ScheduledExecutorService scheduler;
-    volatile private long lastExecuted = -1;
+    private volatile long lastExecuted = -1;
 
     public DirectoryPersistence( Path path, long fsync, int version, List<Migration> migrations, MemoryStorage<I, T> storage ) {
         this( path, plainResolve(), fsync, version, migrations, storage );

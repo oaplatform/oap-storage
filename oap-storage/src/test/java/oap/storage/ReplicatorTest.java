@@ -46,7 +46,7 @@ public class ReplicatorTest {
     public void beforeMethod() {
         Replicator.reset();
     }
-    
+
     @Test
     public void masterSlave() {
         var slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );

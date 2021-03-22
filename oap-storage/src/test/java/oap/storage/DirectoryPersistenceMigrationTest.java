@@ -44,12 +44,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class DirectoryPersistenceMigrationTest extends Fixtures {
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
-    }
-
     static {
         TypeIdFactory.register( Bean.class, Bean.class.getName() );
+    }
+
+    {
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
     @Test
@@ -113,7 +113,7 @@ public class DirectoryPersistenceMigrationTest extends Fixtures {
         @Override
         public JsonMetadata run( JsonMetadata old ) {
             return old
-                .mapString( "object:type", ( str ) -> "oap.storage.Bean" )
+                .mapString( "object:type", str -> "oap.storage.Bean" )
                 .object()
                 .rename( "idx", "id" )
                 .rename( "in.s", "s" )

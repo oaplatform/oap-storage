@@ -29,7 +29,6 @@ import org.testng.annotations.Test;
 
 import static java.util.List.of;
 import static oap.storage.mongo.MongoIndex.IndexConfiguration.Direction.ASC;
-import static oap.storage.mongo.MongoIndex.IndexConfiguration.Direction.DESC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.testng.Assert.assertFalse;
@@ -45,7 +44,7 @@ public class MongoIndexTest extends Fixtures {
     }
 
     @Test
-    public void testUpdate_CreateNewIndex() {
+    public void testUpdateCreateNewIndex() {
         try( MongoClient client = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, "testdb", MongoFixture.mongoDatabase ) ) {
             var collection = client.getCollection( "test" );
             var mongoIndex = new MongoIndex( collection );

@@ -43,11 +43,11 @@ public class ChunkedStorage<T> {
     private static class Chunk {
         private final Map<String, Object> records = new HashMap<>();
 
-        public Chunk( Map<String, Object> records ) {
+        private Chunk( Map<String, Object> records ) {
             this.records.putAll( records );
         }
 
-        public Chunk() {
+        private Chunk() {
         }
     }
 

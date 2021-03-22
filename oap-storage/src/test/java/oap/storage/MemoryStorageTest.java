@@ -133,7 +133,7 @@ public class MemoryStorageTest {
         Integer id;
         String name;
 
-        public IntBean( Integer id, String name ) {
+        IntBean( Integer id, String name ) {
             this.id = id;
             this.name = name;
         }

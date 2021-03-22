@@ -27,7 +27,6 @@ package oap.storage.mongo.memory;
 import de.bwaldvogel.mongo.MongoServer;
 import de.bwaldvogel.mongo.backend.memory.MemoryBackend;
 import lombok.extern.slf4j.Slf4j;
-import oap.application.testng.KernelFixture;
 import oap.storage.mongo.MongoClient;
 import oap.storage.mongo.Version;
 import oap.testng.EnvFixture;
@@ -54,9 +53,9 @@ public class MongoFixture extends EnvFixture {
         define( "MONGO_DATABASE", database = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" ) );
     }
 
-    public MongoFixture withScope( Scope scope) {
+    public MongoFixture withScope( Scope scope ) {
         this.scope = scope;
-        
+
         return this;
     }
 
@@ -105,7 +104,7 @@ public class MongoFixture extends EnvFixture {
     @Override
     public void afterSuite() {
         done( Scope.SUITE );
-        
+
         super.afterSuite();
     }
 

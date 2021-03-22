@@ -29,7 +29,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap.maven</artifactId>
-        <version>2.0.0</version>
+        <version>2.0.7</version>
     </parent>
 
     <packaging>pom</packaging>
@@ -55,9 +55,9 @@
     </repositories>
 
     <properties>
-        <oap.storage.project.version>8.1.6</oap.storage.project.version>
+        <oap.storage.project.version>9.0.0</oap.storage.project.version>
 
-        <oap.deps.oap.version>8.6.9</oap.deps.oap.version>
+        <oap.deps.oap.version>9.0.2</oap.deps.oap.version>
         <oap.deps.assertj.version>3.15.0</oap.deps.assertj.version>
         <oap.deps.guava.version>28.2-jre</oap.deps.guava.version>
         <oap.deps.logback.version>1.2.3</oap.deps.logback.version>

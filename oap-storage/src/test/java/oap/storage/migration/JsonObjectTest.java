@@ -27,7 +27,6 @@ package oap.storage.migration;
 import oap.json.Binder;
 import org.testng.annotations.Test;
 
-import javax.script.ScriptException;
 import java.util.Map;
 
 import static java.util.Optional.empty;

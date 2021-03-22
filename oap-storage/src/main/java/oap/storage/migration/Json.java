@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@SuppressWarnings( "checkstyle:AbstractClassName" )
 public abstract class Json<T> {
     public final Optional<String> field;
     public final Optional<Json<?>> parent;

@@ -56,12 +56,12 @@ public class Replicator<I, T> implements Closeable {
     private final MemoryStorage<I, T> slave;
     private final ReplicationMaster<I, T> master;
     private Scheduled scheduled;
-    transient private Pair<Long, String> lastModified = __( -1L, "" );
+    private transient Pair<Long, String> lastModified = __( -1L, "" );
 
     public Replicator( MemoryStorage<I, T> slave, ReplicationMaster<I, T> master, long interval ) {
         this.slave = slave;
         this.master = master;
-        this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, ( i ) -> {
+        this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, i -> {
             var newLastModified = replicate( lastModified );
             log.trace( "newLastModified = {}, lastModified = {}", newLastModified, lastModified );
             if( newLastModified._2.equals( lastModified._2 ) ) {
