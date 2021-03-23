@@ -47,7 +47,7 @@ public class MongoFixture extends EnvFixture {
     private Consumer<MongoFixture> databaseInitializer = mf -> {};
     private MongoClient mongoClient;
 
-    public MongoFixture(String variablePrefix ) {
+    public MongoFixture( String variablePrefix ) {
         define( variablePrefix + "MONGO_HOST", mongoHost );
         define( variablePrefix + "MONGO_PORT", String.valueOf( mongoPort ) );
         define( variablePrefix + "MONGO_DATABASE", mongoDatabase );
@@ -55,7 +55,7 @@ public class MongoFixture extends EnvFixture {
     }
 
     public MongoFixture() {
-        this("");
+        this( "" );
     }
 
     @SuppressWarnings( "unhecked" )
