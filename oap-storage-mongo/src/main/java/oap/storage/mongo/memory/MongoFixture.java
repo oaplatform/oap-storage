@@ -53,34 +53,14 @@ public class MongoFixture extends EnvFixture {
         define( "MONGO_DATABASE", database = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" ) );
     }
 
+    @SuppressWarnings( "unchecked" )
+    @Override
     public MongoFixture withScope( Scope scope ) {
-        this.scope = scope;
-
-        return this;
+        return ( MongoFixture ) super.withScope( scope );
     }
 
     @Override
-    public void beforeMethod() {
-        super.beforeMethod();
-        init( Scope.METHOD );
-    }
-
-    @Override
-    public void beforeClass() {
-        super.beforeClass();
-        init( Scope.CLASS );
-    }
-
-    @Override
-    public void beforeSuite() {
-        super.beforeSuite();
-
-        init( Scope.SUITE );
-    }
-
-    private void init( Scope scope ) {
-        if( this.scope != scope ) return;
-
+    protected void before() {
         this.server = new MongoServer( new MemoryBackend() );
         log.info( "mongo port = {}", port );
         this.server.bind( host, port );
@@ -89,28 +69,7 @@ public class MongoFixture extends EnvFixture {
     }
 
     @Override
-    public void afterMethod() {
-        done( Scope.METHOD );
-        super.afterMethod();
-    }
-
-    @Override
-    public void afterClass() {
-        done( Scope.CLASS );
-
-        super.afterClass();
-    }
-
-    @Override
-    public void afterSuite() {
-        done( Scope.SUITE );
-
-        super.afterSuite();
-    }
-
-    private void done( Scope scope ) {
-        if( this.scope != scope ) return;
-
+    protected void after() {
         this.mongoClient.close();
         this.server.shutdownNow();
     }

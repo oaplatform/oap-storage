@@ -45,15 +45,20 @@ public class MongoFixture extends EnvFixture {
     public static final String mongoHost = Env.get( "MONGO_HOST", "localhost" );
     public static final String mongoDatabase = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" );
     private Consumer<MongoFixture> databaseInitializer = mf -> {};
+    private MongoClient mongoClient;
 
-    {
+    public MongoFixture() {
         define( "MONGO_HOST", mongoHost );
         define( "MONGO_PORT", String.valueOf( mongoPort ) );
         define( "MONGO_DATABASE", mongoDatabase );
         log.debug( "binding MONGO_DATABASE to {}", mongoDatabase );
     }
 
-    private MongoClient mongoClient;
+    @SuppressWarnings( "unhecked" )
+    @Override
+    public MongoFixture withScope( Scope scope ) {
+        return ( MongoFixture ) super.withScope( scope );
+    }
 
     public void dropTestDatabases() {
         final Pattern pattern = Pattern.compile( ".+_(\\d+)" );
@@ -77,7 +82,7 @@ public class MongoFixture extends EnvFixture {
     }
 
     @Override
-    public void beforeMethod() {
+    protected void before() {
         var mongoClientPath = Env.get( "MONGO_CLIENT_PATH" ).orElse( null );
         mongoClient = new MongoClient( mongoHost, mongoPort, mongoDatabase, mongoDatabase,
             mongoClientPath != null ? new MongoShell( mongoClientPath ) : new MongoShell() );
@@ -85,7 +90,7 @@ public class MongoFixture extends EnvFixture {
     }
 
     @Override
-    public void afterMethod() {
+    public void after() {
         mongoClient.dropDatabase();
         mongoClient.close();
     }
