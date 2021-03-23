@@ -87,6 +87,8 @@ public class MongoFixture extends EnvFixture {
 
     @Override
     protected void before() {
+        super.before();
+
         var mongoClientPath = Env.get( "MONGO_CLIENT_PATH" ).orElse( null );
         mongoClient = new MongoClient( mongoHost, mongoPort, mongoDatabase, mongoDatabase,
             mongoClientPath != null ? new MongoShell( mongoClientPath ) : new MongoShell() );
@@ -97,6 +99,8 @@ public class MongoFixture extends EnvFixture {
     public void after() {
         mongoClient.dropDatabase();
         mongoClient.close();
+
+        super.after();
     }
 
     public void initializeVersion( Version version ) {

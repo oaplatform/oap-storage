@@ -52,7 +52,7 @@ public class MongoFixture extends EnvFixture {
     }
 
     public MongoFixture( String variablePrefix ) {
-        define( variablePrefix + "MONGO_PORT", port = portFor( "MONGO_PORT" ) );
+        define( variablePrefix + "MONGO_PORT", port = portFor( variablePrefix + "MONGO_PORT" ) );
         define( variablePrefix + "MONGO_HOST", host = "localhost" );
         define( variablePrefix + "MONGO_DATABASE", database = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" ) );
     }
@@ -65,6 +65,8 @@ public class MongoFixture extends EnvFixture {
 
     @Override
     protected void before() {
+        super.before();
+
         this.server = new MongoServer( new MemoryBackend() );
         log.info( "mongo port = {}", port );
         this.server.bind( host, port );
@@ -76,6 +78,8 @@ public class MongoFixture extends EnvFixture {
     protected void after() {
         this.mongoClient.close();
         this.server.shutdownNow();
+
+        super.after();
     }
 
     public void insertDocument( Class<?> contextClass, String collection, String resourceName ) {
