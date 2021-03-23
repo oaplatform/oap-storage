@@ -48,9 +48,13 @@ public class MongoFixture extends EnvFixture {
     private Consumer<MongoFixture> databaseInitializer = mf -> {};
 
     public MongoFixture() {
-        define( "MONGO_PORT", port = portFor( "MONGO_PORT" ) );
-        define( "MONGO_HOST", host = "localhost" );
-        define( "MONGO_DATABASE", database = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" ) );
+        this( "" );
+    }
+
+    public MongoFixture( String variablePrefix ) {
+        define( variablePrefix + "MONGO_PORT", port = portFor( "MONGO_PORT" ) );
+        define( variablePrefix + "MONGO_HOST", host = "localhost" );
+        define( variablePrefix + "MONGO_DATABASE", database = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" ) );
     }
 
     @SuppressWarnings( "unchecked" )
