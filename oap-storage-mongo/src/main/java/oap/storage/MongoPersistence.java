@@ -51,6 +51,8 @@ import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.joda.time.DateTimeUtils;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import java.io.Closeable;
 import java.nio.file.Path;
@@ -66,7 +68,6 @@ import java.util.function.Consumer;
 
 import static com.mongodb.client.model.Filters.eq;
 import static oap.io.IoStreams.Encoding.GZIP;
-import static oap.util.Dates.FORMAT_MILLIS;
 import static oap.util.Pair.__;
 
 @Slf4j
@@ -74,6 +75,9 @@ import static oap.util.Pair.__;
 public class MongoPersistence<I, T> implements Closeable {
 
     public static final Path DEFAULT_CRASH_DUMP_PATH = Path.of( "/tmp/mongo-persistance-crash-dump" );
+    public static final DateTimeFormatter CRASH_DUMP_PATH_FORMAT_MILLIS = DateTimeFormat
+        .forPattern( "yyyy-MM-dd-HH-mm-ss-SSS" )
+        .withZoneUTC();
     private static final ReplaceOptions REPLACE_OPTIONS_UPSERT = new ReplaceOptions().upsert( true );
     final MongoCollection<Metadata<T>> collection;
     private final Lock lock = new ReentrantLock();
@@ -196,7 +200,7 @@ public class MongoPersistence<I, T> implements Closeable {
                 list.clear();
                 deletedIds.clear();
             } catch( Exception e ) {
-                Path filename = crashDumpPath.resolve( FORMAT_MILLIS.print( DateTimeUtils.currentTimeMillis() ) + ".json.gz" );
+                Path filename = crashDumpPath.resolve( CRASH_DUMP_PATH_FORMAT_MILLIS.print( DateTimeUtils.currentTimeMillis() ) + ".json.gz" );
                 log.error( "cannot persist. Dumping to " + filename + "...", e );
                 List<Pair<String, Metadata<T>>> dump = Stream.of( list )
                     .filter( model -> model instanceof ReplaceOneModel )
