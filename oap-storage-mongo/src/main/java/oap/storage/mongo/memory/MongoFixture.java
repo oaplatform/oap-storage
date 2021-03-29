@@ -48,19 +48,20 @@ public class MongoFixture extends EnvFixture {
     private Consumer<MongoFixture> databaseInitializer = mf -> {};
 
     public MongoFixture() {
-        define( variablePrefix + "MONGO_PORT", port = portFor( variablePrefix + "MONGO_PORT" ) );
-        define( variablePrefix + "MONGO_HOST", host = "localhost" );
-        define( variablePrefix + "MONGO_DATABASE", database = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" ) );
+        this( "" );
+    }
+
+    public MongoFixture( String variablePrefix ) {
+        super( variablePrefix );
+
+        define( "MONGO_PORT", port = portFor( variablePrefix + "MONGO_PORT" ) );
+        define( "MONGO_HOST", host = "localhost" );
+        define( "MONGO_DATABASE", database = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" ) );
     }
 
     @Override
     public MongoFixture withScope( Scope scope ) {
         return ( MongoFixture ) super.withScope( scope );
-    }
-
-    @Override
-    public EnvFixture withVariablePrefix( String variablePrefix ) {
-        return super.withVariablePrefix( variablePrefix );
     }
 
     @Override

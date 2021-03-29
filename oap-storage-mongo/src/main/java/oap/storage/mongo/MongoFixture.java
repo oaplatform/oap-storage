@@ -48,15 +48,16 @@ public class MongoFixture extends EnvFixture {
     private MongoClient mongoClient;
 
     public MongoFixture() {
+        this( "" );
+    }
+
+    public MongoFixture( String variablePrefix ) {
+        super( variablePrefix );
+
         define( "MONGO_HOST", mongoHost );
         define( "MONGO_PORT", String.valueOf( mongoPort ) );
         define( "MONGO_DATABASE", mongoDatabase );
         log.debug( "binding MONGO_DATABASE to {}", mongoDatabase );
-    }
-
-    @Override
-    public MongoFixture withVariablePrefix( String variablePrefix ) {
-        return ( MongoFixture ) super.withVariablePrefix( variablePrefix );
     }
 
     @Override
