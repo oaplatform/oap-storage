@@ -32,6 +32,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -76,7 +78,7 @@ public class MongoFixture extends EnvFixture {
     }
 
     public void insertDocument( Class<?> contextClass, String collection, String resourceName ) {
-        mongoClient.getCollection( collection ).insertOne( Document.parse( contentOfTestResource( contextClass, resourceName ) ) );
+        mongoClient.getCollection( collection ).insertOne( Document.parse( contentOfTestResource( contextClass, resourceName, Map.of() ) ) );
     }
 
     @Override
@@ -84,7 +86,7 @@ public class MongoFixture extends EnvFixture {
         super.before();
 
         var mongoClientPath = Env.get( "MONGO_CLIENT_PATH" ).orElse( null );
-        mongoClient = new MongoClient( mongoHost, mongoPort, mongoDatabase, mongoDatabase,
+        mongoClient = new MongoClient( mongoHost, mongoPort, mongoDatabase, mongoDatabase, List.of(),
             mongoClientPath != null ? new MongoShell( mongoClientPath ) : new MongoShell() );
         databaseInitializer.accept( this );
     }

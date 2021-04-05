@@ -34,7 +34,8 @@ import oap.testng.Suite;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 
-import java.util.function.Consumer;
+import java.util.List;
+import java.util.Map;
 
 import static oap.testng.Asserts.contentOfTestResource;
 
@@ -45,7 +46,6 @@ public class MongoFixture extends EnvFixture {
     public final String host;
     private MongoClient mongoClient;
     private MongoServer server;
-    private Consumer<MongoFixture> databaseInitializer = mf -> {};
 
     public MongoFixture() {
         this( "" );
@@ -64,8 +64,7 @@ public class MongoFixture extends EnvFixture {
         this.server = new MongoServer( new MemoryBackend() );
         log.info( "mongo port = {}", port );
         this.server.bind( host, port );
-        this.mongoClient = new MongoClient( host, port, database, database );
-        this.databaseInitializer.accept( this );
+        this.mongoClient = new MongoClient( host, port, database, database, List.of() );
     }
 
     @Override
@@ -77,7 +76,7 @@ public class MongoFixture extends EnvFixture {
     }
 
     public void insertDocument( Class<?> contextClass, String collection, String resourceName ) {
-        this.mongoClient.getCollection( collection ).insertOne( Document.parse( contentOfTestResource( contextClass, resourceName ) ) );
+        this.mongoClient.getCollection( collection ).insertOne( Document.parse( contentOfTestResource( contextClass, resourceName, Map.of() ) ) );
     }
 
     public void initializeVersion( Version version ) {
@@ -86,11 +85,6 @@ public class MongoFixture extends EnvFixture {
 
     public MongoClient client() {
         return mongoClient;
-    }
-
-    public MongoFixture withDatabaseInitializer( Consumer<MongoFixture> initializer ) {
-        this.databaseInitializer = initializer;
-        return this;
     }
 
     @Override
