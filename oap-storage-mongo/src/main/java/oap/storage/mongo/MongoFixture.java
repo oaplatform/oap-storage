@@ -48,15 +48,14 @@ public class MongoFixture extends EnvFixture {
     private MongoClient mongoClient;
 
     public MongoFixture() {
+        this( "" );
+    }
+
+    public MongoFixture( String databaseSuffix ) {
         define( "MONGO_HOST", mongoHost );
         define( "MONGO_PORT", String.valueOf( mongoPort ) );
         define( "MONGO_DATABASE", mongoDatabase );
-        log.debug( "binding MONGO_DATABASE to {}", mongoDatabase );
-    }
-
-    @Override
-    public MongoFixture withScope( Scope scope ) {
-        return ( MongoFixture ) super.withScope( scope );
+        log.debug( "binding MONGO_DATABASE to {}", mongoDatabase + databaseSuffix );
     }
 
     public void dropTestDatabases() {
@@ -107,4 +106,13 @@ public class MongoFixture extends EnvFixture {
         return this;
     }
 
+    @Override
+    public MongoFixture withScope( Scope scope ) {
+        return ( MongoFixture ) super.withScope( scope );
+    }
+
+    @Override
+    public MongoFixture withKind( Kind kind ) {
+        return ( MongoFixture ) super.withKind( kind );
+    }
 }
