@@ -40,7 +40,7 @@ import java.util.Map;
 import static oap.testng.Asserts.contentOfTestResource;
 
 @Slf4j
-public class MongoFixture extends EnvFixture {
+public class MongoFixture extends EnvFixture<MongoFixture> {
     public final int port;
     public final String database;
     public final String host;
@@ -85,15 +85,5 @@ public class MongoFixture extends EnvFixture {
 
     public MongoClient client() {
         return mongoClient;
-    }
-
-    @Override
-    public MongoFixture withScope( Scope scope ) {
-        return ( MongoFixture ) super.withScope( scope );
-    }
-
-    @Override
-    public MongoFixture withKind( Kind kind ) {
-        return ( MongoFixture ) super.withKind( kind );
     }
 }

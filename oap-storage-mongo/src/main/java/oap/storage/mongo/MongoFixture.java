@@ -42,7 +42,7 @@ import static oap.testng.Asserts.contentOfTestResource;
 
 
 @Slf4j
-public class MongoFixture extends EnvFixture {
+public class MongoFixture extends EnvFixture<MongoFixture> {
     public static final int mongoPort = 27017;
     public static final String mongoHost = Env.get( "MONGO_HOST", "localhost" );
     public static final String mongoDatabase = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" );
@@ -106,15 +106,5 @@ public class MongoFixture extends EnvFixture {
     public MongoFixture withDatabaseInitializer( Consumer<MongoFixture> initializer ) {
         this.databaseInitializer = initializer;
         return this;
-    }
-
-    @Override
-    public MongoFixture withScope( Scope scope ) {
-        return ( MongoFixture ) super.withScope( scope );
-    }
-
-    @Override
-    public MongoFixture withKind( Kind kind ) {
-        return ( MongoFixture ) super.withKind( kind );
     }
 }
