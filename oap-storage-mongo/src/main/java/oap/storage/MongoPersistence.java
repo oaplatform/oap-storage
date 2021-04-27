@@ -67,6 +67,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
 import static com.mongodb.client.model.Filters.eq;
+import static oap.concurrent.Threads.synchronizedOn;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.util.Pair.__;
 
@@ -123,7 +124,7 @@ public class MongoPersistence<I, T> implements Closeable {
         log.info( "collection = {}, fsync delay = {}, watch = {}, crashDumpPath = {}",
             collectionName, Dates.durationToString( delay ), watch, crashDumpPath );
 
-        Threads.synchronously( lock, () -> {
+        synchronizedOn( lock, () -> {
             this.load();
 
             scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, serviceName );
@@ -174,8 +175,7 @@ public class MongoPersistence<I, T> implements Closeable {
 
     private void fsync() {
         var time = DateTimeUtils.currentTimeMillis();
-
-        Threads.synchronously( lock, () -> {
+        synchronizedOn( lock, () -> {
             log.trace( "fsyncing, last: {}, objects in storage: {}", lastExecuted, storage.size() );
             var list = new ArrayList<WriteModel<Metadata<T>>>( batchSize );
             var deletedIds = new ArrayList<I>( batchSize );
@@ -187,45 +187,38 @@ public class MongoPersistence<I, T> implements Closeable {
                 if( list.size() >= batchSize ) persist( deletedIds, list );
             } );
             persist( deletedIds, list );
-
             lastExecuted = time;
         } );
     }
 
     private void persist( List<I> deletedIds, List<WriteModel<Metadata<T>>> list ) {
-        if( !list.isEmpty() ) {
-            try {
-                collection.bulkWrite( list, new BulkWriteOptions().ordered( false ) );
-                deletedIds.forEach( storage.memory::removePermanently );
-                list.clear();
-                deletedIds.clear();
-            } catch( Exception e ) {
-                Path filename = crashDumpPath.resolve( CRASH_DUMP_PATH_FORMAT_MILLIS.print( DateTimeUtils.currentTimeMillis() ) + ".json.gz" );
-                log.error( "cannot persist. Dumping to " + filename + "...", e );
-                List<Pair<String, Metadata<T>>> dump = Stream.of( list )
-                    .filter( model -> model instanceof ReplaceOneModel )
-                    .map( model -> __( "replace", ( ( ReplaceOneModel<Metadata<T>> ) model ).getReplacement() ) )
-                    .toList();
-                Files.writeString( filename, GZIP, Binder.json.marshal( dump ) );
-            }
+        if( !list.isEmpty() ) try {
+            collection.bulkWrite( list, new BulkWriteOptions().ordered( false ) );
+            deletedIds.forEach( storage.memory::removePermanently );
+            list.clear();
+            deletedIds.clear();
+        } catch( Exception e ) {
+            Path filename = crashDumpPath.resolve( CRASH_DUMP_PATH_FORMAT_MILLIS.print( DateTimeUtils.currentTimeMillis() ) + ".json.gz" );
+            log.error( "cannot persist. Dumping to " + filename + "...", e );
+            List<Pair<String, Metadata<T>>> dump = Stream.of( list )
+                .filter( model -> model instanceof ReplaceOneModel )
+                .map( model -> __( "replace", ( ( ReplaceOneModel<Metadata<T>> ) model ).getReplacement() ) )
+                .toList();
+            Files.writeString( filename, GZIP, Binder.json.marshal( dump ) );
         }
     }
 
     @Override
     public void close() {
         log.debug( "closing {}...", this );
-        if( scheduler != null && storage != null ) {
-            Threads.synchronously( lock, () -> {
-                Closeables.close( scheduler );
-                fsync();
+        if( scheduler != null && storage != null ) synchronizedOn( lock, () -> {
+            Closeables.close( scheduler );
+            fsync();
+            log.debug( "closed {}...", this );
+        } );
+        else log.debug( "this {} was't started or already closed", this );
 
-                log.debug( "closed {}...", this );
-            } );
-        } else log.debug( "this {} was't started or already closed", this );
-
-        if( watch ) {
-            Closeables.close( watchExecutor );
-        }
+        if( watch ) Closeables.close( watchExecutor );
     }
 
     private void refreshById( String mongoId ) {

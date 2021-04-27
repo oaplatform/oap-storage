@@ -28,7 +28,6 @@ import com.google.common.io.CountingOutputStream;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import oap.application.ServiceName;
-import oap.concurrent.Threads;
 import oap.concurrent.scheduler.ScheduledExecutorService;
 import oap.io.Closeables;
 import oap.io.Files;
@@ -54,6 +53,7 @@ import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static oap.concurrent.Threads.synchronizedOn;
 import static oap.io.IoStreams.DEFAULT_BUFFER;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -96,7 +96,7 @@ public class DirectoryPersistence<I, T> implements Closeable {
     }
 
     public void preStart() {
-        Threads.synchronously( lock, () -> {
+        synchronizedOn( lock, () -> {
             this.load();
 
             scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, serviceName );
@@ -135,8 +135,7 @@ public class DirectoryPersistence<I, T> implements Closeable {
 
     @SneakyThrows
     private Path migration( Path path ) {
-
-        return Threads.synchronously( lock, () -> {
+        return synchronizedOn( lock, () -> {
             JsonMetadata oldV = new JsonMetadata( Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, path )
                 .orElseThrow() );
 
@@ -165,7 +164,7 @@ public class DirectoryPersistence<I, T> implements Closeable {
     }
 
     private void fsync() {
-        Threads.synchronously( lock, () -> {
+        synchronizedOn( lock, () -> {
             var time = DateTimeUtils.currentTimeMillis();
 
             log.trace( "fsyncing, last: {}, objects in storage: {}", lastExecuted, storage.size() );
@@ -193,7 +192,7 @@ public class DirectoryPersistence<I, T> implements Closeable {
     public void close() {
         log.debug( "closing {}...", this );
         if( scheduler != null && storage != null ) {
-            Threads.synchronously( lock, () -> {
+            synchronizedOn( lock, () -> {
                 Closeables.close( scheduler );
                 fsync();
             } );

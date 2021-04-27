@@ -26,7 +26,7 @@ package oap.storage.mongo;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.system.Env;
-import oap.testng.EnvFixture;
+import oap.testng.AbstractEnvFixture;
 import oap.testng.Suite;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -42,7 +42,7 @@ import static oap.testng.Asserts.contentOfTestResource;
 
 
 @Slf4j
-public class MongoFixture extends EnvFixture<MongoFixture> {
+public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
     public static final int mongoPort = 27017;
     public static final String mongoHost = Env.get( "MONGO_HOST", "localhost" );
     public static final String mongoDatabase = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" );

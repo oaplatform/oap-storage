@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import static oap.io.content.ContentReader.ofString;
 import static oap.util.Maps.Collectors.toListMultimap;
 import static oap.util.Pair.__;
 
@@ -84,12 +85,12 @@ public class Migration {
             .append( v instanceof String ? "\"" + v + "\"" : v ).append( ";\n" ) );
         for( String include : includes ) {
             script.append( "\n// ========== INCLUDE: " ).append( include ).append( " ==========\n" );
-            script.append( Resources.readStringOrThrow( getClass(), include ) );
+            script.append( Resources.readOrThrow( getClass(), include, ofString() ) );
         }
         for( String scr : scripts ) {
             script.append( "\n// ========== SCRIPT: " ).append( scr ).append( " ==========\n" );
             script.append( "(function() {\n" );
-            script.append( Resources.readStringOrThrow( getClass(), scr ) );
+            script.append( Resources.readOrThrow( getClass(), scr, ofString() ) );
             script.append( "})();\n" );
         }
         return script.toString();

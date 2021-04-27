@@ -29,7 +29,7 @@ import de.bwaldvogel.mongo.backend.memory.MemoryBackend;
 import lombok.extern.slf4j.Slf4j;
 import oap.storage.mongo.MongoClient;
 import oap.storage.mongo.Version;
-import oap.testng.EnvFixture;
+import oap.testng.AbstractEnvFixture;
 import oap.testng.Suite;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -40,7 +40,7 @@ import java.util.Map;
 import static oap.testng.Asserts.contentOfTestResource;
 
 @Slf4j
-public class MongoFixture extends EnvFixture<MongoFixture> {
+public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
     public final int port;
     public final String database;
     public final String host;

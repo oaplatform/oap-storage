@@ -35,8 +35,8 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static java.util.Arrays.asList;
-import static oap.util.Lists.head;
-import static oap.util.Lists.tail;
+import static oap.util.Lists.headOf;
+import static oap.util.Lists.tailOf;
 
 @Slf4j
 public class JsonObject extends Json<Map<String, Object>> {
@@ -48,28 +48,28 @@ public class JsonObject extends Json<Map<String, Object>> {
     }
 
     public Optional<Json<?>> field( String name ) {
-        final Object o = underlying.get( name );
+        Object o = underlying.get( name );
         return map( Optional.of( name ), o, Optional.of( this ) );
     }
 
     private boolean rename( JsonObject root, JsonObject parent, List<String> oldName, List<String> newName ) {
         if( oldName.size() > 1 ) {
-            final String oldFirst = head( oldName );
-            final String newFirst = head( newName );
-            final boolean equals = oldFirst.equals( newFirst ) && root == parent;
+            String oldFirst = headOf( oldName ).orElseThrow();
+            String newFirst = headOf( newName ).orElseThrow();
+            boolean equals = oldFirst.equals( newFirst ) && root == parent;
 
-            final Optional<Json<?>> v = parent.field( oldFirst );
+            Optional<Json<?>> v = parent.field( oldFirst );
             if( v.isEmpty() ) return false;
 
-            final Json<?> json = v.get();
+            Json<?> json = v.get();
 
             if( json instanceof JsonObject ) {
-                final JsonObject jo = ( JsonObject ) json;
+                JsonObject jo = ( JsonObject ) json;
                 return rename(
                     equals ? jo : root,
                     jo,
-                    tail( oldName ),
-                    equals ? tail( newName ) : newName
+                    tailOf( oldName ),
+                    equals ? tailOf( newName ) : newName
                 );
             } else if( json instanceof JsonArray ) {
                 if( !equals ) {
@@ -77,27 +77,26 @@ public class JsonObject extends Json<Map<String, Object>> {
                     return false;
                 }
 
-                final JsonArray jsonA = ( JsonArray ) json;
+                JsonArray jsonA = ( JsonArray ) json;
                 jsonA
                     .stream()
                     .filter( j -> j instanceof JsonObject )
                     .map( j -> ( JsonObject ) j )
-                    .forEach( jo -> rename( jo, jo, tail( oldName ), tail( newName ) ) );
+                    .forEach( jo -> rename( jo, jo, tailOf( oldName ), tailOf( newName ) ) );
             } else {
                 return false;
             }
         } else {
-            final String oldField = oldName.get( oldName.size() - 1 );
-            final Optional<Json<?>> field = parent.field( oldField );
-            final JsonObject finalP = parent;
+            String oldField = oldName.get( oldName.size() - 1 );
+            Optional<Json<?>> field = parent.field( oldField );
             field.ifPresent( f -> {
-                finalP.deleteField( oldField );
+                parent.deleteField( oldField );
 
                 JsonObject np = root;
                 for( String nf : newName.subList( 0, newName.size() - 1 ) ) {
-                    final JsonObject finalParent = np;
+                    JsonObject finalParent = np;
                     np = finalParent.objectOpt( nf ).orElseGet( () -> {
-                        final JsonObject jsonObject = new JsonObject( Optional.of( nf ), Optional.of( finalParent ), new HashMap<>() );
+                        JsonObject jsonObject = new JsonObject( Optional.of( nf ), Optional.of( finalParent ), new HashMap<>() );
                         finalParent.underlying.put( nf, jsonObject.underlying );
                         return jsonObject;
                     } );
@@ -124,8 +123,7 @@ public class JsonObject extends Json<Map<String, Object>> {
     }
 
     public JsonObject deleteField( String field ) {
-        Optional<Json<?>> f = field( field );
-        f.ifPresent( ff -> underlying.remove( field ) );
+        field( field ).ifPresent( ff -> underlying.remove( field ) );
         return this;
     }
 
@@ -137,17 +135,17 @@ public class JsonObject extends Json<Map<String, Object>> {
     }
 
     public Optional<String> stringOpt( String field ) {
-        final Optional<Json<?>> f = field( field );
+        Optional<Json<?>> f = field( field );
         return f.filter( ff -> ff.underlying instanceof String ).map( ff -> ( String ) ff.underlying );
     }
 
     public Optional<Long> longOpt( String field ) {
-        final Optional<Json<?>> f = field( field );
+        Optional<Json<?>> f = field( field );
         return f.filter( ff -> ff.underlying instanceof Number ).map( ff -> ( ( Number ) ff.underlying ).longValue() );
     }
 
     public Optional<JsonObject> objectOpt( String field ) {
-        final Optional<Json<?>> f = field( field );
+        Optional<Json<?>> f = field( field );
         return f.filter( ff -> ff.underlying instanceof Map ).map( ff -> ( JsonObject ) ff );
     }
 

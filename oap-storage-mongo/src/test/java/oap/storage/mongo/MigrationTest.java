@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static oap.io.content.ContentReader.ofString;
 import static oap.storage.mongo.MigrationConfig.CONFIGURATION;
 import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
@@ -106,6 +107,7 @@ public class MigrationTest {
                 __( "param4", "string2" )
             )
         );
-        assertString( migration.toScript( "localhost", 27017, "testdb" ) ).isEqualTo( contentOfTestResource( getClass(), "result.js" ) );
+        assertString( migration.toScript( "localhost", 27017, "testdb" ) )
+            .isEqualTo( contentOfTestResource( getClass(), "result.js", ofString() ) );
     }
 }

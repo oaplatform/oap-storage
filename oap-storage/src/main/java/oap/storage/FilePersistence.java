@@ -25,7 +25,6 @@
 package oap.storage;
 
 import lombok.SneakyThrows;
-import oap.concurrent.Threads;
 import oap.concurrent.scheduler.PeriodicScheduled;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
@@ -40,6 +39,7 @@ import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static oap.concurrent.Threads.synchronizedOn;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class FilePersistence<I, T> implements Closeable {
@@ -64,7 +64,7 @@ public class FilePersistence<I, T> implements Closeable {
     }
 
     private void load() {
-        Threads.synchronously( lock, () -> {
+        synchronizedOn( lock, () -> {
             var metadata = Binder.json.unmarshal( new TypeRef<List<Metadata<T>>>() {}, path ).orElse( Lists.empty() );
             metadata.forEach( m -> {
                 I id = storage.identifier.get( m.object );
@@ -76,7 +76,7 @@ public class FilePersistence<I, T> implements Closeable {
 
     @SneakyThrows
     private synchronized void fsync( long last ) {
-        Threads.synchronously( lock, () -> {
+        synchronizedOn( lock, () -> {
             log.trace( "fsync: last: {}, objects in storage: {}", last, storage.size() );
 
             var updates = storage.memory.selectUpdatedSince( last ).toList();
@@ -96,7 +96,7 @@ public class FilePersistence<I, T> implements Closeable {
 
     @Override
     public void close() {
-        Threads.synchronously( lock, () -> Scheduled.cancel( scheduled ) );
+        synchronizedOn( lock, () -> Scheduled.cancel( scheduled ) );
         fsync( scheduled.lastExecuted() );
     }
 
