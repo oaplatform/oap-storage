@@ -24,13 +24,17 @@
 
 package oap.storage.mongo;
 
-import com.mongodb.MongoClientOptions;
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.ServerAddress;
+import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.ReplaceOptions;
+import com.mongodb.connection.ServerDescription;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import oap.util.Lists;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
@@ -39,7 +43,9 @@ import java.io.Closeable;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.Objects.requireNonNull;
 import static oap.storage.mongo.MigrationConfig.CONFIGURATION;
+import static oap.util.function.Functions.illegalArgument;
 
 @Slf4j
 @ToString( exclude = { "migrations", "shell", "mongoClient", "database" } )
@@ -49,7 +55,7 @@ public class MongoClient implements Closeable {
     public final String databaseName;
     public final String physicalDatabase;
     protected final MongoShell shell;
-    final com.mongodb.MongoClient mongoClient;
+    final com.mongodb.client.MongoClient mongoClient;
     private final MongoDatabase database;
     private final List<MigrationConfig> migrations;
 
@@ -84,12 +90,34 @@ public class MongoClient implements Closeable {
         this.physicalDatabase = physicalDatabase;
         this.migrations = migrations;
         this.shell = shell;
-        this.mongoClient = new com.mongodb.MongoClient( new ServerAddress( host, port ),
-            MongoClientOptions.builder().codecRegistry( CodecRegistries.fromRegistries(
-                CodecRegistries.fromCodecs( new JodaTimeCodec() ),
-                com.mongodb.MongoClient.getDefaultCodecRegistry() ) ).build() );
+        this.mongoClient = MongoClients.create( defaultBuilder()
+            .applyToClusterSettings( b -> b.hosts( Lists.of( new ServerAddress( host, port ) ) ) )
+            .build() );
         this.database = mongoClient.getDatabase( physicalDatabase );
         log.debug( "creating mongo client {}", this );
+    }
+
+    private MongoClientSettings.Builder defaultBuilder() {
+        return MongoClientSettings.builder()
+            .codecRegistry( CodecRegistries.fromRegistries(
+                CodecRegistries.fromCodecs( new JodaTimeCodec() ),
+                MongoClientSettings.getDefaultCodecRegistry() ) );
+    }
+
+    public MongoClient( String uri ) {
+        ConnectionString connectionString = new ConnectionString( uri );
+        this.mongoClient = MongoClients.create( defaultBuilder()
+            .applyConnectionString( connectionString ).build() );
+        this.databaseName = requireNonNull( connectionString.getDatabase(), "no database specified in " + uri );
+        this.physicalDatabase = databaseName;
+        this.database = this.mongoClient.getDatabase( physicalDatabase );
+        ServerAddress address = Lists.headOf( this.mongoClient.getClusterDescription().getServerDescriptions() )
+            .map( ServerDescription::getAddress )
+            .orElseThrow( illegalArgument( "no server description found for " + uri ) );
+        this.host = address.getHost();
+        this.port = address.getPort();
+        this.migrations = CONFIGURATION.fromClassPath();
+        this.shell = new MongoShell();
     }
 
     public Version databaseVersion() {

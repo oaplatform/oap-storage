@@ -90,7 +90,7 @@ public class MongoPersistenceTest extends Fixtures {
     @Test
     public void store() {
         var storage1 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-        try( var mongoClient = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, MongoFixture.mongoDatabase );
+        try( var mongoClient = new MongoClient( "mongodb://" + MongoFixture.mongoHost + ":" + MongoFixture.mongoPort + "/" + MongoFixture.mongoDatabase );
              var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage1 ) ) {
             mongoClient.preStart();
             persistence.preStart();
