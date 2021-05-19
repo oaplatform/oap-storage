@@ -104,12 +104,12 @@ public class MongoClient implements Closeable {
                 MongoClientSettings.getDefaultCodecRegistry() ) );
     }
 
-    public MongoClient( String uri ) {
+    public MongoClient( String uri, String databaseName ) {
         ConnectionString connectionString = new ConnectionString( uri );
         this.mongoClient = MongoClients.create( defaultBuilder()
             .applyConnectionString( connectionString ).build() );
-        this.databaseName = requireNonNull( connectionString.getDatabase(), "no database specified in " + uri );
-        this.physicalDatabase = databaseName;
+        this.databaseName = databaseName;
+        this.physicalDatabase = requireNonNull( connectionString.getDatabase(), "no database specified in " + uri );
         this.database = this.mongoClient.getDatabase( physicalDatabase );
         ServerAddress address = Lists.headOf( this.mongoClient.getClusterDescription().getServerDescriptions() )
             .map( ServerDescription::getAddress )
