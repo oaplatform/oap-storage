@@ -34,6 +34,7 @@ import oap.storage.Storage.DataListener.IdObject;
 import oap.util.Pair;
 
 import java.io.Closeable;
+import java.io.UncheckedIOException;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
@@ -102,6 +103,9 @@ public class Replicator<I, T> implements Closeable {
                 return last;
             }
             throw e;
+        } catch( UncheckedIOException e ) {
+            log.error( e.getCause().getMessage() );
+            return last;
         }
 
         var added = new ArrayList<IdObject<I, T>>();
