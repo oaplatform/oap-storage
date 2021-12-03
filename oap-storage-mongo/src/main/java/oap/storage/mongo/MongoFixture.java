@@ -85,7 +85,10 @@ public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
     protected void before() {
         super.before();
 
-        var mongoClientPath = Env.get( "MONGO_CLIENT_PATH" ).orElse( null );
+        var mongoClientPath = Env
+            .get( "MONGO_CLIENT_PATH" )
+            .or( () -> Env.get( "CONFIG.services.oap-storage-mongo.oap-storage-mongo-shell.parameters.path" ) )
+            .orElse( null );
         mongoClient = new MongoClient( mongoHost, mongoPort, mongoDatabase, mongoDatabase, List.of(),
             mongoClientPath != null ? new MongoShell( mongoClientPath ) : new MongoShell() );
         databaseInitializer.accept( this );
