@@ -64,7 +64,7 @@ public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
         this.server = new MongoServer( new MemoryBackend() );
         log.info( "mongo port = {}", port );
         this.server.bind( host, port );
-        this.mongoClient = new MongoClient( host, port, database, database, List.of() );
+        this.mongoClient = new MongoClient( host, port, database, database, List.of(), oap.storage.mongo.MongoFixture.createMongoShell() );
     }
 
     @Override

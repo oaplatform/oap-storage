@@ -34,6 +34,7 @@ import org.bson.Document;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -58,6 +59,17 @@ public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
         define( "MONGO_PORT", String.valueOf( mongoPort ) );
         define( "MONGO_DATABASE", mongoDatabase );
         log.debug( "binding MONGO_DATABASE to {}", mongoDatabase + databaseSuffix );
+    }
+
+    public static MongoShell createMongoShell() {
+        var mongoClientPath = Env
+            .get( "MONGO_CLIENT_PATH" )
+            .or( () -> Env.get( "CONFIG.services.oap-storage-mongo.oap-storage-mongo-shell.parameters.path" ) )
+            .or( () -> Optional.ofNullable( System.getProperty( "MONGO_CLIENT_PATH" ) ) )
+            .or( () -> Optional.ofNullable( System.getProperty( "CONFIG.services.oap-storage-mongo.oap-storage-mongo-shell.parameters.path" ) ) )
+            .orElse( null );
+
+        return mongoClientPath != null ? new MongoShell( mongoClientPath ) : new MongoShell();
     }
 
     public void dropTestDatabases() {
@@ -85,12 +97,8 @@ public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
     protected void before() {
         super.before();
 
-        var mongoClientPath = Env
-            .get( "MONGO_CLIENT_PATH" )
-            .or( () -> Env.get( "CONFIG.services.oap-storage-mongo.oap-storage-mongo-shell.parameters.path" ) )
-            .orElse( null );
         mongoClient = new MongoClient( mongoHost, mongoPort, mongoDatabase, mongoDatabase, List.of(),
-            mongoClientPath != null ? new MongoShell( mongoClientPath ) : new MongoShell() );
+            createMongoShell() );
         databaseInitializer.accept( this );
     }
 
