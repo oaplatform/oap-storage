@@ -34,7 +34,7 @@
 
     <packaging>pom</packaging>
     <artifactId>oap-storage-parent</artifactId>
-    <version>${oap.storage.project.version}</version>
+    <version>${oap-storage.project.version}</version>
 
     <name>oap-storage-parent</name>
 
@@ -55,12 +55,13 @@
     </repositories>
 
     <properties>
-        <oap.storage.project.version>17.9.5.7</oap.storage.project.version>
+        <oap-storage.project.version>17.9.6.0</oap-storage.project.version>
 
-        <oap.deps.oap.version>17.9.18.3</oap.deps.oap.version>
+        <oap.deps.oap.version>17.10.0.1</oap.deps.oap.version>
+
         <oap.deps.assertj.version>3.15.0</oap.deps.assertj.version>
         <oap.deps.guava.version>28.2-jre</oap.deps.guava.version>
-        <oap.deps.logback.version>1.2.3</oap.deps.logback.version>
+        <oap.deps.logback.version>1.2.7</oap.deps.logback.version>
         <oap.deps.slf4j.version>1.7.32</oap.deps.slf4j.version>
         <oap.deps.lombok.version>1.18.22</oap.deps.lombok.version>
         <oap.deps.mongo.version>3.12.10</oap.deps.mongo.version>
