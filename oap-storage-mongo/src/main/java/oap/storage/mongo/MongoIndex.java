@@ -37,8 +37,10 @@ import org.bson.Document;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -74,8 +76,7 @@ public class MongoIndex {
 
     public void update( IndexConfiguration... indexConfigurations ) {
         try {
-            var expected = List.of( indexConfigurations )
-                .stream()
+            var expected = Stream.of( indexConfigurations )
                 .map( ic -> ic.name )
                 .collect( toSet() );
 
@@ -139,14 +140,12 @@ public class MongoIndex {
         public final LinkedHashMap<String, Direction> keys = new LinkedHashMap<>();
 
 
-        public IndexConfiguration( String name, List<String> keys, boolean unique ) {
-            this( name, keys, unique, null );
-        }
-
         @JsonCreator
-        public IndexConfiguration( String name, List<String> keys, boolean unique, Long expireAfterSeconds ) {
+        public IndexConfiguration( String name, Map<String, Integer> keys, boolean unique, Long expireAfterSeconds ) {
             this.name = name;
-            for( var key : keys ) this.keys.put( key, Direction.ASC );
+            keys.forEach( ( key, direction ) -> {
+                this.keys.put( key, direction == 1 ? Direction.ASC : Direction.DESC );
+            } );
             this.unique = unique;
             this.expireAfterSeconds = expireAfterSeconds;
         }
@@ -157,9 +156,8 @@ public class MongoIndex {
             expireAfterSeconds = document.getLong( "expireAfterSeconds" );
 
             var keyDocument = document.get( "key", Document.class );
-            keyDocument.forEach( ( k, v ) -> {
-                keys.put( k, ( ( Number ) v ).intValue() == 1 ? Direction.ASC : Direction.DESC );
-            } );
+            keyDocument.forEach( ( k, v ) ->
+                keys.put( k, ( ( Number ) v ).intValue() == 1 ? Direction.ASC : Direction.DESC ) );
         }
 
         public boolean equals( List<String> keys, boolean unique, Long expireAfterSeconds ) {

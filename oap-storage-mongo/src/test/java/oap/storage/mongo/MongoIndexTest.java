@@ -27,6 +27,8 @@ package oap.storage.mongo;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
+import java.util.Map;
+
 import static java.util.List.of;
 import static oap.storage.mongo.MongoIndex.IndexConfiguration.Direction.ASC;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -79,7 +81,7 @@ public class MongoIndexTest extends Fixtures {
             mongoIndex.update( "idx2", of( "b" ), true, 10L );
 
 
-            mongoIndex.update( new MongoIndex.IndexConfiguration( "idx1", of( "c", "d" ), false, null ) );
+            mongoIndex.update( new MongoIndex.IndexConfiguration( "idx1", Map.of( "c", 1, "d", 1 ), false, null ) );
 
             assertNull( mongoIndex.getInfo( "idx2" ) );
             assertNotNull( mongoIndex.getInfo( "idx1" ) );
