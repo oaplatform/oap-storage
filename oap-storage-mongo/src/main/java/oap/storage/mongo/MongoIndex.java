@@ -150,6 +150,10 @@ public class MongoIndex {
             this.expireAfterSeconds = expireAfterSeconds;
         }
 
+        public IndexConfiguration( String name, Map<String, Integer> keys, boolean unique ) {
+            this( name, keys, unique, null );
+        }
+
         public IndexConfiguration( Document document ) {
             name = document.getString( "name" );
             unique = document.getBoolean( "unique", false );
