@@ -34,8 +34,8 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static oap.id.Identifier.Option.FILL;
 import static oap.storage.Storage.Lock.SERIALIZED;
-import static oap.util.Strings.FriendlyIdOption.FILL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MemoryStorageTest {
