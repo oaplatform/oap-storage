@@ -32,7 +32,6 @@ import oap.id.Id;
 import oap.id.Identifier;
 import oap.io.Files;
 import oap.storage.mongo.MongoClient;
-import oap.storage.mongo.MongoFixture;
 import oap.storage.mongo.Version;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
