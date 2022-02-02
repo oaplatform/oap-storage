@@ -40,13 +40,15 @@ import static org.testng.Assert.assertNull;
  * Created by igor.petrenko on 2020-11-02.
  */
 public class MongoIndexTest extends Fixtures {
+    private final oap.storage.mongo.memory.MongoFixture mongoFixture;
+
     public MongoIndexTest() {
-        fixture( new MongoFixture() );
+        fixture( mongoFixture = new oap.storage.mongo.memory.MongoFixture() );
     }
 
     @Test
     public void testUpdateCreateNewIndex() {
-        try( MongoClient client = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, "testdb", MongoFixture.mongoDatabase ) ) {
+        try( MongoClient client = new MongoClient( "localhost", mongoFixture.port, "testdb", mongoFixture.database ) ) {
             var collection = client.getCollection( "test" );
             var mongoIndex = new MongoIndex( collection );
 
@@ -72,7 +74,7 @@ public class MongoIndexTest extends Fixtures {
 
     @Test
     public void testSync() {
-        try( MongoClient client = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, "testdb", MongoFixture.mongoDatabase ) ) {
+        try( MongoClient client = new MongoClient( "localhost", mongoFixture.port, "testdb", mongoFixture.database ) ) {
             var collection = client.getCollection( "test" );
             var mongoIndex = new MongoIndex( collection );
 

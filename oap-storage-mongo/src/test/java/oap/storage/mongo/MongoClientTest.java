@@ -36,9 +36,10 @@ import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MongoClientTest extends Fixtures {
+    private final oap.storage.mongo.memory.MongoFixture mongoFixture;
 
     public MongoClientTest() {
-        fixture( new MongoFixture() );
+        fixture( mongoFixture = new oap.storage.mongo.memory.MongoFixture() );
     }
 
     @Test
@@ -49,7 +50,7 @@ public class MongoClientTest extends Fixtures {
             CONFIGURATION.fromUrl( urlOfTestResource( getClass(), "10/config10.yaml" ) )
         );
 
-        try( MongoClient client = new MongoClient( MongoFixture.mongoHost, MongoFixture.mongoPort, "testdb", MongoFixture.mongoDatabase, configs ) ) {
+        try( MongoClient client = new MongoClient( "localhost", mongoFixture.port, "testdb", mongoFixture.database ) ) {
             assertThat( client.databaseVersion() ).isEqualTo( UNDEFINED );
             client.preStart();
             assertThat( client.databaseVersion() ).isEqualTo( new Version( 10 ) );
