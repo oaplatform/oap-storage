@@ -50,7 +50,7 @@ public class MongoClientTest extends Fixtures {
             CONFIGURATION.fromUrl( urlOfTestResource( getClass(), "10/config10.yaml" ) )
         );
 
-        try( MongoClient client = new MongoClient( "localhost", mongoFixture.port, "testdb", mongoFixture.database ) ) {
+        try( MongoClient client = new MongoClient( mongoFixture.host, mongoFixture.port, "testdb", mongoFixture.database, configs ) ) {
             assertThat( client.databaseVersion() ).isEqualTo( UNDEFINED );
             client.preStart();
             assertThat( client.databaseVersion() ).isEqualTo( new Version( 10 ) );
