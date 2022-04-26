@@ -55,16 +55,16 @@
     </repositories>
 
     <properties>
-        <oap-storage.project.version>17.9.7.2</oap-storage.project.version>
+        <oap-storage.project.version>17.9.7.3</oap-storage.project.version>
 
-        <oap.deps.oap.version>17.10.4.2</oap.deps.oap.version>
+        <oap.deps.oap.version>17.10.10.7</oap.deps.oap.version>
 
-        <oap.deps.assertj.version>3.15.0</oap.deps.assertj.version>
-        <oap.deps.guava.version>28.2-jre</oap.deps.guava.version>
-        <oap.deps.logback.version>1.2.7</oap.deps.logback.version>
-        <oap.deps.slf4j.version>1.7.32</oap.deps.slf4j.version>
-        <oap.deps.lombok.version>1.18.22</oap.deps.lombok.version>
-        <oap.deps.mongo.version>3.12.10</oap.deps.mongo.version>
+        <oap.deps.assertj.version>3.22.0</oap.deps.assertj.version>
+        <oap.deps.guava.version>31.1-jre</oap.deps.guava.version>
+        <oap.deps.logback.version>1.2.11</oap.deps.logback.version>
+        <oap.deps.slf4j.version>1.7.36</oap.deps.slf4j.version>
+        <oap.deps.lombok.version>1.18.24</oap.deps.lombok.version>
+        <oap.deps.mongo.version>3.12.11</oap.deps.mongo.version>
         <oap.deps.apache.exec.version>1.3</oap.deps.apache.exec.version>
         <oap.deps.mongo-java-server.version>1.39.0</oap.deps.mongo-java-server.version>
         <oap.deps.netty.version>4.1.72.Final</oap.deps.netty.version>
