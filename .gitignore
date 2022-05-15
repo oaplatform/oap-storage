@@ -18,3 +18,6 @@ kotlinc.xml
 # Default ignored files
 shelf
 /.idea/jarRepositories.xml
+oap-storage-mongo/.DS_Store
+.DS_Store
+/.idea/runConfigurations.xml

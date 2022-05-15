@@ -41,6 +41,7 @@
     <modules>
         <module>oap-storage</module>
         <module>oap-storage-mongo</module>
+        <module>oap-storage-dynamo</module>
     </modules>
 
     <repositories>
@@ -56,6 +57,7 @@
 
     <properties>
         <oap-storage.project.version>17.9.7.3</oap-storage.project.version>
+        <oap-dynamodb.project.version>17.4.3.0</oap-dynamodb.project.version>
 
         <oap.deps.oap.version>17.10.10.7</oap.deps.oap.version>
 
