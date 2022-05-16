@@ -132,8 +132,6 @@ public class DynamoPersistence<I, T> implements Closeable {
         } );
 
         if( watch ) {
-            dynamodbClient.update( new Key( tableName, "id", "dummy" ), "dummy_name", "John Doe" );
-            dynamodbClient.delete( new Key( tableName, "id", "dummy" ), null );
             watchExecutor = Executors.newSingleThreadExecutor();
 
             watchExecutor.execute( () -> {
