@@ -31,8 +31,8 @@ import oap.concurrent.Threads;
 import oap.concurrent.scheduler.ScheduledExecutorService;
 import oap.dynamodb.DynamodbClient;
 import oap.dynamodb.Key;
+import oap.dynamodb.batch.WriteBatchOperationHelper;
 import oap.dynamodb.crud.AbstractOperation;
-import oap.dynamodb.crud.BatchOperationHelper;
 import oap.dynamodb.crud.DeleteItemOperation;
 import oap.dynamodb.crud.OperationType;
 import oap.dynamodb.crud.UpdateItemOperation;
@@ -78,7 +78,7 @@ public class DynamoPersistence<I, T> implements Closeable {
     private final Lock lock = new ReentrantLock();
     private final DynamodbClient dynamodbClient;
     private final DynamodbStreamsRecordProcessor streamProcessor;
-    private final BatchOperationHelper batchWriter;
+    private final WriteBatchOperationHelper batchWriter;
     private final String tableName;
     private final long delay;
     private final MemoryStorage<I, T> storage;
@@ -114,9 +114,8 @@ public class DynamoPersistence<I, T> implements Closeable {
         this.delay = delay;
         this.storage = storage;
         this.crashDumpPath = crashDumpPath;
-        this.streamProcessor = DynamodbStreamsRecordProcessor.builder( dynamodbClient.getStreamClient() ).build();
-        ;
-        batchWriter = new BatchOperationHelper( dynamodbClient );
+        this.streamProcessor = DynamodbStreamsRecordProcessor.builder( dynamodbClient ).build();
+        batchWriter = new WriteBatchOperationHelper( dynamodbClient );
         this.dynamodbClient = dynamodbClient;
     }
 
@@ -221,7 +220,7 @@ public class DynamoPersistence<I, T> implements Closeable {
     }
 
     private void refreshById( String dynamoId ) {
-        var res = dynamodbClient.get( new Key( tableName, "id", dynamoId ) );
+        var res = dynamodbClient.get( new Key( tableName, "id", dynamoId ),null );
         if( res != null && res.isSuccess() ) {
             Metadata<T> m = convertFromDynamoItem.apply( res.getSuccessValue() );
             storage.lock.synchronizedOn( dynamoId, () -> {

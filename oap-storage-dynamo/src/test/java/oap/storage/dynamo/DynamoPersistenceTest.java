@@ -29,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.dynamodb.DynamodbClient;
 import oap.dynamodb.DynamodbFixture;
 import oap.dynamodb.Key;
-import oap.dynamodb.crud.BatchOperationHelper;
+import oap.dynamodb.batch.WriteBatchOperationHelper;
 import oap.dynamodb.crud.CreateItemOperation;
 import oap.id.Identifier;
 import oap.storage.DynamoPersistence;
@@ -37,7 +37,6 @@ import oap.storage.MemoryStorage;
 import oap.storage.Metadata;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
-import org.jetbrains.annotations.NotNull;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.StreamSpecification;
@@ -52,7 +51,6 @@ import java.util.stream.Collectors;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
-import static oap.util.Maps.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
@@ -92,7 +90,7 @@ public class DynamoPersistenceTest extends Fixtures {
              var persistence = new DynamoPersistence<>( dynamodbClient, "test", 6000, storage, fromDynamo, toDynamo ) ) {
             dynamodbClient.waitConnectionEstablished();
             dynamodbClient.createTable( "test", 2, 1, "id", "S", null, null, null );
-            final BatchOperationHelper batchWriter = new BatchOperationHelper( dynamodbClient );
+            final WriteBatchOperationHelper batchWriter = new WriteBatchOperationHelper( dynamodbClient );
             batchWriter.addOperation( new CreateItemOperation( new Key( "test", "id", "1" ), ImmutableMap.of( "name", "John" ) ) );
             batchWriter.write();
 
