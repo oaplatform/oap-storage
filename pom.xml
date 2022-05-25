@@ -56,7 +56,7 @@
     </repositories>
 
     <properties>
-        <oap-storage.project.version>17.9.7.3</oap-storage.project.version>
+        <oap-storage.project.version>17.9.7.4</oap-storage.project.version>
         <oap-dynamodb.project.version>17.4.3.0</oap-dynamodb.project.version>
 
         <oap.deps.oap.version>17.10.10.7</oap.deps.oap.version>

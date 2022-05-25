@@ -165,7 +165,7 @@ public class DynamoPersistence<I, T> implements Closeable {
         log.debug( "loading data from {}", tableName );
         Consumer<Metadata<T>> cons = metadata -> storage.memory.put( storage.identifier.get( metadata.object ), metadata );
         log.info( "Load items from [{}] DynamoDB table", tableName );
-        dynamodbClient.getItemsByScan( tableName, null ).map( convertFromDynamoItem ).forEach( cons );
+        dynamodbClient.getRecordsByScan( tableName, null ).map( convertFromDynamoItem ).forEach( cons );
         log.info( storage.size() + " object(s) loaded." );
     }
 
@@ -220,7 +220,7 @@ public class DynamoPersistence<I, T> implements Closeable {
     }
 
     private void refreshById( String dynamoId ) {
-        var res = dynamodbClient.get( new Key( tableName, "id", dynamoId ),null );
+        var res = dynamodbClient.getRecord( new Key( tableName, "id", dynamoId ),null );
         if( res != null && res.isSuccess() ) {
             Metadata<T> m = convertFromDynamoItem.apply( res.getSuccessValue() );
             storage.lock.synchronizedOn( dynamoId, () -> {
