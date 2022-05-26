@@ -26,6 +26,7 @@ package oap.storage.mongo;
 
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
+import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
@@ -35,6 +36,7 @@ import com.mongodb.connection.ServerDescription;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Lists;
+import org.apache.commons.lang.StringUtils;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
@@ -46,6 +48,7 @@ import java.util.Map;
 import static java.util.Objects.requireNonNull;
 import static oap.storage.mongo.MigrationConfig.CONFIGURATION;
 import static oap.util.function.Functions.illegalArgument;
+import static org.apache.commons.lang.StringUtils.*;
 
 @Slf4j
 @ToString( exclude = { "migrations", "shell", "mongoClient", "database" } )
@@ -63,16 +66,32 @@ public class MongoClient implements Closeable {
         this( host, port, database, new MongoShell() );
     }
 
+    public MongoClient( String host, int port, String database, String user, String password ) {
+        this( host, port, database, new MongoShell(), user, password );
+    }
+
     public MongoClient( String host, int port, String database, MongoShell shell ) {
         this( host, port, database, database, shell );
+    }
+
+    public MongoClient( String host, int port, String database, MongoShell shell, String user, String password ) {
+        this( host, port, database, database, shell, user, password );
     }
 
     public MongoClient( String host, int port, String database, String physicalDatabase, MongoShell shell ) {
         this( host, port, database, physicalDatabase, CONFIGURATION.fromClassPath(), shell );
     }
 
+    public MongoClient( String host, int port, String database, String physicalDatabase, MongoShell shell, String user, String password ) {
+        this( host, port, database, physicalDatabase, CONFIGURATION.fromClassPath(), shell, user, password);
+    }
+
     public MongoClient( String host, int port, String database, String physicalDatabase ) {
         this( host, port, database, physicalDatabase, new MongoShell() );
+    }
+
+    public MongoClient( String host, int port, String database, String physicalDatabase, String user, String password ) {
+        this( host, port, database, physicalDatabase, new MongoShell(), user, password );
     }
 
     public MongoClient( String host, int port, String database, String physicalDatabase, boolean withMigrations ) {
@@ -83,16 +102,27 @@ public class MongoClient implements Closeable {
         this( host, port, database, physicalDatabase, migrations, new MongoShell() );
     }
 
+    public MongoClient( String host, int port, String database, String physicalDatabase, List<MigrationConfig> migrations, String user, String password ) {
+        this( host, port, database, physicalDatabase, migrations, new MongoShell(), user, password );
+    }
+
     public MongoClient( String host, int port, String database, String physicalDatabase, List<MigrationConfig> migrations, MongoShell shell ) {
+        this( host, port, database, physicalDatabase, migrations, shell, null, null );
+    }
+
+    public MongoClient( String host, int port, String database, String physicalDatabase, List<MigrationConfig> migrations, MongoShell shell, String user, String password ) {
         this.host = host;
         this.port = port;
         this.databaseName = database;
         this.physicalDatabase = physicalDatabase;
         this.migrations = migrations;
         this.shell = shell;
-        this.mongoClient = MongoClients.create( defaultBuilder()
-            .applyToClusterSettings( b -> b.hosts( Lists.of( new ServerAddress( host, port ) ) ) )
-            .build() );
+        final MongoClientSettings.Builder settingsBuilder = defaultBuilder()
+            .applyToClusterSettings( b -> b.hosts( Lists.of( new ServerAddress( host, port ) ) ) );
+        if( isNotEmpty( user ) && isNotEmpty( password ) ) {
+            settingsBuilder.credential( MongoCredential.createCredential( user, database, password.toCharArray() ) );
+        }
+        this.mongoClient = MongoClients.create( settingsBuilder.build() );
         this.database = mongoClient.getDatabase( physicalDatabase );
         log.debug( "creating mongo client {}", this );
     }

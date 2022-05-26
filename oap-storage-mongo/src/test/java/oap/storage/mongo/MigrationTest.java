@@ -110,4 +110,20 @@ public class MigrationTest {
         assertString( migration.toScript( "localhost", 27017, "testdb" ) )
             .isEqualTo( contentOfTestResource( getClass(), "result.js", ofString() ) );
     }
+
+    @Test
+    public void toScriptWithCredentials() {
+        Migration migration = new Migration( new Version( 666 ),
+            List.of( "/oap/storage/mongo/MigrationTest/s1.migration.js", "/oap/storage/mongo/MigrationTest/s2.migration.js" ),
+            Set.of( "/oap/storage/mongo/MigrationTest/lib.migration.js" ),
+            Maps.of(
+                __( "param1", true ),
+                __( "param2", "string" ),
+                __( "param3", true ),
+                __( "param4", "string2" )
+            )
+        );
+        assertString( migration.toScript( "localhost", 27017, "testdb", "root", "password" ) )
+            .isEqualTo( contentOfTestResource( getClass(), "resultWithCreds.js", ofString() ) );
+    }
 }
