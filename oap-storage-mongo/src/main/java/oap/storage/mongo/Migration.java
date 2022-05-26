@@ -31,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.io.Resources;
 import oap.util.BiStream;
 import oap.util.Stream;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.Comparator;
 import java.util.List;
@@ -76,10 +77,13 @@ public class Migration {
             .toList();
     }
 
-    public String toScript( String mongoHost, int mongoPort, String database ) {
+    public String toScript( String mongoHost, int mongoPort, String database, String user, String password ) {
         StringBuilder script = new StringBuilder();
         script.append( "conn = new Mongo(\"" ).append( mongoHost ).append( ":" ).append( mongoPort ).append( "\");\n" );
         script.append( "db = conn.getDB(\"" ).append( database ).append( "\");\n" );
+        if( StringUtils.isNotEmpty( user ) && StringUtils.isNotEmpty( password ) ) {
+            script.append( "db.auth(\"" ).append( user ).append( "\",\"" ).append( password ).append( "\");\n" );
+        }
         script.append( "\n// ========== PARAMETERS ==========\n" );
         params.forEach( ( n, v ) -> script.append( "var " ).append( n ).append( " = " )
             .append( v instanceof String ? "\"" + v + "\"" : v ).append( ";\n" ) );
@@ -96,8 +100,16 @@ public class Migration {
         return script.toString();
     }
 
+    public String toScript( String mongoHost, int mongoPort, String database ) {
+        return toScript( mongoHost, mongoPort, database, null, null );
+    }
+
     public void execute( MongoShell shell, String mongoHost, int mongoPort, String database ) {
-        String script = toScript( mongoHost, mongoPort, database );
+        execute( shell, mongoHost, mongoPort, database, null, null );
+    }
+
+    public void execute( MongoShell shell, String mongoHost, int mongoPort, String database, String user, String password ) {
+        String script = toScript( mongoHost, mongoPort, database, user, password );
         log.debug( "executing migration of {} to {} with script\n{}", database, version, script );
         shell.execute( mongoHost, mongoPort, database, script );
     }
