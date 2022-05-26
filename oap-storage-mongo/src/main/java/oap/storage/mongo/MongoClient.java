@@ -36,7 +36,6 @@ import com.mongodb.connection.ServerDescription;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Lists;
-import org.apache.commons.lang.StringUtils;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
@@ -48,7 +47,7 @@ import java.util.Map;
 import static java.util.Objects.requireNonNull;
 import static oap.storage.mongo.MigrationConfig.CONFIGURATION;
 import static oap.util.function.Functions.illegalArgument;
-import static org.apache.commons.lang.StringUtils.*;
+import static org.apache.commons.lang.StringUtils.isNotEmpty;
 
 @Slf4j
 @ToString( exclude = { "migrations", "shell", "mongoClient", "database" } )
@@ -83,7 +82,7 @@ public class MongoClient implements Closeable {
     }
 
     public MongoClient( String host, int port, String database, String physicalDatabase, MongoShell shell, String user, String password ) {
-        this( host, port, database, physicalDatabase, CONFIGURATION.fromClassPath(), shell, user, password);
+        this( host, port, database, physicalDatabase, CONFIGURATION.fromClassPath(), shell, user, password );
     }
 
     public MongoClient( String host, int port, String database, String physicalDatabase ) {
