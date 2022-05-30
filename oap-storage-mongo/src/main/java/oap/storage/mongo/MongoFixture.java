@@ -40,12 +40,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static oap.testng.Asserts.contentOfTestResource;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 
 @Slf4j
 public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
     public static final int mongoPort = 27017;
     public static final String mongoHost = Env.get( "MONGO_HOST", "localhost" );
+    public static final String mongoUser = Env.get( "MONGO_USER", null );
+    public static final String mongoPassword = Env.get( "MONGO_PASSWORD", null );
     public static final String mongoDatabase = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" );
     private Consumer<MongoFixture> databaseInitializer = mf -> {};
     private MongoClient mongoClient;
@@ -58,6 +61,10 @@ public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
         define( "MONGO_HOST", mongoHost );
         define( "MONGO_PORT", String.valueOf( mongoPort ) );
         define( "MONGO_DATABASE", mongoDatabase );
+        if( isNotEmpty( mongoUser ) && isNotEmpty( mongoPassword ) ) {
+            define( "MONGO_USER", mongoUser );
+            define( "MONGO_PASSWORD", mongoPassword );
+        }
         log.debug( "binding MONGO_DATABASE to {}", mongoDatabase + databaseSuffix );
     }
 
