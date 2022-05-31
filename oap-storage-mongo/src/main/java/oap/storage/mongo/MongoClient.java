@@ -24,7 +24,10 @@
 
 package oap.storage.mongo;
 
+import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientOptions;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.MongoClientURI;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -39,6 +42,7 @@ import java.io.Closeable;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.Objects.requireNonNull;
 import static oap.storage.mongo.MigrationConfig.CONFIGURATION;
 
 @Slf4j
@@ -86,6 +90,26 @@ public class MongoClient implements Closeable {
                 com.mongodb.MongoClient.getDefaultCodecRegistry() ) ).build() );
         this.database = mongoClient.getDatabase( physicalDatabase );
         log.debug( "creating mongo client {}", this );
+    }
+
+    private MongoClientSettings.Builder defaultBuilder() {
+        return MongoClientSettings.builder()
+            .codecRegistry( CodecRegistries.fromRegistries(
+                CodecRegistries.fromCodecs( new JodaTimeCodec() ),
+                MongoClientSettings.getDefaultCodecRegistry() ) );
+    }
+
+    public MongoClient( String uri, String databaseName ) {
+        ConnectionString connectionString = new ConnectionString( uri );
+        this.mongoClient = new com.mongodb.MongoClient( new MongoClientURI( uri ) );
+        this.databaseName = databaseName;
+        this.physicalDatabase = requireNonNull( connectionString.getDatabase(), "no database specified in " + uri );
+        this.database = this.mongoClient.getDatabase( physicalDatabase );
+        ServerAddress address = this.mongoClient.getAddress();
+        this.host = address.getHost();
+        this.port = address.getPort();
+        this.migrations = CONFIGURATION.fromClassPath();
+        this.shell = new MongoShell();
     }
 
     public Version databaseVersion() {
