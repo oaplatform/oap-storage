@@ -94,7 +94,13 @@ public class MongoClient implements Closeable {
     }
 
     public MongoClient( String host, int port, String database, String physicalDatabase, boolean withMigrations ) {
-        this( host, port, database, physicalDatabase, withMigrations ? CONFIGURATION.fromClassPath() : List.of() );
+        this( host, port, database, physicalDatabase,
+            withMigrations ? CONFIGURATION.fromClassPath() : List.of(), null, null );
+    }
+
+    public MongoClient( String host, int port, String database, String physicalDatabase, boolean withMigrations, String user, String password ) {
+        this( host, port, database, physicalDatabase,
+            withMigrations ? CONFIGURATION.fromClassPath() : List.of(), user, password );
     }
 
     public MongoClient( String host, int port, String database, String physicalDatabase, List<MigrationConfig> migrations ) {
