@@ -130,7 +130,7 @@ public class MongoClient implements Closeable {
         this.mongoClient = MongoClients.create( settingsBuilder.build() );
         this.database = mongoClient.getDatabase( physicalDatabase );
         log.debug( "creating mongo client host:{}, port:{}, database:{}, physicalDatabase:{}, migrations:{}, shell:{}, user:{}, password:{}",
-            this.host, this.port, this.database, this.physicalDatabase, this.migrations, this.shell, user,password );
+            this.host, this.port, this.database, this.physicalDatabase, this.migrations, this.shell, user, password );
     }
 
     private MongoClientSettings.Builder defaultBuilder() {
@@ -155,7 +155,7 @@ public class MongoClient implements Closeable {
         this.migrations = CONFIGURATION.fromClassPath();
         this.shell = new MongoShell();
         log.debug( "creating mongo client host:{}, port:{}, database:{}, physicalDatabase:{}, migrations:{}, shell:{}",
-            this.host, this.port, this.database, this.physicalDatabase, this.migrations, this.shell);
+            this.host, this.port, this.database, this.physicalDatabase, this.migrations, this.shell );
     }
 
     public Version databaseVersion() {
