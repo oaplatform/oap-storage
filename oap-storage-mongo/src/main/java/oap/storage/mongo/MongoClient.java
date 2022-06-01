@@ -94,7 +94,13 @@ public class MongoClient implements Closeable {
     }
 
     public MongoClient( String host, int port, String database, String physicalDatabase, boolean withMigrations ) {
-        this( host, port, database, physicalDatabase, withMigrations ? CONFIGURATION.fromClassPath() : List.of() );
+        this( host, port, database, physicalDatabase,
+            withMigrations ? CONFIGURATION.fromClassPath() : List.of(), null, null );
+    }
+
+    public MongoClient( String host, int port, String database, String physicalDatabase, boolean withMigrations, String user, String password ) {
+        this( host, port, database, physicalDatabase,
+            withMigrations ? CONFIGURATION.fromClassPath() : List.of(), user, password );
     }
 
     public MongoClient( String host, int port, String database, String physicalDatabase, List<MigrationConfig> migrations ) {
@@ -123,7 +129,8 @@ public class MongoClient implements Closeable {
         }
         this.mongoClient = MongoClients.create( settingsBuilder.build() );
         this.database = mongoClient.getDatabase( physicalDatabase );
-        log.debug( "creating mongo client {}", this );
+        log.debug( "creating mongo client host:{}, port:{}, database:{}, physicalDatabase:{}, migrations:{}, shell:{}, user:{}, password:{}",
+            this.host, this.port, this.database, this.physicalDatabase, this.migrations, this.shell, user, password );
     }
 
     private MongoClientSettings.Builder defaultBuilder() {
@@ -147,6 +154,8 @@ public class MongoClient implements Closeable {
         this.port = address.getPort();
         this.migrations = CONFIGURATION.fromClassPath();
         this.shell = new MongoShell();
+        log.debug( "creating mongo client host:{}, port:{}, database:{}, physicalDatabase:{}, migrations:{}, shell:{}",
+            this.host, this.port, this.database, this.physicalDatabase, this.migrations, this.shell );
     }
 
     public Version databaseVersion() {
