@@ -30,6 +30,7 @@ import oap.testng.AbstractEnvFixture;
 import oap.testng.Suite;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Date;
 import java.util.List;
@@ -104,9 +105,13 @@ public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
     protected void before() {
         super.before();
 
-        mongoClient = new MongoClient( mongoHost, mongoPort, mongoDatabase, mongoDatabase, List.of(),
-            createMongoShell() );
+        mongoClient = createMongoClient();
         databaseInitializer.accept( this );
+    }
+
+    @NotNull
+    private MongoClient createMongoClient() {
+        return new MongoClient( mongoHost, mongoPort, mongoDatabase, mongoDatabase, List.of(), createMongoShell() );
     }
 
     @Override
