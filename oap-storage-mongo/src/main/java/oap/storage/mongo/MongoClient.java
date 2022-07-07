@@ -60,6 +60,8 @@ public class MongoClient implements Closeable {
     final com.mongodb.client.MongoClient mongoClient;
     private final MongoDatabase database;
     private final List<MigrationConfig> migrations;
+    private final String user;
+    private final String password;
 
     public MongoClient( String host, int port, String database ) {
         this( host, port, database, new MongoShell() );
@@ -122,6 +124,8 @@ public class MongoClient implements Closeable {
         this.physicalDatabase = physicalDatabase;
         this.migrations = migrations;
         this.shell = shell;
+        this.user = user;
+        this.password = password;
         final MongoClientSettings.Builder settingsBuilder = defaultBuilder()
             .applyToClusterSettings( b -> b.hosts( Lists.of( new ServerAddress( host, port ) ) ) );
         if( isNotEmpty( user ) && isNotEmpty( password ) ) {
@@ -154,6 +158,8 @@ public class MongoClient implements Closeable {
         this.port = address.getPort();
         this.migrations = CONFIGURATION.fromClassPath();
         this.shell = new MongoShell();
+        this.user = connectionString.getUsername();
+        this.password = connectionString.getPassword().toString();
         log.debug( "creating mongo client host:{}, port:{}, database:{}, physicalDatabase:{}, migrations:{}, shell:{}",
             this.host, this.port, this.database, this.physicalDatabase, this.migrations, this.shell );
     }
@@ -171,7 +177,7 @@ public class MongoClient implements Closeable {
         log.debug( "starting mongo client {}, version {}", this, databaseVersion() );
         for( var migration : Migration.of( databaseName, databaseVersion(), migrations ) ) {
             log.debug( "executing migration {} for {}", migration, databaseVersion() );
-            migration.execute( shell, host, port, physicalDatabase );
+            migration.execute( shell, host, port, physicalDatabase, user, password );
             updateVersion( migration.version );
         }
         log.debug( "migration complete, database is {}", databaseVersion() );
