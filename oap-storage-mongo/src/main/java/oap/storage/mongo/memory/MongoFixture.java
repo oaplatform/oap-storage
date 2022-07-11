@@ -33,6 +33,7 @@ import oap.testng.AbstractEnvFixture;
 import oap.testng.Suite;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
@@ -61,10 +62,20 @@ public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
     protected void before() {
         super.before();
 
-        this.server = new MongoServer( new MemoryBackend() );
+        this.server = createMongoServer();
         log.info( "mongo port = {}", port );
         this.server.bind( host, port );
-        this.mongoClient = new MongoClient( host, port, database, database, List.of(), oap.storage.mongo.MongoFixture.createMongoShell() );
+        this.mongoClient = createMongoClient();
+    }
+
+    @NotNull
+    protected MongoClient createMongoClient() {
+        return new MongoClient( host, port, database, database, List.of(), oap.storage.mongo.MongoFixture.createMongoShell() );
+    }
+
+    @NotNull
+    protected MongoServer createMongoServer() {
+        return new MongoServer( new MemoryBackend() );
     }
 
     @Override
