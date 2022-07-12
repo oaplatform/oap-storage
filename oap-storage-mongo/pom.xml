@@ -33,7 +33,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap-storage-parent</artifactId>
-        <version>${oap-storage.project.version}</version>
+        <version>17.9.7.10</version>
     </parent>
 
     <dependencies>
