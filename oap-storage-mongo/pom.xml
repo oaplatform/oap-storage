@@ -45,7 +45,7 @@
        <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-storage</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${oap-storage.project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.mongodb</groupId>
