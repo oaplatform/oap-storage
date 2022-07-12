@@ -220,7 +220,7 @@ public class DynamoPersistence<I, T> implements Closeable {
     }
 
     private void refreshById( String dynamoId ) {
-        var res = dynamodbClient.getRecord( new Key( tableName, "id", dynamoId ),null );
+        var res = dynamodbClient.getRecord( new Key( tableName, "id", dynamoId ), null );
         if( res != null && res.isSuccess() ) {
             Metadata<T> m = convertFromDynamoItem.apply( res.getSuccessValue() );
             storage.lock.synchronizedOn( dynamoId, () -> {

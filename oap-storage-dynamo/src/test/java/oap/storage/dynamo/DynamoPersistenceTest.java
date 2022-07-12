@@ -106,10 +106,10 @@ public class DynamoPersistenceTest extends Fixtures {
     public void watch() throws IOException {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
 
-        try( var dynamodbClient = new DynamodbClient( DynamodbFixture.DYNAMODB_PROTOCOL, DynamodbFixture.DYNAMODB_HOSTS, DynamodbFixture.DYNAMODB_PORT, DynamodbFixture.AWS_ACCESS_KEY_ID, DynamodbFixture.AWS_SECRET_ACCESS_KEY, DynamodbFixture.AWS_REGION ); ) {
+        try( var dynamodbClient = new DynamodbClient( DynamodbFixture.DYNAMODB_PROTOCOL, DynamodbFixture.DYNAMODB_HOSTS, DynamodbFixture.DYNAMODB_PORT, DynamodbFixture.AWS_ACCESS_KEY_ID, DynamodbFixture.AWS_SECRET_ACCESS_KEY, DynamodbFixture.AWS_REGION ) ) {
             dynamodbClient.waitConnectionEstablished();
             var persistence = new DynamoPersistence<>( dynamodbClient, "test", 6000, storage, fromDynamo, toDynamo );
-            dynamodbClient.createTable( "test", 2, 1, "id", "S", null, null, ( builder ) -> builder.streamSpecification( StreamSpecification.builder().streamEnabled( true ).streamViewType( StreamViewType.NEW_AND_OLD_IMAGES ).build() ) );
+            dynamodbClient.createTable( "test", 2, 1, "id", "S", null, null, builder -> builder.streamSpecification( StreamSpecification.builder().streamEnabled( true ).streamViewType( StreamViewType.NEW_AND_OLD_IMAGES ).build() ) );
 
             persistence.watch = true;
             persistence.preStart();
@@ -126,10 +126,10 @@ public class DynamoPersistenceTest extends Fixtures {
     public void sync() throws IOException {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
 
-        try( var dynamodbClient = new DynamodbClient( DynamodbFixture.DYNAMODB_PROTOCOL, DynamodbFixture.DYNAMODB_HOSTS, DynamodbFixture.DYNAMODB_PORT, DynamodbFixture.AWS_ACCESS_KEY_ID, DynamodbFixture.AWS_SECRET_ACCESS_KEY, DynamodbFixture.AWS_REGION ); ) {
+        try( var dynamodbClient = new DynamodbClient( DynamodbFixture.DYNAMODB_PROTOCOL, DynamodbFixture.DYNAMODB_HOSTS, DynamodbFixture.DYNAMODB_PORT, DynamodbFixture.AWS_ACCESS_KEY_ID, DynamodbFixture.AWS_SECRET_ACCESS_KEY, DynamodbFixture.AWS_REGION ) ) {
             dynamodbClient.waitConnectionEstablished();
             var persistence = new DynamoPersistence<>( dynamodbClient, "test", 500, storage, fromDynamo, toDynamo );
-            dynamodbClient.createTable( "test", 2, 1, "id", "S", null, null, ( builder ) -> builder.streamSpecification( StreamSpecification.builder().streamEnabled( true ).streamViewType( StreamViewType.NEW_AND_OLD_IMAGES ).build() ) );
+            dynamodbClient.createTable( "test", 2, 1, "id", "S", null, null, builder -> builder.streamSpecification( StreamSpecification.builder().streamEnabled( true ).streamViewType( StreamViewType.NEW_AND_OLD_IMAGES ).build() ) );
             dynamodbClient.update( new Key( "test", "id", "1" ), "firstName", "John" );
             persistence.preStart();
 
@@ -149,10 +149,10 @@ public class DynamoPersistenceTest extends Fixtures {
     public void syncWithDeletedItems() throws IOException {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
 
-        try( var dynamodbClient = new DynamodbClient( DynamodbFixture.DYNAMODB_PROTOCOL, DynamodbFixture.DYNAMODB_HOSTS, DynamodbFixture.DYNAMODB_PORT, DynamodbFixture.AWS_ACCESS_KEY_ID, DynamodbFixture.AWS_SECRET_ACCESS_KEY, DynamodbFixture.AWS_REGION ); ) {
+        try( var dynamodbClient = new DynamodbClient( DynamodbFixture.DYNAMODB_PROTOCOL, DynamodbFixture.DYNAMODB_HOSTS, DynamodbFixture.DYNAMODB_PORT, DynamodbFixture.AWS_ACCESS_KEY_ID, DynamodbFixture.AWS_SECRET_ACCESS_KEY, DynamodbFixture.AWS_REGION ) ) {
             dynamodbClient.waitConnectionEstablished();
             var persistence = new DynamoPersistence<>( dynamodbClient, "test", 500, storage, fromDynamo, toDynamo );
-            dynamodbClient.createTable( "test", 2, 1, "id", "S", null, null, ( builder ) -> builder.streamSpecification( StreamSpecification.builder().streamEnabled( true ).streamViewType( StreamViewType.NEW_AND_OLD_IMAGES ).build() ) );
+            dynamodbClient.createTable( "test", 2, 1, "id", "S", null, null, builder -> builder.streamSpecification( StreamSpecification.builder().streamEnabled( true ).streamViewType( StreamViewType.NEW_AND_OLD_IMAGES ).build() ) );
             dynamodbClient.update( new Key( "test", "id", "1" ), "name", "John" );
             persistence.preStart();
 
@@ -171,10 +171,10 @@ public class DynamoPersistenceTest extends Fixtures {
     public void bothStoragesShouldBeEmpty() throws IOException {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
 
-        try( var dynamodbClient = new DynamodbClient( DynamodbFixture.DYNAMODB_PROTOCOL, DynamodbFixture.DYNAMODB_HOSTS, DynamodbFixture.DYNAMODB_PORT, DynamodbFixture.AWS_ACCESS_KEY_ID, DynamodbFixture.AWS_SECRET_ACCESS_KEY, DynamodbFixture.AWS_REGION ); ) {
+        try( var dynamodbClient = new DynamodbClient( DynamodbFixture.DYNAMODB_PROTOCOL, DynamodbFixture.DYNAMODB_HOSTS, DynamodbFixture.DYNAMODB_PORT, DynamodbFixture.AWS_ACCESS_KEY_ID, DynamodbFixture.AWS_SECRET_ACCESS_KEY, DynamodbFixture.AWS_REGION ) ) {
             dynamodbClient.waitConnectionEstablished();
             var persistence = new DynamoPersistence<>( dynamodbClient, "test", 500, storage, fromDynamo, toDynamo );
-            dynamodbClient.createTable( "test", 2, 1, "id", "S", null, null, ( builder ) -> builder.streamSpecification( StreamSpecification.builder().streamEnabled( true ).streamViewType( StreamViewType.NEW_AND_OLD_IMAGES ).build() ) );
+            dynamodbClient.createTable( "test", 2, 1, "id", "S", null, null, builder -> builder.streamSpecification( StreamSpecification.builder().streamEnabled( true ).streamViewType( StreamViewType.NEW_AND_OLD_IMAGES ).build() ) );
             dynamodbClient.update( new Key( "test", "id", "1" ), "firstName", "John" );
             dynamodbClient.update( new Key( "test", "id", "2" ), "firstName", "Anna" );
             persistence.watch = true;
