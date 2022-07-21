@@ -145,6 +145,10 @@ public class MongoClient implements Closeable {
     }
 
     public MongoClient( String uri, String databaseName ) {
+        this( uri, databaseName, true );
+    }
+
+    public MongoClient( String uri, String databaseName, boolean withMigration ) {
         ConnectionString connectionString = new ConnectionString( uri );
         this.mongoClient = MongoClients.create( defaultBuilder()
             .applyConnectionString( connectionString ).build() );
@@ -156,10 +160,11 @@ public class MongoClient implements Closeable {
             .orElseThrow( illegalArgument( "no server description found for " + uri ) );
         this.host = address.getHost();
         this.port = address.getPort();
-        this.migrations = CONFIGURATION.fromClassPath();
+        this.migrations = withMigration ? CONFIGURATION.fromClassPath() : List.of();
         this.shell = new MongoShell();
         this.user = connectionString.getUsername();
-        this.password = connectionString.getPassword() != null ? String.valueOf( connectionString.getPassword() ) : null;
+        this.password =
+            connectionString.getPassword() != null ? String.valueOf( connectionString.getPassword() ) : null;
         log.debug( "creating mongo client host:{}, port:{}, database:{}, physicalDatabase:{}, migrations:{}, shell:{}",
             this.host, this.port, this.database, this.physicalDatabase, this.migrations, this.shell );
     }
