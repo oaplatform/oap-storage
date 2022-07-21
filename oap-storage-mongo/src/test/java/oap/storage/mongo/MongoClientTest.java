@@ -25,6 +25,7 @@
 package oap.storage.mongo;
 
 import oap.testng.Fixtures;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -40,6 +41,15 @@ public class MongoClientTest extends Fixtures {
 
     public MongoClientTest() {
         fixture( mongoFixture = new oap.storage.mongo.memory.MongoFixture() );
+    }
+
+    @Test
+    public void instantiationWithoutCredentialsInConnectionString() {
+        try {
+            new MongoClient(String.format("mongodb://%s:%s/%s", mongoFixture.host, mongoFixture.port, mongoFixture.database), mongoFixture.database);
+        } catch( Exception e ) {
+            Assert.fail(e.getMessage());
+        }
     }
 
     @Test
