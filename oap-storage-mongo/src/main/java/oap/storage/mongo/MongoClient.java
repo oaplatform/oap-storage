@@ -159,7 +159,7 @@ public class MongoClient implements Closeable {
         this.migrations = CONFIGURATION.fromClassPath();
         this.shell = new MongoShell();
         this.user = connectionString.getUsername();
-        this.password = connectionString.getPassword().toString();
+        this.password = connectionString.getPassword() != null ? String.valueOf(connectionString.getPassword()) : null;
         log.debug( "creating mongo client host:{}, port:{}, database:{}, physicalDatabase:{}, migrations:{}, shell:{}",
             this.host, this.port, this.database, this.physicalDatabase, this.migrations, this.shell );
     }
