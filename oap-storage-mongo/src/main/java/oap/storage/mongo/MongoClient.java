@@ -62,6 +62,7 @@ public class MongoClient implements Closeable {
     private final List<MigrationConfig> migrations;
     private final String user;
     private final String password;
+    private final boolean retryableWrites = true;
 
     public MongoClient( String host, int port, String database ) {
         this( host, port, database, new MongoShell() );
@@ -131,6 +132,7 @@ public class MongoClient implements Closeable {
         if( isNotEmpty( user ) && isNotEmpty( password ) ) {
             settingsBuilder.credential( MongoCredential.createCredential( user, database, password.toCharArray() ) );
         }
+        settingsBuilder.retryWrites( retryableWrites );
         this.mongoClient = MongoClients.create( settingsBuilder.build() );
         this.database = mongoClient.getDatabase( physicalDatabase );
         log.debug( "creating mongo client host:{}, port:{}, database:{}, physicalDatabase:{}, migrations:{}, shell:{}, user:{}, password:{}",
