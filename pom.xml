@@ -49,10 +49,6 @@
             <id>oap</id>
             <url>https://mvn.oaplatform.org</url>
         </repository>
-        <repository>
-            <id>jitpack</id>
-            <url>https://jitpack.io</url>
-        </repository>
     </repositories>
 
     <properties>
