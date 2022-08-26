@@ -41,10 +41,14 @@
     <modules>
         <module>oap-storage</module>
         <module>oap-storage-mongo</module>
-        <module>oap-storage-dynamo</module>
+<!--        <module>oap-storage-dynamo</module>-->
     </modules>
 
     <repositories>
+        <repository>
+            <id>jitpack</id>
+            <url>https://jitpack.io</url>
+        </repository>
         <repository>
             <id>oap</id>
             <url>https://mvn.oaplatform.org</url>
