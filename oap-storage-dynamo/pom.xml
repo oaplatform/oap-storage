@@ -76,7 +76,7 @@
         </dependency>
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-dynamodb</artifactId>
+            <artifactId>oap-dynamo-db</artifactId>
             <version>${oap-dynamodb.version}</version>
             <scope>compile</scope>
         </dependency>
