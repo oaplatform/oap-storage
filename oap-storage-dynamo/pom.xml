@@ -74,11 +74,16 @@
             <version>${oap.deps.lombok.version}</version>
             <scope>provided</scope>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>oap</groupId>-->
+<!--            <artifactId>oap-dynamo-db</artifactId>-->
+<!--            <version>${oap-dynamodb.version}</version>-->
+<!--            <scope>compile</scope>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-dynamo-db</artifactId>
-            <version>${oap-dynamodb.version}</version>
-            <scope>compile</scope>
+            <version>17.4.3.11</version>
         </dependency>
     </dependencies>
 
