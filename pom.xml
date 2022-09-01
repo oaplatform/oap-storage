@@ -40,8 +40,8 @@
 
     <modules>
         <module>oap-storage</module>
-        <module>oap-storage-mongo</module>
         <module>oap-storage-dynamo</module>
+        <module>oap-storage-mongo</module>
     </modules>
 
     <repositories>
