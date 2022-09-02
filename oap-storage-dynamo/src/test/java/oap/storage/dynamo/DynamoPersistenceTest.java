@@ -38,6 +38,7 @@ import oap.storage.Metadata;
 import oap.system.Env;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.StreamSpecification;
@@ -55,6 +56,7 @@ import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
+@Ignore
 public class DynamoPersistenceTest extends Fixtures {
 
     private final DynamodbFixture fixture;
