@@ -25,6 +25,7 @@
 package oap.storage.mongo.memory;
 
 import de.bwaldvogel.mongo.MongoServer;
+import de.bwaldvogel.mongo.ServerVersion;
 import de.bwaldvogel.mongo.backend.memory.MemoryBackend;
 import lombok.extern.slf4j.Slf4j;
 import oap.storage.mongo.MongoClient;
@@ -75,7 +76,7 @@ public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
 
     @NotNull
     protected MongoServer createMongoServer() {
-        return new MongoServer( new MemoryBackend() );
+        return new MongoServer( new MemoryBackend().version( ServerVersion.MONGO_3_6 ) );
     }
 
     @Override
