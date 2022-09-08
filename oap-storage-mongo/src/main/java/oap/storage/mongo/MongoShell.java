@@ -42,8 +42,11 @@ import static java.util.Arrays.asList;
 public class MongoShell {
     public static final String[] SHELL_LOCATIONS = {
         "/usr/bin/mongo",
+        "/usr/bin/mongosh",
         "/usr/local/bin/mongo",
-        "/usr/local/opt/mongodb-community/bin/mongo"
+        "/usr/local/bin/mongosh",
+        "/usr/local/opt/mongodb-community/bin/mongo",
+        "/usr/local/opt/mongodb-community/bin/mongosh"
     };
     private final String path;
 
@@ -53,7 +56,7 @@ public class MongoShell {
             .orElseGet( () -> {
                 log.warn( "can't find mongo shell at " + asList( SHELL_LOCATIONS ) );
                 log.warn( "defaulting to mongo executable" );
-                return "mongo";
+                return "mongosh";
             } ) );
     }
 
