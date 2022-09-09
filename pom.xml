@@ -57,7 +57,7 @@
 
     <properties>
         <oap-storage.project.version>17.9.12.0</oap-storage.project.version>
-        <oap-dynamodb.version>17.4.3.11</oap-dynamodb.version>
+        <oap-dynamodb.version>17.4.4.3</oap-dynamodb.version>
 
         <oap.deps.oap.version>17.10.28.1</oap.deps.oap.version>
 
