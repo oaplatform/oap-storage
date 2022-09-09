@@ -57,7 +57,7 @@
 
     <properties>
         <oap-storage.project.version>17.9.12.0</oap-storage.project.version>
-        <oap-dynamodb.version>17.4.3.11</oap-dynamodb.version>
+        <oap-dynamodb.version>17.4.4.3</oap-dynamodb.version>
 
         <oap.deps.oap.version>17.10.28.1</oap.deps.oap.version>
 
@@ -70,5 +70,6 @@
         <oap.deps.apache.exec.version>1.3</oap.deps.apache.exec.version>
         <oap.deps.mongo-java-server.version>1.41.0</oap.deps.mongo-java-server.version>
         <oap.deps.netty.version>4.1.72.Final</oap.deps.netty.version>
+        <oap.deps.testcontainers.version>1.15.2</oap.deps.testcontainers.version>
     </properties>
 </project>
