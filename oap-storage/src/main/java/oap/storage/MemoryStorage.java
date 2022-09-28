@@ -280,6 +280,10 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
             return Optional.ofNullable( data.remove( id ) );
         }
 
+        public void clear() {
+            data.clear();
+        }
+
         public Stream<I> selectLiveIds() {
             return selectLive().mapToObj( ( id, m ) -> id );
         }
