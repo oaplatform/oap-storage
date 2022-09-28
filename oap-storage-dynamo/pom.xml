@@ -40,13 +40,19 @@
     <dependencies>
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-stdlib</artifactId>
-            <version>${oap.deps.oap.version}</version>
+            <artifactId>oap-storage</artifactId>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-storage</artifactId>
+            <artifactId>oap-storage-dynamo-client</artifactId>
             <version>${project.parent.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-stdlib</artifactId>
+            <version>${oap.deps.oap.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -73,11 +79,6 @@
             <artifactId>lombok</artifactId>
             <version>${oap.deps.lombok.version}</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-dynamo-db</artifactId>
-            <version>${oap-dynamodb.version}</version>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
