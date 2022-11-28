@@ -26,6 +26,7 @@ package oap.storage.dynamo.client.batch;
 
 import oap.application.Kernel;
 import oap.application.module.Module;
+import oap.storage.dynamo.client.AbstractDynamodbFixture;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.storage.dynamo.client.Key;
 import oap.storage.dynamo.client.TestContainerDynamodbFixture;
@@ -35,7 +36,6 @@ import oap.storage.dynamo.client.crud.DeleteItemOperation;
 import oap.storage.dynamo.client.crud.OperationType;
 import oap.storage.dynamo.client.crud.ReadItemOperation;
 import oap.storage.dynamo.client.crud.UpdateItemOperation;
-import oap.storage.dynamo.client.AbstractDynamodbFixture;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
@@ -44,9 +44,8 @@ import oap.util.Pair;
 import oap.util.Result;
 import oap.util.Sets;
 import org.jetbrains.annotations.NotNull;
-import org.testng.annotations.Ignore;
-import org.testng.annotations.Test;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.nio.charset.StandardCharsets;
@@ -59,7 +58,6 @@ import java.util.Random;
 import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Ignore
 public class BatchOperationHelperTest extends Fixtures {
     private String tableName1 = "batchTable1";
     private String tableName2 = "batchTable2";
@@ -70,7 +68,7 @@ public class BatchOperationHelperTest extends Fixtures {
     public BatchOperationHelperTest() {
         fixture( fixture );
         Kernel kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-        kernel.start( pathOfResource( getClass(), "/oap/dynamodb/test-application.conf" ) );
+        kernel.start( pathOfResource( getClass(), "/oap/storage/dynamo/client/test-application.conf" ) );
     }
 
     @BeforeMethod
@@ -88,20 +86,20 @@ public class BatchOperationHelperTest extends Fixtures {
 
         WriteBatchOperationHelper helper = new WriteBatchOperationHelper( client );
         List<AbstractOperation> operations = Lists.of(
-                new CreateItemOperation(
-                        new Key( tableName1, keyName, "id1" ),
-                        Maps.of(
-                                new Pair<>( "StringColumn", "string value" )
-                        )
-                ),
-                new CreateItemOperation(
-                        new Key( tableName1, keyName, "id2" ),
-                        Maps.of(
-                                new Pair<>( "StringColumn", "string value" )
-                        )
-                ),
-                new DeleteItemOperation( new Key( tableName1, keyName, "id2" ) ),
-                new DeleteItemOperation( new Key( tableName1, keyName, "id1" ) )
+            new CreateItemOperation(
+                new Key( tableName1, keyName, "id1" ),
+                Maps.of(
+                    new Pair<>( "StringColumn", "string value" )
+                )
+            ),
+            new CreateItemOperation(
+                new Key( tableName1, keyName, "id2" ),
+                Maps.of(
+                    new Pair<>( "StringColumn", "string value" )
+                )
+            ),
+            new DeleteItemOperation( new Key( tableName1, keyName, "id2" ) ),
+            new DeleteItemOperation( new Key( tableName1, keyName, "id1" ) )
         );
         helper.addOperations( operations );
 
@@ -133,8 +131,8 @@ public class BatchOperationHelperTest extends Fixtures {
         Result<Map<String, AttributeValue>, DynamodbClient.State> id1 = client.getRecord( key, null );
 
         assertThat( id1.successValue.size() ).isEqualTo( 7 );
-        assertThat( id1.successValue.get( "StringColumn" ).s() ).isEqualTo(  "string value 1 updated" );
-        assertThat( id1.successValue.get( "ByteColumn" ).b().asByteArray() ).isEqualTo(  "新機能！かんたんスピード検索".getBytes( StandardCharsets.UTF_8 ) );
+        assertThat( id1.successValue.get( "StringColumn" ).s() ).isEqualTo( "string value 1 updated" );
+        assertThat( id1.successValue.get( "ByteColumn" ).b().asByteArray() ).isEqualTo( "新機能！かんたんスピード検索".getBytes( StandardCharsets.UTF_8 ) );
         assertThat( id1.successValue.get( "IntColumn" ).n() ).isEqualTo( "1" ); // the value returned as string
         assertThat( id1.successValue.get( "BoolColumn" ).bool() ).isTrue();
         assertThat( id1.successValue.get( "DoubleColumn" ).n() ).isEqualTo( String.valueOf( Math.PI ) );
@@ -142,7 +140,7 @@ public class BatchOperationHelperTest extends Fixtures {
 
         Result<Map<String, AttributeValue>, DynamodbClient.State> id2 = client.getRecord( new Key( tableName1, keyName, "id2" ), null );
         assertThat( id2.successValue.size() ).isEqualTo( 5 );
-        assertThat( id2.successValue.get( "StringColumn" ).s() ).isEqualTo(  "string value 2 updated" );
+        assertThat( id2.successValue.get( "StringColumn" ).s() ).isEqualTo( "string value 2 updated" );
         assertThat( id2.successValue.get( "IntColumn" ).n() ).isEqualTo( "2" ); // the value returned as string
         assertThat( id2.successValue.get( "BoolColumn" ).bool() ).isFalse();
         assertThat( id2.successValue.get( "DoubleColumn" ).n() ).isEqualTo( String.valueOf( Math.E ) );
@@ -177,48 +175,48 @@ public class BatchOperationHelperTest extends Fixtures {
     @NotNull
     private List<AbstractOperation> createOperationsForTable( String tableName, boolean withoutUpdates ) {
         List<AbstractOperation> operations = Lists.of(
-                new CreateItemOperation(
-                        new Key( tableName, keyName, "id1" ),
-                        Maps.of(
-                                new Pair<>( "StringColumn", "string value 1" ),
-                                new Pair<>( "StringColumnNull", "string value 1 to be overwritten with null" ),
-                                new Pair<>( "IntColumn", 1 ),
-                                new Pair<>( "BoolColumn", true ),
-                                new Pair<>( "DoubleColumn", Math.PI ),
-                                new Pair<>( "ByteColumn", "新機能！かんたんスピード検索".getBytes( StandardCharsets.UTF_8 ) )
-                        )
-                ),
-                new CreateItemOperation(
-                        new Key( tableName, keyName, "id2" ),
-                        Maps.of(
-                                new Pair<>( "StringColumn", "string value 2" ),
-                                new Pair<>( "IntColumn", 2 ),
-                                new Pair<>( "BoolColumn", false ),
-                                new Pair<>( "DoubleColumn", Math.E )
-                        )
-                ),
-                new UpdateItemOperation(
-                        new Key( tableName, keyName, "id1" ),
-                        Maps.of(
-                                new Pair<>( "StringColumn", "string value 1 updated" ),
-                                new Pair<>( "StringColumnNull", null )
-                        )
-                ),
-                new CreateItemOperation(
-                        new Key( tableName, keyName, "id3" ),
-                        Maps.of(
-                                new Pair<>( "StringColumn", "to be deleted" )
-                        )
-                ),
-                new UpdateItemOperation(
-                        new Key( tableName, keyName, "id2" ),
-                        Maps.of(
-                                new Pair<>( "StringColumn", "string value 2 updated" )
-                        )
-                ),
-                new DeleteItemOperation( new Key( tableName, keyName, "id3" ) )
+            new CreateItemOperation(
+                new Key( tableName, keyName, "id1" ),
+                Maps.of(
+                    new Pair<>( "StringColumn", "string value 1" ),
+                    new Pair<>( "StringColumnNull", "string value 1 to be overwritten with null" ),
+                    new Pair<>( "IntColumn", 1 ),
+                    new Pair<>( "BoolColumn", true ),
+                    new Pair<>( "DoubleColumn", Math.PI ),
+                    new Pair<>( "ByteColumn", "新機能！かんたんスピード検索".getBytes( StandardCharsets.UTF_8 ) )
+                )
+            ),
+            new CreateItemOperation(
+                new Key( tableName, keyName, "id2" ),
+                Maps.of(
+                    new Pair<>( "StringColumn", "string value 2" ),
+                    new Pair<>( "IntColumn", 2 ),
+                    new Pair<>( "BoolColumn", false ),
+                    new Pair<>( "DoubleColumn", Math.E )
+                )
+            ),
+            new UpdateItemOperation(
+                new Key( tableName, keyName, "id1" ),
+                Maps.of(
+                    new Pair<>( "StringColumn", "string value 1 updated" ),
+                    new Pair<>( "StringColumnNull", null )
+                )
+            ),
+            new CreateItemOperation(
+                new Key( tableName, keyName, "id3" ),
+                Maps.of(
+                    new Pair<>( "StringColumn", "to be deleted" )
+                )
+            ),
+            new UpdateItemOperation(
+                new Key( tableName, keyName, "id2" ),
+                Maps.of(
+                    new Pair<>( "StringColumn", "string value 2 updated" )
+                )
+            ),
+            new DeleteItemOperation( new Key( tableName, keyName, "id3" ) )
         );
-        if ( withoutUpdates ) {
+        if( withoutUpdates ) {
             return operations.stream().filter( operation -> operation.getType() != OperationType.UPDATE ).toList();
         }
         return operations;
@@ -261,7 +259,7 @@ public class BatchOperationHelperTest extends Fixtures {
         helper.addOperation( new ReadItemOperation( id24, null ) );
 
         Map<String, Collection<Map<String, AttributeValue>>> result = helper.read(
-                r -> r.attributesToGet( Sets.of( keyName, "record1bin1", "record1bin2", "record2bin1", "record2bin2", "record2bin3" ) )
+            r -> r.attributesToGet( Sets.of( keyName, "record1bin1", "record1bin2", "record2bin1", "record2bin2", "record2bin3" ) )
         );
 
         assertThat( result.size() ).isEqualTo( 2 );

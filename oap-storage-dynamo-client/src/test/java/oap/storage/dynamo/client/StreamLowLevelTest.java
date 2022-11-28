@@ -31,9 +31,8 @@ import oap.storage.dynamo.client.streams.DynamodbStreamsRecordProcessor;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.jetbrains.annotations.NotNull;
-import org.testng.annotations.Ignore;
-import org.testng.annotations.Test;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.StreamSpecification;
 import software.amazon.awssdk.services.dynamodb.model.StreamViewType;
@@ -50,7 +49,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Ignore
 @Slf4j
 public class StreamLowLevelTest extends Fixtures {
     private final String tableName = "tableForStream";
@@ -62,7 +60,7 @@ public class StreamLowLevelTest extends Fixtures {
     public StreamLowLevelTest() {
         fixture( fixture );
         Kernel kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-        kernel.start( pathOfResource( getClass(), "/oap/dynamodb/test-application.conf" ) );
+        kernel.start( pathOfResource( getClass(), "/oap/storage/dynamo/client/test-application.conf" ) );
     }
 
     @BeforeMethod
@@ -78,10 +76,10 @@ public class StreamLowLevelTest extends Fixtures {
         client.deleteTable( tableName );
 
         client.createTable( tableName, 2, 1, keyName, "S", null, null,
-                z -> z.streamSpecification( StreamSpecification.builder()
-                        .streamEnabled( true )
-                        .streamViewType( StreamViewType.NEW_AND_OLD_IMAGES )
-                        .build() ) );
+            z -> z.streamSpecification( StreamSpecification.builder()
+                .streamEnabled( true )
+                .streamViewType( StreamViewType.NEW_AND_OLD_IMAGES )
+                .build() ) );
 
         //create stream for a table
         TableDescription table = client.describeTable( tableName, null );
@@ -106,7 +104,7 @@ public class StreamLowLevelTest extends Fixtures {
             DynamodbStreamsRecordProcessor processor = DynamodbStreamsRecordProcessor.builder( client ).build();
             try {
                 recordsAreWritten.await( 5, TimeUnit.SECONDS );
-            } catch ( InterruptedException e ) {
+            } catch( InterruptedException e ) {
                 throw new RuntimeException( e );
             }
             extractChanges( streamArn, processor, changes );
@@ -115,12 +113,12 @@ public class StreamLowLevelTest extends Fixtures {
         service.awaitTermination( 1, TimeUnit.MINUTES );
 
         assertThat( changes.toString() ).isEqualTo( "["
-                        + "id:{id=AttributeValue(S=787846fd-6e98-4ca9-a2d4-236ff93aa0271)}|v1:null->false|v2:null->null, " // update 1
-                        + "id:{id=AttributeValue(S=787846fd-6e98-4ca9-a2d4-236ff93aa0271)}|v1:false->true|v2:null->null, " // update 2
-                        + "id:{id=AttributeValue(S=787846fd-6e98-4ca9-a2d4-236ff93aa0271)}|v1:true->true|v2:null->3.141592653589793, " // update 3
-                        + "id:{id=AttributeValue(S=787846fd-6e98-4ca9-a2d4-236ff93aa0271)}|v1:true->true|v2:3.141592653589793->null, " // update 4
-                        + "id:{id=AttributeValue(S=787846fd-6e98-4ca9-a2d4-236ff93aa0271)}|v1:true->null|v2:null->null" // delete
-                        + "]" );
+            + "id:{id=AttributeValue(S=787846fd-6e98-4ca9-a2d4-236ff93aa0271)}|v1:null->false|v2:null->null, " // update 1
+            + "id:{id=AttributeValue(S=787846fd-6e98-4ca9-a2d4-236ff93aa0271)}|v1:false->true|v2:null->null, " // update 2
+            + "id:{id=AttributeValue(S=787846fd-6e98-4ca9-a2d4-236ff93aa0271)}|v1:true->true|v2:null->3.141592653589793, " // update 3
+            + "id:{id=AttributeValue(S=787846fd-6e98-4ca9-a2d4-236ff93aa0271)}|v1:true->true|v2:3.141592653589793->null, " // update 4
+            + "id:{id=AttributeValue(S=787846fd-6e98-4ca9-a2d4-236ff93aa0271)}|v1:true->null|v2:null->null" // delete
+            + "]" );
 
         client.deleteTableIfExists( tableName );
     }
@@ -133,10 +131,10 @@ public class StreamLowLevelTest extends Fixtures {
         client.deleteTable( tableName );
 
         client.createTable( tableName, 2, 1, keyName, "S", null, null,
-                z -> z.streamSpecification( StreamSpecification.builder()
-                        .streamEnabled( true )
-                        .streamViewType( StreamViewType.NEW_AND_OLD_IMAGES )
-                        .build() ) );
+            z -> z.streamSpecification( StreamSpecification.builder()
+                .streamEnabled( true )
+                .streamViewType( StreamViewType.NEW_AND_OLD_IMAGES )
+                .build() ) );
         client.recreateTable( tableName, keyName );
 
         //create stream for a table
@@ -158,7 +156,7 @@ public class StreamLowLevelTest extends Fixtures {
             DynamodbStreamsRecordProcessor processor = DynamodbStreamsRecordProcessor.builder( client ).build();
             try {
                 recordsAreWritten.await( 5, TimeUnit.SECONDS );
-            } catch ( InterruptedException e ) {
+            } catch( InterruptedException e ) {
                 throw new RuntimeException( e );
             }
             extractChanges( streamArn, processor, changes );
@@ -181,17 +179,17 @@ public class StreamLowLevelTest extends Fixtures {
     private void extractChanges( String streamArn, DynamodbStreamsRecordProcessor processor, List<String> changes ) {
         processor.processRecords( streamArn, record -> {
             AttributeValue newV1Value = record.dynamodb().newImage().get( "v1" );
-            if ( newV1Value == null ) newV1Value = AttributeValue.fromBool( null );
+            if( newV1Value == null ) newV1Value = AttributeValue.fromBool( null );
             AttributeValue newV2Value = record.dynamodb().newImage().get( "v2" );
-            if ( newV2Value == null ) newV2Value = AttributeValue.fromN( null );
+            if( newV2Value == null ) newV2Value = AttributeValue.fromN( null );
             AttributeValue oldV1Value = record.dynamodb().oldImage().get( "v1" );
-            if ( oldV1Value == null ) oldV1Value = AttributeValue.fromBool( null );
+            if( oldV1Value == null ) oldV1Value = AttributeValue.fromBool( null );
             AttributeValue oldV2Value = record.dynamodb().oldImage().get( "v2" );
-            if ( oldV2Value == null ) oldV2Value = AttributeValue.fromN( null );
+            if( oldV2Value == null ) oldV2Value = AttributeValue.fromN( null );
 
             changes.add( "id:" + record.dynamodb().keys()
-                    + "|v1:" + oldV1Value.bool() + "->" + newV1Value.bool()
-                    + "|v2:" + oldV2Value.n() + "->" + newV2Value.n() );
+                + "|v1:" + oldV1Value.bool() + "->" + newV1Value.bool()
+                + "|v2:" + oldV2Value.n() + "->" + newV2Value.n() );
         } );
     }
 }

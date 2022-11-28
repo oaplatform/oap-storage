@@ -33,9 +33,7 @@ import oap.util.HashMaps;
 import oap.util.Result;
 import oap.util.Sets;
 import org.jetbrains.annotations.NotNull;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
-
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
 
@@ -48,8 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-@Ignore
-public class RetryClientTest  extends Fixtures {
+public class RetryClientTest extends Fixtures {
 
     public static final String TABLE_NAME = "retryTest";
     public static final String ID_COLUMN_NAME = "id";
@@ -59,14 +56,14 @@ public class RetryClientTest  extends Fixtures {
     public RetryClientTest() {
         fixture( fixture );
         var kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-        kernel.start( pathOfResource( getClass(), "/oap/dynamodb/test-application.conf" ) );
+        kernel.start( pathOfResource( getClass(), "/oap/storage/dynamo/client/test-application.conf" ) );
     }
 
     private AtomicInteger counter = new AtomicInteger();
     private Map<String, AttributeValue> attributeValueMap = HashMaps.of(
-            "generation", AttributeValue.fromN( "2" ),
-            "bin1", AttributeValue.fromS( "Adam Smith" ),
-            "bin2", AttributeValue.fromS( "Samuel Collins" )
+        "generation", AttributeValue.fromN( "2" ),
+        "bin1", AttributeValue.fromS( "Adam Smith" ),
+        "bin2", AttributeValue.fromS( "Samuel Collins" )
     );
 
     @NotNull
@@ -75,9 +72,10 @@ public class RetryClientTest  extends Fixtures {
             public Result<Map<String, AttributeValue>, State> getRecord( Key key, GetItemRequestModifier modifier ) {
                 return Result.success( attributeValueMap );
             }
+
             public Result<UpdateItemResponse, DynamodbClient.State> updateRecordAtomic( Key key, Map<String, AttributeValue> binNamesAndValues, UpdateItemRequestModifier modifier, int generation ) {
                 counter.incrementAndGet();
-                if ( counter.get() == 5 ) {
+                if( counter.get() == 5 ) {
                     attributeValueMap.put( "generation", AttributeValue.fromN( "2" ) );
                     attributeValueMap.put( "bin3", AttributeValue.fromS( "v2" ) );
                     return Result.success( UpdateItemResponse.builder().attributes( attributeValueMap ).build() );
@@ -100,14 +98,14 @@ public class RetryClientTest  extends Fixtures {
         Map<String, AttributeValue> attributes = Collections.singletonMap( "bin3", AttributeValue.fromS( "v1" ) );
 
         Result<UpdateItemResponse, DynamodbClient.State> result = client.updateRecordAtomicWithRetry( key,
-                Sets.of( "bin1", "bin2" ),
-                attributeValueMap -> {
-                    Map<String, AttributeValue> map = new HashMap<>( attributeValueMap );
-                    map.putAll( attributes );
-                    return attributes;
-                },
-                5,
-                1 );
+            Sets.of( "bin1", "bin2" ),
+            attributeValueMap -> {
+                Map<String, AttributeValue> map = new HashMap<>( attributeValueMap );
+                map.putAll( attributes );
+                return attributes;
+            },
+            5,
+            1 );
 
         assertThat( counter.get() ).isEqualTo( 5 );
         assertThat( result.isSuccess() ).isTrue();

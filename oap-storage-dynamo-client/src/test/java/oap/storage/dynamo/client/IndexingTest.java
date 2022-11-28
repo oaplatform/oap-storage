@@ -36,10 +36,8 @@ import oap.testng.TestDirectoryFixture;
 import oap.util.Maps;
 import oap.util.Pair;
 import org.jetbrains.annotations.NotNull;
-import org.testng.annotations.Ignore;
-import org.testng.annotations.Test;
 import org.testng.annotations.BeforeMethod;
-
+import org.testng.annotations.Test;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.StaticTableSchema;
@@ -64,7 +62,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTags.primaryPartitionKey;
 import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTags.secondaryPartitionKey;
 
-@Ignore
 @Slf4j
 public class IndexingTest extends Fixtures {
 
@@ -75,7 +72,7 @@ public class IndexingTest extends Fixtures {
     public IndexingTest() {
         fixture( fixture );
         var kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-        kernel.start( pathOfResource( getClass(), "/oap/dynamodb/test-application.conf" ) );
+        kernel.start( pathOfResource( getClass(), "/oap/storage/dynamo/client/test-application.conf" ) );
     }
 
     @BeforeMethod
@@ -109,16 +106,16 @@ public class IndexingTest extends Fixtures {
         assertThat( client.update( key4, "aaa", 2 ).getSuccessValue() ).isNotNull();
 
         client.createIndex(
-                new KeyForSchema( tableName, keyName ),
-                indexName,
-                "test_bin",
-                DynamodbDatatype.NUMBER,
-                null,
-                null );
+            new KeyForSchema( tableName, keyName ),
+            indexName,
+            "test_bin",
+            DynamodbDatatype.NUMBER,
+            null,
+            null );
 
         var resultFuture = defineScanTableStream( client, tableName, indexName, "-1" );
         Map<String, Map<String, AttributeValue>> records = resultFuture.collect( Collectors.toMap( k -> k.get( "longId" ).s(), v -> v ) );
-        assertThat( records.size() ).isEqualTo(  2 );
+        assertThat( records.size() ).isEqualTo( 2 );
         assertThat( records.get( "id3" ).get( "test_bin" ).n() ).isEqualTo( "-1" );
         assertThat( records.get( "id4" ).get( "test_bin" ).n() ).isEqualTo( "-1" );
         assertThat( records.get( "id3" ).get( "aaa" ).n() ).isEqualTo( "1" );
@@ -134,12 +131,12 @@ public class IndexingTest extends Fixtures {
 
     private TableSchema<IndexedRecord> createSchemaForRecord( TableSchemaModifier<IndexedRecord> modifier ) {
         StaticTableSchema.Builder<IndexedRecord> builder = StaticTableSchema.builder( IndexedRecord.class )
-                .newItemSupplier( IndexedRecord::new )
-                .addAttribute( String.class, a -> a.name( "longId" )
-                        .getter( IndexedRecord::getLongId )
-                        .setter( IndexedRecord::setLongId )
-                        .tags( primaryPartitionKey() ) );
-        if ( modifier != null ) {
+            .newItemSupplier( IndexedRecord::new )
+            .addAttribute( String.class, a -> a.name( "longId" )
+                .getter( IndexedRecord::getLongId )
+                .setter( IndexedRecord::setLongId )
+                .tags( primaryPartitionKey() ) );
+        if( modifier != null ) {
             modifier.accept( builder );
         }
         return builder.build();
@@ -158,45 +155,45 @@ public class IndexingTest extends Fixtures {
         client.createTableIfNotExist( tableName, keyName );
 
         client.createIndex(
-                new KeyForSchema( tableName, keyName ),
-                indexName,
-                indexColumnName,
-                DynamodbDatatype.NUMBER,
-                m -> m
-                    .keySchema(
-                            KeySchemaElement.builder()
-                                    .attributeName( indexColumnName )
-                                    .keyType( KeyType.HASH )
-                                    .build()
-                    )
-                    .projection( Projection.builder().projectionType( ProjectionType.ALL ).build() ),
-                m -> m
-                    .attributeDefinitions(
-                        AttributeDefinition.builder()
-                            .attributeName( keyName )
-                            .attributeType( DynamodbDatatype.STRING.getScalarAttributeType() )
-                            .build(),
-                        AttributeDefinition.builder()
-                            .attributeName( indexColumnName )
-                            .attributeType( DynamodbDatatype.NUMBER.getScalarAttributeType() )
-                            .build(),
-                        AttributeDefinition.builder()
-                            .attributeName( "aaa" )
-                            .attributeType( DynamodbDatatype.NUMBER.getScalarAttributeType() )
-                            .build()
-                    ) );
+            new KeyForSchema( tableName, keyName ),
+            indexName,
+            indexColumnName,
+            DynamodbDatatype.NUMBER,
+            m -> m
+                .keySchema(
+                    KeySchemaElement.builder()
+                        .attributeName( indexColumnName )
+                        .keyType( KeyType.HASH )
+                        .build()
+                )
+                .projection( Projection.builder().projectionType( ProjectionType.ALL ).build() ),
+            m -> m
+                .attributeDefinitions(
+                    AttributeDefinition.builder()
+                        .attributeName( keyName )
+                        .attributeType( DynamodbDatatype.STRING.getScalarAttributeType() )
+                        .build(),
+                    AttributeDefinition.builder()
+                        .attributeName( indexColumnName )
+                        .attributeType( DynamodbDatatype.NUMBER.getScalarAttributeType() )
+                        .build(),
+                    AttributeDefinition.builder()
+                        .attributeName( "aaa" )
+                        .attributeType( DynamodbDatatype.NUMBER.getScalarAttributeType() )
+                        .build()
+                ) );
         insert100Rows( client, tableName, keyName );
 
         DynamoDbTable table = client.getEnhancedClient().table( tableName,
-                createSchemaForRecord( m -> m //add index attribute
-                        .addAttribute( Long.class, a -> a.name( indexColumnName )
-                                .getter( IndexedRecord::getTestBin )
-                                .setter( IndexedRecord::setTestBin )
-                                .tags( secondaryPartitionKey( indexName ) ) )
-                        //this is necessary to get attribute value
-                        .addAttribute( Long.class, a -> a.name( "aaa" )
-                                .getter( IndexedRecord::getAaa )
-                                .setter( IndexedRecord::setAaa ) ) )
+            createSchemaForRecord( m -> m //add index attribute
+                .addAttribute( Long.class, a -> a.name( indexColumnName )
+                    .getter( IndexedRecord::getTestBin )
+                    .setter( IndexedRecord::setTestBin )
+                    .tags( secondaryPartitionKey( indexName ) ) )
+                //this is necessary to get attribute value
+                .addAttribute( Long.class, a -> a.name( "aaa" )
+                    .getter( IndexedRecord::getAaa )
+                    .setter( IndexedRecord::setAaa ) ) )
         );
 
         List<IndexedRecord> records = scanTableUsingIndex( table, indexName, 3L );
@@ -225,61 +222,61 @@ public class IndexingTest extends Fixtures {
 
         //index for testBin+aaa
         client.createIndex(
-                new KeyForSchema( tableName, keyName ),
-                index1Name,
-                index1ColumnName,
-                DynamodbDatatype.NUMBER,
-                m -> m
-                    .keySchema(
-                        KeySchemaElement.builder()
-                                .attributeName( index1ColumnName )
-                                .keyType( KeyType.HASH )
-                                .build(),
-                        KeySchemaElement.builder()
-                                .attributeName( index2ColumnName )
-                                .keyType( KeyType.RANGE )
-                                .build()
-                    )
-                    .projection( Projection.builder().projectionType( ProjectionType.KEYS_ONLY ).build() ),
-                defineAttributes( keyName, DynamodbDatatype.STRING,
-                                  index1ColumnName, DynamodbDatatype.NUMBER,
-                                  index2ColumnName, DynamodbDatatype.NUMBER ) );
+            new KeyForSchema( tableName, keyName ),
+            index1Name,
+            index1ColumnName,
+            DynamodbDatatype.NUMBER,
+            m -> m
+                .keySchema(
+                    KeySchemaElement.builder()
+                        .attributeName( index1ColumnName )
+                        .keyType( KeyType.HASH )
+                        .build(),
+                    KeySchemaElement.builder()
+                        .attributeName( index2ColumnName )
+                        .keyType( KeyType.RANGE )
+                        .build()
+                )
+                .projection( Projection.builder().projectionType( ProjectionType.KEYS_ONLY ).build() ),
+            defineAttributes( keyName, DynamodbDatatype.STRING,
+                index1ColumnName, DynamodbDatatype.NUMBER,
+                index2ColumnName, DynamodbDatatype.NUMBER ) );
         //index for aaa+testBin
         client.createIndex(
-                new KeyForSchema( tableName, keyName ),
-                index2Name,
-                index2ColumnName,
-                DynamodbDatatype.NUMBER,
-                m -> m
-                    .keySchema(
-                        KeySchemaElement.builder()
-                                .attributeName( index2ColumnName )
-                                .keyType( KeyType.HASH )
-                                .build(),
-                        KeySchemaElement.builder()
-                                .attributeName( index1ColumnName )
-                                .keyType( KeyType.RANGE )
-                                .build()
-                    )
-                    .projection( Projection.builder().projectionType( ProjectionType.KEYS_ONLY ).build() ),
-                defineAttributes( keyName, DynamodbDatatype.STRING,
-                                  index1ColumnName, DynamodbDatatype.NUMBER,
-                                  index2ColumnName, DynamodbDatatype.NUMBER ) );
+            new KeyForSchema( tableName, keyName ),
+            index2Name,
+            index2ColumnName,
+            DynamodbDatatype.NUMBER,
+            m -> m
+                .keySchema(
+                    KeySchemaElement.builder()
+                        .attributeName( index2ColumnName )
+                        .keyType( KeyType.HASH )
+                        .build(),
+                    KeySchemaElement.builder()
+                        .attributeName( index1ColumnName )
+                        .keyType( KeyType.RANGE )
+                        .build()
+                )
+                .projection( Projection.builder().projectionType( ProjectionType.KEYS_ONLY ).build() ),
+            defineAttributes( keyName, DynamodbDatatype.STRING,
+                index1ColumnName, DynamodbDatatype.NUMBER,
+                index2ColumnName, DynamodbDatatype.NUMBER ) );
         insert100Rows( client, tableName, keyName );
 
         DynamoDbTable table1 = client.getEnhancedClient().table( tableName,
-                createSchemaForRecord( m -> m //add index attribute along with key
-                        .addAttribute( Long.class, a -> a.name( index1ColumnName )
-                                .getter( IndexedRecord::getTestBin )
-                                .setter( IndexedRecord::setTestBin )
-                                .tags( secondaryPartitionKey( index1Name ) ) ) )
+            createSchemaForRecord( m -> m //add index attribute along with key
+                .addAttribute( Long.class, a -> a.name( index1ColumnName )
+                    .getter( IndexedRecord::getTestBin )
+                    .setter( IndexedRecord::setTestBin )
+                    .tags( secondaryPartitionKey( index1Name ) ) ) )
         );
         DynamoDbTable table2 = client.getEnhancedClient().table( tableName,
-                createSchemaForRecord( m -> m //add index attribute along with key
-                        .addAttribute( Long.class, a -> a.name( index2ColumnName )
-                                .getter( IndexedRecord::getAaa )
-                                .setter( IndexedRecord::setAaa )
-                                .tags( secondaryPartitionKey( index2Name ) ) ) )
+            createSchemaForRecord( m -> m //add index attribute along with key
+                .addAttribute( Long.class, a -> a.name( index2ColumnName )
+                    .getter( IndexedRecord::getAaa )
+                    .setter( IndexedRecord::setAaa )
+                    .tags( secondaryPartitionKey( index2Name ) ) ) )
         );
 
         List<IndexedRecord> records1 = scanTableUsingIndex( table1, index1Name, 1L );
@@ -294,36 +291,36 @@ public class IndexingTest extends Fixtures {
     @NotNull
     private UpdateTableRequestModifier defineAttributes( String keyName, DynamodbDatatype string, String index1ColumnName, DynamodbDatatype string1, String index2ColumnName, DynamodbDatatype number ) {
         return m -> m
-                .attributeDefinitions(
-                    AttributeDefinition.builder()
-                        .attributeName( keyName )
-                        .attributeType( string.getScalarAttributeType() )
-                        .build(),
-                    AttributeDefinition.builder()
-                        .attributeName( index1ColumnName )
-                        .attributeType( number.getScalarAttributeType() )
-                        .build(),
-                    AttributeDefinition.builder()
-                        .attributeName( index2ColumnName )
-                        .attributeType( string1.getScalarAttributeType() )
-                        .build()
-                );
+            .attributeDefinitions(
+                AttributeDefinition.builder()
+                    .attributeName( keyName )
+                    .attributeType( string.getScalarAttributeType() )
+                    .build(),
+                AttributeDefinition.builder()
+                    .attributeName( index1ColumnName )
+                    .attributeType( number.getScalarAttributeType() )
+                    .build(),
+                AttributeDefinition.builder()
+                    .attributeName( index2ColumnName )
+                    .attributeType( string1.getScalarAttributeType() )
+                    .build()
+            );
     }
 
     private List<IndexedRecord> scanTableUsingIndex( DynamoDbTable dynamoDbTable, String indexName, Long valueToSearch ) {
         var resultFuture = ( Stream<Page<IndexedRecord>> ) dynamoDbTable
-                .index( indexName )
-                .query( QueryEnhancedRequest.builder()
-                        .queryConditional( QueryConditional.keyEqualTo( k -> k.partitionValue( valueToSearch ) ) )
-                        .build() )
-                .stream();
+            .index( indexName )
+            .query( QueryEnhancedRequest.builder()
+                .queryConditional( QueryConditional.keyEqualTo( k -> k.partitionValue( valueToSearch ) ) )
+                .build() )
+            .stream();
         List<IndexedRecord> records = new ArrayList<>();
         resultFuture.forEach( p -> records.addAll( p.items() ) );
         return records;
     }
 
     private void insert100Rows( DynamodbClient client, String tableName, String columnName ) {
-        for ( int i = 0; i < 100; i++ ) {
+        for( int i = 0; i < 100; i++ ) {
             Key key = new Key( tableName, columnName, "id" + i );
             client.update( key, "test_bin", i % 5 );
             client.update( key, "aaa", i );
@@ -334,11 +331,11 @@ public class IndexingTest extends Fixtures {
     private Stream<Map<String, AttributeValue>> defineScanTableStream( DynamodbClient client, String tableName, String indexName, String valueToSelect ) {
         return client.getRecordsByScan( tableName,
             r -> {
-                if ( indexName != null ) r.indexName( indexName );
+                if( indexName != null ) r.indexName( indexName );
                 r.filterExpression( "test_bin = :var1Val" )
-                 .expressionAttributeValues(
-                     Maps.of( new Pair<>( ":var1Val", AttributeValue.fromN( valueToSelect ) ) )
-                 );
+                    .expressionAttributeValues(
+                        Maps.of( new Pair<>( ":var1Val", AttributeValue.fromN( valueToSelect ) ) )
+                    );
             }
         );
     }

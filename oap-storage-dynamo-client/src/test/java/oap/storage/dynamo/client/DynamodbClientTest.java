@@ -30,10 +30,10 @@ import oap.application.Kernel;
 import oap.application.module.Module;
 import oap.storage.dynamo.client.convertors.DynamodbDatatype;
 import oap.storage.dynamo.client.creator.PojoBeanToDynamoCreator;
+import oap.storage.dynamo.client.creator.samples.Autonomious;
 import oap.storage.dynamo.client.creator.samples.AutonomiousDynamo;
 import oap.storage.dynamo.client.creator.samples.BeanWithRestrictedField;
 import oap.storage.dynamo.client.creator.samples.CompositeBean;
-import oap.storage.dynamo.client.creator.samples.Autonomious;
 import oap.storage.dynamo.client.creator.samples.EmbeddedBean;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
@@ -41,10 +41,7 @@ import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Sets;
-
-
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -58,7 +55,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.testng.Assert.assertNotNull;
 
-@Ignore
 public class DynamodbClientTest extends Fixtures {
     private String tableName = "tableForTestClient";
     private final String keyName = "longId";
@@ -68,7 +64,7 @@ public class DynamodbClientTest extends Fixtures {
     public DynamodbClientTest() {
         fixture( fixture );
         var kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-        kernel.start( pathOfResource( getClass(), "/oap/dynamodb/test-application.conf" ) );
+        kernel.start( pathOfResource( getClass(), "/oap/storage/dynamo/client/test-application.conf" ) );
     }
 
     @BeforeMethod
@@ -83,7 +79,7 @@ public class DynamodbClientTest extends Fixtures {
         client.start();
         client.waitConnectionEstablished();
         client.deleteTableIfExists( tableName );
-        client.createTable( tableName, 2, 1, keyName, "S", null, null, null  );
+        client.createTable( tableName, 2, 1, keyName, "S", null, null, null );
 
         client.update( new Key( tableName, keyName, longId ), "v1", false );
         client.update( new Key( tableName, keyName, longId ), "v1", true );
@@ -119,7 +115,7 @@ public class DynamodbClientTest extends Fixtures {
     public void testStartWithoutDynamodb() {
         var kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
         try {
-            assertThatCode( () -> kernel.start( pathOfResource( getClass(), "/oap/dynamodb/test-application.conf" ) ) )
+            assertThatCode( () -> kernel.start( pathOfResource( getClass(), "/oap/storage/dynamo/client/test-application.conf" ) ) )
                 .doesNotThrowAnyException();
         } finally {
             kernel.stop();
@@ -129,7 +125,7 @@ public class DynamodbClientTest extends Fixtures {
     @Test
     public void testGetSets() throws IOException {
         var kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-        kernel.start( pathOfResource( getClass(), "/oap/dynamodb/test-application.conf" ) );
+        kernel.start( pathOfResource( getClass(), "/oap/storage/dynamo/client/test-application.conf" ) );
         var client = fixture.getDynamodbClient();
         try {
             client.start();
@@ -141,8 +137,8 @@ public class DynamodbClientTest extends Fixtures {
             client.createTable( "setOne", 2, 1, keyName, "S", null, null, null );
             client.createTable( "setTwo", 2, 1, keyName, "S", null, null, null );
 
-            client.update( new Key(  "setOne", "longId", "id1" ), "b1", "v1" );
-            client.update( new Key(  "setTwo", "longId", "id1" ), "b1", "v1" );
+            client.update( new Key( "setOne", "longId", "id1" ), "b1", "v1" );
+            client.update( new Key( "setTwo", "longId", "id1" ), "b1", "v1" );
             assertThat( client.getTables().successValue ).contains( "setOne", "setTwo" );
 
         } finally {
@@ -159,9 +155,9 @@ public class DynamodbClientTest extends Fixtures {
         client.createTableIfNotExist( tableName, keyName );
 
         client.update( new Key( tableName, keyName, "id1" ), Map.of(
-                "b1", "v1",
-                "b2", "v2",
-                "b3", "v3" ), null );
+            "b1", "v1",
+            "b2", "v2",
+            "b3", "v3" ), null );
 
         var record = client.getRecord( new Key( tableName, keyName, "id1" ), r -> r.projectionExpression( "b1,b3" ) );
 
@@ -192,16 +188,16 @@ public class DynamodbClientTest extends Fixtures {
         auto.setIntVar( 123 );
         auto.setLongVar( 1234567890L );
         auto.setListOfBinaries( Lists.of(
-                "A".getBytes( StandardCharsets.UTF_8 ),
-                "B".getBytes( StandardCharsets.UTF_8 ),
-                "C".getBytes( StandardCharsets.UTF_8 ) ) );
+            "A".getBytes( StandardCharsets.UTF_8 ),
+            "B".getBytes( StandardCharsets.UTF_8 ),
+            "C".getBytes( StandardCharsets.UTF_8 ) ) );
         auto.setListOfIntegers( Lists.of( 1, 2, 3, 4, 5 ) );
         auto.setListOfStrings( Lists.of( "Audi", "BMW", "Renault", "Toyota" ) );
         auto.setMapOfObjects( Maps.of(
-                new Pair<>( "One", 1 ),
-                new Pair<>( "Two", "2" ),
-                new Pair<>( "Three", "3".getBytes( StandardCharsets.UTF_8 ) ),
-                new Pair<>( "Four",  Lists.of( "4", "Four", "Fier" ) )
+            new Pair<>( "One", 1 ),
+            new Pair<>( "Two", "2" ),
+            new Pair<>( "Three", "3".getBytes( StandardCharsets.UTF_8 ) ),
+            new Pair<>( "Four", Lists.of( "4", "Four", "Fier" ) )
         ) );
 
         client.updateOrCreateItem( key, auto, null );
@@ -232,16 +228,16 @@ public class DynamodbClientTest extends Fixtures {
         auto.setIntVar( 123 );
         auto.setLongVar( 1234567890L );
         auto.setListOfBinaries( Lists.of(
-                "A".getBytes( StandardCharsets.UTF_8 ),
-                "B".getBytes( StandardCharsets.UTF_8 ),
-                "C".getBytes( StandardCharsets.UTF_8 ) ) );
+            "A".getBytes( StandardCharsets.UTF_8 ),
+            "B".getBytes( StandardCharsets.UTF_8 ),
+            "C".getBytes( StandardCharsets.UTF_8 ) ) );
         auto.setListOfIntegers( Lists.of( 1, 2, 3, 4, 5 ) );
         auto.setListOfStrings( Lists.of( "Audi", "BMW", "Renault", "Toyota" ) );
         auto.setMapOfObjects( Maps.of(
-                new Pair<>( "One", Lists.of( "1" ) ),
-                new Pair<>( "Two", Lists.of( "2" ) ),
-                new Pair<>( "Three", Lists.of( "3" ) ),
-                new Pair<>( "Four",  Lists.of( "4", "Four", "Fier" ) )
+            new Pair<>( "One", Lists.of( "1" ) ),
+            new Pair<>( "Two", Lists.of( "2" ) ),
+            new Pair<>( "Three", Lists.of( "3" ) ),
+            new Pair<>( "Four", Lists.of( "4", "Four", "Fier" ) )
         ) );
 
         Map<String, AttributeValue> attributes = new PojoBeanToDynamoCreator().fromDynamo( auto );
@@ -319,14 +315,14 @@ public class DynamodbClientTest extends Fixtures {
         assertThat( client.update( key4, "aaa", 2 ).getSuccessValue() ).isNotNull();
 
         var resultFuture = client.getRecordsByScan( tableName,
-                r -> r
-                      .filterExpression( "test_bin = :var1Val" )
-                      .expressionAttributeValues( Maps.of(
-                            new Pair<>( ":var1Val", AttributeValue.fromN( "1" ) )
-                       ) )
+            r -> r
+                .filterExpression( "test_bin = :var1Val" )
+                .expressionAttributeValues( Maps.of(
+                    new Pair<>( ":var1Val", AttributeValue.fromN( "1" ) )
+                ) )
         );
         Map<String, Map<String, AttributeValue>> records = resultFuture.collect( Collectors.toMap( k -> k.get( "longId" ).s(), v -> v ) );
-        assertThat( records.size() ).isEqualTo(  2 );
+        assertThat( records.size() ).isEqualTo( 2 );
         assertThat( records.get( "id3" ).get( "test_bin" ).n() ).isEqualTo( "1" );
         assertThat( records.get( "id4" ).get( "test_bin" ).n() ).isEqualTo( "1" );
         assertThat( records.get( "id3" ).get( "aaa" ).n() ).isEqualTo( "1" );
@@ -335,9 +331,9 @@ public class DynamodbClientTest extends Fixtures {
 
     private AttributeValue modifyAndGet( DynamodbClient client, Key key, String binName, Long value ) {
         return client.findAndModify(
-                key,
-                r -> r.put( binName, DynamodbDatatype.createAttributeValueFromObject( value ) ),
-                null ).get( binName );
+            key,
+            r -> r.put( binName, DynamodbDatatype.createAttributeValueFromObject( value ) ),
+            null ).get( binName );
     }
 
     @Test
