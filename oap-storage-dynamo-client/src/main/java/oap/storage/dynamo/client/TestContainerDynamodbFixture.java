@@ -26,6 +26,7 @@ package oap.storage.dynamo.client;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
 import lombok.extern.slf4j.Slf4j;
@@ -67,7 +68,7 @@ public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
     @BeforeClass
     public void beforeClass() {
         if( genericContainer == null ) {
-            Consumer<CreateContainerCmd> cmd = e -> e.withPortBindings( new PortBinding( Ports.Binding.bindPort( 8000 ), new ExposedPort( 8000 ) ) );
+            Consumer<CreateContainerCmd> cmd = e -> e.withHostConfig( new HostConfig().withPortBindings( new PortBinding( Ports.Binding.bindPort( 8000 ), new ExposedPort( 8000 ) ) ) );
             genericContainer =
                 new GenericContainer( DockerImageName
                     .parse( "amazon/dynamodb-local" ) )
