@@ -27,7 +27,6 @@ package oap.storage;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import lombok.ToString;
-import oap.util.MemoryMeter;
 
 import java.util.HashMap;
 import java.util.List;
@@ -99,10 +98,7 @@ public class StorageMetrics<I, T> implements Storage.DataListener<I, T> {
 
         @Override
         public void accept( Storage<I, T> storage ) {
-            if( storage instanceof MemoryStorage<?, ?> )
-                size.set( MemoryMeter.get().measureDeep( ( ( MemoryStorage<I, T> ) storage ).memory.data ) );
-            else
-                size.set( 0 );
+            size.set( 0 );
         }
 
         @Override
