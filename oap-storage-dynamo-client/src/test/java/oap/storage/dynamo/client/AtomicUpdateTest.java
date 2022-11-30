@@ -32,6 +32,7 @@ import oap.util.HashMaps;
 import oap.util.Result;
 import oap.util.Sets;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
@@ -48,6 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+@Ignore
 public class AtomicUpdateTest extends Fixtures {
 
     public static final String TABLE_NAME = "atomicUpdateTest";

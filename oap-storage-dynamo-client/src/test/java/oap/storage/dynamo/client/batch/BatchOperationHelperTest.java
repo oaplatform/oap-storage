@@ -45,6 +45,7 @@ import oap.util.Result;
 import oap.util.Sets;
 import org.jetbrains.annotations.NotNull;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -58,6 +59,7 @@ import java.util.Random;
 import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Ignore
 public class BatchOperationHelperTest extends Fixtures {
     private String tableName1 = "batchTable1";
     private String tableName2 = "batchTable2";

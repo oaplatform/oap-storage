@@ -37,6 +37,7 @@ import oap.util.Maps;
 import oap.util.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
@@ -63,6 +64,7 @@ import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTag
 import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTags.secondaryPartitionKey;
 
 @Slf4j
+@Ignore
 public class IndexingTest extends Fixtures {
 
     private final String keyName = "longId";

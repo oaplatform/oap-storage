@@ -42,6 +42,7 @@ import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Sets;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -55,6 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.testng.Assert.assertNotNull;
 
+@Ignore
 public class DynamodbClientTest extends Fixtures {
     private String tableName = "tableForTestClient";
     private final String keyName = "longId";

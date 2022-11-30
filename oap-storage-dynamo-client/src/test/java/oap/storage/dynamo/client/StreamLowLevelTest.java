@@ -32,6 +32,7 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.jetbrains.annotations.NotNull;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.StreamSpecification;
@@ -50,6 +51,7 @@ import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
+@Ignore
 public class StreamLowLevelTest extends Fixtures {
     private final String tableName = "tableForStream";
     private final String keyName = "id";
