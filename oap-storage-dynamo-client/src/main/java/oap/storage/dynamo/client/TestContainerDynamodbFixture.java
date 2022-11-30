@@ -81,6 +81,9 @@ public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
 
     @AfterClass
     public void tearDown() {
-//       No need to stop container, because it will be stopped automatically after tests finish
+        if( genericContainer != null ) {
+            genericContainer.stop();
+            genericContainer = null;
+        }
     }
 }
