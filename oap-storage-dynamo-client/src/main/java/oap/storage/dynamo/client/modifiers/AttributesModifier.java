@@ -24,11 +24,13 @@
 
 package oap.storage.dynamo.client.modifiers;
 
+import oap.storage.dynamo.client.annotations.API;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Map;
 import java.util.function.Function;
 
+@API
 public interface AttributesModifier extends Function<Map<String, AttributeValue>, Map<String, AttributeValue>> {
 
     /**

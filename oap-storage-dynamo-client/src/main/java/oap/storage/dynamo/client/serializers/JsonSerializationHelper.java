@@ -42,6 +42,9 @@ import java.util.List;
 public class JsonSerializationHelper {
     public static final String CHARACTER_ENCODING = "UTF-8";
 
+    private JsonSerializationHelper() {
+    }
+
     /**
      * base64 encode a byte array using org.apache.commons.codec.binary.Base64
      *

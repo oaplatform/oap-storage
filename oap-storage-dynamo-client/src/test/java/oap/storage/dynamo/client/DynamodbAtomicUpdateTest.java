@@ -31,8 +31,8 @@ import oap.testng.TestDirectoryFixture;
 import oap.util.HashMaps;
 import oap.util.Result;
 import oap.util.Sets;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Ignore;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
@@ -49,26 +49,31 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-@Ignore
-public class AtomicUpdateTest extends Fixtures {
+public class DynamodbAtomicUpdateTest extends Fixtures {
 
     public static final String TABLE_NAME = "atomicUpdateTest";
     public static final String ID_COLUMN_NAME = "id";
     private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
+    private static Kernel kernel;
 
-    public AtomicUpdateTest() {
+    public DynamodbAtomicUpdateTest() {
         fixture( fixture );
-        var kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-        kernel.start( pathOfResource( getClass(), "/oap/storage/dynamo/client/test-application.conf" ) );
     }
 
-    @BeforeMethod
-    public void beforeMethod() {
+    @BeforeClass
+    public static void setUp() {
+        kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
+        kernel.start( pathOfResource( DynamodbAtomicUpdateTest.class, "/oap/storage/dynamo/client/test-application.conf" ) );
         System.setProperty( "TMP_PATH", TestDirectoryFixture.testDirectory().toAbsolutePath().toString().replace( '\\', '/' ) );
     }
 
+    @AfterClass
+    public static void tearDown() {
+        kernel.stop();
+    }
+
     @Test
-    public void atomicUpdateShouldInitializeField() throws IOException {
+    public void atomicUpdateShouldInitializeField() {
         var client = fixture.getDynamodbClient();
 
         client.start();
@@ -90,7 +95,7 @@ public class AtomicUpdateTest extends Fixtures {
     }
 
     @Test
-    public void atomicUpdateShouldIncrementItsField() throws IOException {
+    public void atomicUpdateShouldIncrementItsField() {
         var client = fixture.getDynamodbClient();
 
         client.start();
@@ -119,7 +124,7 @@ public class AtomicUpdateTest extends Fixtures {
     }
 
     @Test
-    public void atomicUpdateShouldSkipUpdateIfVersionDoesNotFit() throws IOException {
+    public void atomicUpdateShouldSkipUpdateIfVersionDoesNotFit() {
         var client = fixture.getDynamodbClient();
 
         client.start();
@@ -185,7 +190,7 @@ public class AtomicUpdateTest extends Fixtures {
             } );
         }
         service.shutdown();
-        service.awaitTermination( 1, TimeUnit.MINUTES );
+        assertThat( service.awaitTermination( 1, TimeUnit.MINUTES ) ).isTrue();
 
         Result<Map<String, AttributeValue>, DynamodbClient.State> result = client.getRecord( key, null );
         assertThat( result.getSuccessValue().get( "generation" ).n() ).isEqualTo( "" + counter.get() );

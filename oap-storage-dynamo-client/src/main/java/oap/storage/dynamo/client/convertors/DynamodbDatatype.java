@@ -26,6 +26,7 @@ package oap.storage.dynamo.client.convertors;
 
 import oap.storage.dynamo.client.creator.PojoBeanToDynamoCreator;
 import oap.util.Pair;
+import software.amazon.awssdk.core.BytesWrapper;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
@@ -45,104 +46,91 @@ import static oap.storage.dynamo.client.serializers.JsonSerializationHelper.CHAR
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.Type.NUL;
 
 /**
- * https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html
+ * @link https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html
  */
 public enum DynamodbDatatype {
         //scalars ScalarAttributeType
     BOOLEAN( "B",
         ( o, value, convertor ) -> o.bool( ( Boolean ) value ),
         ( o, convertor ) -> o == null || o.bool() == null ? null : o.bool(),
-        o -> 1,
-        Boolean.class
-    ),
+        o -> 1
+        ),
     STRING( "S",
         ( o, value, convertor ) -> o.s( ( String ) value ),
         ( o, convertor ) -> o == null ? null : o.s(),
-        o -> getLength( ( String ) o ),
-        String.class
+        o -> getLength( ( String ) o )
     ),
     NUMBER( "N",
-        ( o, value, convertor ) -> o.n( String.valueOf( ( Number ) value ) ),
+        ( o, value, convertor ) -> o.n( String.valueOf( value ) ),
         ( o, convertor ) -> o == null || o.n() == null ? null : Double.parseDouble( o.n() ),
-        o -> o == null ? 0 : getLength( String.valueOf( ( Number ) o ) ),
-        Number.class
+        o -> o == null ? 0 : getLength( String.valueOf( o ) )
     ),
     BINARY( "BB",
         ( o, value, convertor ) -> o.b( SdkBytes.fromByteArray( ( byte[] ) value ) ),
         ( o, convertor ) -> o == null || o.b() == null ? null : o.b().asByteArray(),
-        o -> o == null ? 0 : ( ( byte[] ) o ).length,
-        byte[].class
+        o -> o == null ? 0 : ( ( byte[] ) o ).length
     ),
     NULL( "nul",
         ( o, value, convertor ) -> o.nul( true ),
         ( o, convertor ) -> o == null || o.type() == NUL || o.nul() != null,
-        o -> 0,
-        Void.class
+        o -> 0
     ),
     //documents
     LIST( "L",
         ( o, value, convertor ) -> o.l( convertToList( ( List ) value ) ),
-        ( o, convertor ) -> o == null || o.l() == null ? null : o.l().stream().map( v -> createObjectFromAttributeValue( v ) ).collect( Collectors.toList() ),
-        o -> o == null ? 0 : ( ( LinkedHashSet<Object> ) o ).stream().map( v -> getLength( String.valueOf( v.toString() ) ) ).reduce( 0, Integer::sum ),
-        List.class
+        ( o, convertor ) -> o == null || o.l() == null ? null : o.l().stream().map( DynamodbDatatype::createObjectFromAttributeValue ).collect( Collectors.toList() ),
+        o -> o == null ? 0 : ( ( LinkedHashSet<Object> ) o ).stream().map( v -> getLength( String.valueOf( v.toString() ) ) ).reduce( 0, Integer::sum )
     ),
     MAP( "M",
         ( o, value, convertor ) -> o.m( convertToMap( ( Map ) value, convertor ) ),
         ( o, convertor ) -> o == null || o.m() == null ? null : o.m().entrySet().stream().collect( Collectors.toMap( k -> convertor == null ? k.getKey() : convertor.convert( k.getKey() ), v -> createObjectFromAttributeValue( v.getValue() ) ) ),
-        o -> o == null ? 0 : getLength( o.toString() ),
-        Map.class
+        o -> o == null ? 0 : getLength( o.toString() )
     ),
         //set structures
     SET_OF_BINARIES( "BS",
-        ( o, value, convertor ) -> o.bs( ( ( List<byte[]> ) value ).stream().map( v -> SdkBytes.fromByteArray( v ) ).collect( Collectors.toList() ) ),
+        ( o, value, convertor ) -> o.bs( ( ( List<byte[]> ) value ).stream().map( SdkBytes::fromByteArray ).collect( Collectors.toList() ) ),
         ( o, convertor ) -> {
-        if( o == null || o.bs() == null && o.l() == null ) return null;
-            return !o.bs().isEmpty()
-                    ?  o.bs().stream().map( av -> av.asByteArray() ).collect( Collectors.toList() )
+            if( o == null || o.bs() == null && o.l() == null ) return null;
+            return o.bs() != null
+                    ?  o.bs().stream().map( BytesWrapper::asByteArray ).collect( Collectors.toList() )
                     :  o.l().stream().map( av -> av.b().asByteArray() ).collect( Collectors.toList() );
         },
-        o -> o == null ? 0 : ( ( List<byte[]> ) o ).stream().map( v -> v.length ).reduce( 0, Integer::sum ),
-        List.class
-    ),
+        o -> o == null ? 0 : ( ( List<byte[]> ) o ).stream().map( v -> v.length ).reduce( 0, Integer::sum )
+        ),
     SET_OF_STRINGS( "SS",
         ( o, value, convertor ) -> o.ss( new ArrayList<>( ( Collection<String> ) value ) ),
         ( o, convertor ) -> {
             if ( o == null || o.ss() == null && o.l() == null ) return null;
-            return !o.ss().isEmpty()
+            return o.ss() != null
                     ? o.ss()
                     : o.l().stream().map( AttributeValue::s ).collect( Collectors.toList() );
         },
-        o -> o == null ? 0 : ( ( Collection<Object> ) o ).stream().map( v -> getLength( v.toString() ) ).reduce( 0, Integer::sum ),
-        Set.class
+        o -> o == null ? 0 : ( ( Collection<Object> ) o ).stream().map( v -> getLength( v.toString() ) ).reduce( 0, Integer::sum )
     ),
     SET_OF_NUMBERS( "NS",
-        ( o, value, convertor ) -> o.ns( new ArrayList<>( ( Collection<Number> ) value ).stream().map( n -> String.valueOf( n ) ).collect( Collectors.toList() ) ),
+        ( o, value, convertor ) -> o.ns( new ArrayList<>( ( Collection<Number> ) value ).stream().map( String::valueOf ).collect( Collectors.toList() ) ),
         ( o, convertor ) -> {
             if ( o == null || o.ns() == null && o.l() == null ) return null;
-            return !o.ns().isEmpty()
-                    ? o.ns().stream().map( v -> Double.parseDouble( v ) ).collect( Collectors.toList() )
+            return o.ns() != null
+                    ? o.ns().stream().map( Double::parseDouble ).collect( Collectors.toList() )
                     : o.l().stream().map( v -> Double.parseDouble( v.n() ) ).collect( Collectors.toList() );
         },
-        o -> o == null ? 0 : ( ( Collection<Number> ) o ).stream().map( n -> getLength( String.valueOf( n ) ) ).reduce( 0, Integer::sum ),
-        Set.class
+        o -> o == null ? 0 : ( ( Collection<Number> ) o ).stream().map( n -> getLength( String.valueOf( n ) ) ).reduce( 0, Integer::sum )
     );
 
-    private ScalarAttributeType scalarAttributeType;
-    private DynamoDbToAttributeValueConvertor convertorTo;
-    private DynamoDbAttributeValueSizeCalculator sizeCalculator;
-    private DynamoDBFromAttributeValueConvertor convertorFrom;
-    private Class clazz;
+    private final ScalarAttributeType scalarAttributeType;
+    private final DynamoDbToAttributeValueConvertor convertorTo;
+    private final DynamoDbAttributeValueSizeCalculator sizeCalculator;
+    private final DynamoDBFromAttributeValueConvertor convertorFrom;
 
     DynamodbDatatype( String scalarAttributeType,
                       DynamoDbToAttributeValueConvertor convertorTo,
                       DynamoDBFromAttributeValueConvertor convertorFrom,
-                      DynamoDbAttributeValueSizeCalculator sizeCalculator,
-                      Class clazz ) {
+                      DynamoDbAttributeValueSizeCalculator sizeCalculator ) {
         this.scalarAttributeType = ScalarAttributeType.fromValue( scalarAttributeType );
         this.convertorTo = convertorTo;
         this.sizeCalculator = sizeCalculator;
         this.convertorFrom = convertorFrom;
-        this.clazz = clazz;
     }
 
     public ScalarAttributeType getScalarAttributeType() {
@@ -214,7 +202,7 @@ public enum DynamodbDatatype {
             return createAttributeValue( MAP, binValue, convertor );
         }
         try {
-            Pair<String, Map<String, AttributeValue>> binNamesAndValues = new PojoBeanToDynamoCreator().createExpressionsFromBean( binValue, "" );
+            Pair<String, Map<String, AttributeValue>> binNamesAndValues = new PojoBeanToDynamoCreator<>().createExpressionsFromBean( binValue, "" );
             return AttributeValue.fromM( binNamesAndValues._2() );
         } catch ( ReflectiveOperationException e ) {
             throw new RuntimeException( e );

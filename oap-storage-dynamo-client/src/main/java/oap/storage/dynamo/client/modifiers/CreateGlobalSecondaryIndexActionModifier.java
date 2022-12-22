@@ -24,11 +24,13 @@
 
 package oap.storage.dynamo.client.modifiers;
 
+import oap.storage.dynamo.client.annotations.API;
 import software.amazon.awssdk.services.dynamodb.model.CreateGlobalSecondaryIndexAction;
 
 import java.util.function.Consumer;
 
 @FunctionalInterface
+@API
 public interface CreateGlobalSecondaryIndexActionModifier extends Consumer<CreateGlobalSecondaryIndexAction.Builder> {
     @Override
     void accept( CreateGlobalSecondaryIndexAction.Builder builder );

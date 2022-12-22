@@ -44,7 +44,7 @@ import java.util.function.Consumer;
 
 @Slf4j
 public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
-    private static GenericContainer genericContainer;
+    private static volatile GenericContainer genericContainer;
     protected URI uri;
     protected StaticCredentialsProvider provider;
 
@@ -83,7 +83,9 @@ public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
     public void tearDown() {
         if( genericContainer != null ) {
             genericContainer.stop();
+            log.info( "Container {} stopped", uri.toString() );
             genericContainer = null;
+            uri = null;
         }
     }
 }

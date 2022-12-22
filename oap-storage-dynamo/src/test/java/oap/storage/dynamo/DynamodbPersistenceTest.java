@@ -37,10 +37,10 @@ import oap.id.Identifier;
 import oap.storage.DynamoPersistence;
 import oap.storage.MemoryStorage;
 import oap.storage.Metadata;
-import oap.system.Env;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
-import org.testng.annotations.Ignore;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.StreamSpecification;
@@ -59,19 +59,26 @@ import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
-@Ignore
-public class DynamoPersistenceTest extends Fixtures {
+public class DynamodbPersistenceTest extends Fixtures {
 
     private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
+    private static Kernel kernel;
 
-    public DynamoPersistenceTest() {
-        Env.set( "AWS_ACCESS_KEY_ID", "dummy" );
-        Env.set( "AWS_SECRET_ACCESS_KEY", "dummy" );
+    public DynamodbPersistenceTest() {
         fixture( fixture );
         fixture( TestDirectoryFixture.FIXTURE );
-        var kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-        kernel.start( pathOfResource( getClass(), "/oap/storage/dynamo/test-application.conf" ) );
     }
+
+//    @BeforeClass
+//    public static void setUp() {
+//        kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
+//        kernel.start( pathOfResource( DynamodbPersistenceTest.class, "/oap/storage/dynamo/test-application.conf" ) );
+//    }
+//
+//    @AfterClass
+//    public static void tearDown() {
+//        kernel.stop();
+//    }
 
     private final Identifier<String, Bean> beanIdentifier =
         Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
@@ -79,7 +86,7 @@ public class DynamoPersistenceTest extends Fixtures {
             .build();
 
     private Function<Map<String, AttributeValue>, Metadata<Bean>> fromDynamo = map -> {
-        final Metadata<Bean> metadata = new Metadata<>() {}; //todo discuss metadata creation (override modifiedWhen...)
+        final Metadata<Bean> metadata = new Metadata<>() {};
         metadata.object = new Bean( map.get( "id" ).s(), map.get( "firstName" ).s() );
         return metadata;
     };
@@ -135,7 +142,6 @@ public class DynamoPersistenceTest extends Fixtures {
         var dynamodbClient = fixture.getDynamodbClient();
         dynamodbClient.start();
         dynamodbClient.waitConnectionEstablished();
-
 
         var persistence = new DynamoPersistence<>( dynamodbClient, "test", 500, storage, fromDynamo, toDynamo );
         dynamodbClient.createTable( "test", 2, 1, "id", "S", null, null, builder -> builder.streamSpecification( StreamSpecification.builder().streamEnabled( true ).streamViewType( StreamViewType.NEW_AND_OLD_IMAGES ).build() ) );

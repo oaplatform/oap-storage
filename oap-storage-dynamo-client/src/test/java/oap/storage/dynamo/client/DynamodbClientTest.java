@@ -41,8 +41,9 @@ import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Sets;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -56,22 +57,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.testng.Assert.assertNotNull;
 
-@Ignore
 public class DynamodbClientTest extends Fixtures {
     private String tableName = "tableForTestClient";
     private final String keyName = "longId";
     private final String longId = Strings.repeat( "1", 8000 );
     private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
+    private static Kernel kernel;
 
     public DynamodbClientTest() {
         fixture( fixture );
-        var kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-        kernel.start( pathOfResource( getClass(), "/oap/storage/dynamo/client/test-application.conf" ) );
     }
 
-    @BeforeMethod
-    public void beforeMethod() {
+    @BeforeClass
+    public static void setUp() {
+        kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
+        kernel.start( pathOfResource( DynamodbAtomicUpdateTest.class, "/oap/storage/dynamo/client/test-application.conf" ) );
         System.setProperty( "TMP_PATH", TestDirectoryFixture.testDirectory().toAbsolutePath().toString().replace( '\\', '/' ) );
+    }
+
+    @AfterClass
+    public static void tearDown() {
+        kernel.stop();
     }
 
     @Test
@@ -242,7 +248,7 @@ public class DynamodbClientTest extends Fixtures {
             new Pair<>( "Four", Lists.of( "4", "Four", "Fier" ) )
         ) );
 
-        Map<String, AttributeValue> attributes = new PojoBeanToDynamoCreator().fromDynamo( auto );
+        Map<String, AttributeValue> attributes = new PojoBeanToDynamoCreator<>().fromDynamo( auto );
 
         client.updateRecord( key, attributes, null );
 

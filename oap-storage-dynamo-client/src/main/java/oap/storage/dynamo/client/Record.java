@@ -27,6 +27,7 @@ package oap.storage.dynamo.client;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import oap.storage.dynamo.client.annotations.API;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
@@ -36,6 +37,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 @Data
 @EqualsAndHashCode
 @ToString
+@API
 public class Record {
 
     private String id;

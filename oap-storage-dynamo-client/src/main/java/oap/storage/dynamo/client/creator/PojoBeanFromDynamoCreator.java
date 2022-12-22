@@ -106,8 +106,16 @@ public class PojoBeanFromDynamoCreator<T> {
             }
             return result;
         } catch ( IllegalArgumentException | ReflectiveOperationException ex ) {
-            throw new RuntimeException( "Cannot set field '" + processingField.getName() + "' in class '"
+            if ( processingField != null ) {
+                throw new RuntimeException( "Cannot set field '"
+                    + processingField.getName()
+                    + "' in class '"
                     + processingField.getDeclaringClass().getCanonicalName() + "'", ex );
+            } else {
+                throw new RuntimeException( "Cannot create instance of '"
+                    + clazz.getCanonicalName()
+                    + "'", ex );
+            }
         }
     }
 
@@ -133,7 +141,7 @@ public class PojoBeanFromDynamoCreator<T> {
                 result = clazz.getDeclaredConstructor().newInstance();
                 return result;
             } catch ( IllegalAccessException ex ) {
-                throw new ReflectiveOperationException( "No public constructor found in class '" + clazz.getCanonicalName() + "'", ex );
+                throw new ReflectiveOperationException( "No public constructor found in class: '" + clazz.getCanonicalName() + "'", ex );
             }
         }
         for ( Constructor constructor : clazz.getDeclaredConstructors() ) {
@@ -163,7 +171,7 @@ public class PojoBeanFromDynamoCreator<T> {
                break;
             }
         }
-        if ( result == null ) throw new NoSuchMethodException( "Cannot find public no-args constructor for class " + clazz.getCanonicalName() );
+        if ( result == null ) throw new NoSuchMethodException( "Cannot find any available constructor for class: '" + clazz.getCanonicalName() + "'" );
         return result;
     }
 
@@ -191,14 +199,14 @@ public class PojoBeanFromDynamoCreator<T> {
                         method.invoke( result, valueArg );
                         setterInvoked = true;
                     } catch ( Exception pex ) {
-                        log.debug( "Cannot find appropriate setter for field '{}':", field.getName(), ex.getMessage() );
+                        log.debug( "Cannot find appropriate setter for field '{}': {}", field.getName(), ex.getMessage() );
                     }
                     exceptionLogged = true;
                     break;
                 }
             }
             if ( !exceptionLogged ) {
-                log.debug( "Cannot find appropriate setter for field '{}':", field.getName(), ex.getMessage() );
+                log.debug( "Cannot find appropriate setter for field '{}': {}", field.getName(), ex.getMessage() );
             }
         }
         if ( !setterInvoked ) {
@@ -220,10 +228,10 @@ public class PojoBeanFromDynamoCreator<T> {
             return ( ( Double ) valueArg ).floatValue();
         }
         if ( field.getType() == double.class || field.getType() == Double.class ) {
-            return ( ( Double ) valueArg ).doubleValue();
+            return valueArg;
         }
         if ( field.getType() == boolean.class || field.getType() == Boolean.class ) {
-            return ( ( Boolean ) valueArg ).booleanValue();
+            return valueArg;
         }
         return valueArg;
     }
@@ -258,7 +266,7 @@ public class PojoBeanFromDynamoCreator<T> {
             dynamodbDatatype = DynamodbDatatype.of( ( Class ) field.getGenericType() );
             if ( dynamodbDatatype == MAP ) {
                 AttributeValue value = values.get( field.getName() );
-                return new PojoBeanFromDynamoCreator().createBean( field.getType(), value.m() );
+                return new PojoBeanFromDynamoCreator<>().createBean( field.getType(), value.m() );
             }
         }
         Object value = fromAttributeValue( dynamodbDatatype, values.get( field.getName() ), null );
@@ -267,23 +275,18 @@ public class PojoBeanFromDynamoCreator<T> {
             if ( convertedValue != null ) return convertedValue;
         } else if( value != null && dynamodbDatatype == SET_OF_NUMBERS ) {
             if ( field.getGenericType().toString().startsWith( "java.util.List<java.lang.Integer>" ) ) {
-                value = ( ( List<Double> ) value ).stream().map( v -> v.intValue() ).collect( Collectors.toList() );
+                value = ( ( List<Double> ) value ).stream().map( Double::intValue ).collect( Collectors.toList() );
             } else if ( field.getGenericType().toString().startsWith( "java.util.List<java.lang.Long>" ) ) {
-                value = ( ( List<Double> ) value ).stream().map( v -> v.longValue() ).collect( Collectors.toList() );
+                value = ( ( List<Double> ) value ).stream().map( Double::longValue ).collect( Collectors.toList() );
             } else if ( field.getGenericType().toString().startsWith( "java.util.List<java.lang.Float>" ) ) {
-                value = ( ( List<Double> ) value ).stream().map( v -> v.floatValue() ).collect( Collectors.toList() );
-            } else if ( field.getGenericType().toString().startsWith( "java.util.List<java.lang.Double>" ) ) {
-                value = ( ( List<Double> ) value ).stream().map( v -> v.doubleValue() ).collect( Collectors.toList() );
+                value = ( ( List<Double> ) value ).stream().map( Double::floatValue ).collect( Collectors.toList() );
             } else if ( field.getGenericType().toString().startsWith( "java.util.Set<java.lang.Integer" ) ) {
-                value = ( ( List<Double> ) value ).stream().map( v -> v.intValue() ).collect( Collectors.toSet() );
+                value = ( ( List<Double> ) value ).stream().map( Double::intValue ).collect( Collectors.toSet() );
             } else if ( field.getGenericType().toString().startsWith( "java.util.Set<java.lang.Long>" ) ) {
-                value = ( ( List<Double> ) value ).stream().map( v -> v.longValue() ).collect( Collectors.toSet() );
+                value = ( ( List<Double> ) value ).stream().map( Double::longValue ).collect( Collectors.toSet() );
             } else if ( field.getGenericType().toString().startsWith( "java.util.Set<java.lang.Float>" ) ) {
-                value = ( ( List<Double> ) value ).stream().map( v -> v.floatValue() ).collect( Collectors.toSet() );
-            } else if ( field.getGenericType().toString().startsWith( "java.util.Set<java.lang.Double>" ) ) {
-                value = ( ( List<Double> ) value ).stream().map( v -> v.doubleValue() ).collect( Collectors.toSet() );
+                value = ( ( List<Double> ) value ).stream().map( Double::floatValue ).collect( Collectors.toSet() );
             }
-
         }
         return value;
     }
@@ -309,8 +312,8 @@ public class PojoBeanFromDynamoCreator<T> {
         return null;
     }
 
-    public T fromDynamo( Class<? extends T> clazz, Map<String, AttributeValue> values ) {
-        TableSchema schema = TableSchema.fromClass( clazz );
-        return ( T ) schema.mapToItem( values );
+    public T fromDynamo( Class<T> clazz, Map<String, AttributeValue> values ) {
+        TableSchema<T> schema = TableSchema.fromClass( clazz );
+        return schema.mapToItem( values );
     }
 }

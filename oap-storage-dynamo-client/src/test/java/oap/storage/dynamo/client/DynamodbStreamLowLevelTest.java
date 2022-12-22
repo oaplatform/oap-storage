@@ -32,7 +32,6 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.jetbrains.annotations.NotNull;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.StreamSpecification;
@@ -51,15 +50,14 @@ import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
-@Ignore
-public class StreamLowLevelTest extends Fixtures {
+public class DynamodbStreamLowLevelTest extends Fixtures {
     private final String tableName = "tableForStream";
     private final String keyName = "id";
     private final String longId = "787846fd-6e98-4ca9-a2d4-236ff93aa027";
 
     private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
 
-    public StreamLowLevelTest() {
+    public DynamodbStreamLowLevelTest() {
         fixture( fixture );
         Kernel kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
         kernel.start( pathOfResource( getClass(), "/oap/storage/dynamo/client/test-application.conf" ) );

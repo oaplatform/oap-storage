@@ -36,8 +36,9 @@ import oap.testng.TestDirectoryFixture;
 import oap.util.Maps;
 import oap.util.Pair;
 import org.jetbrains.annotations.NotNull;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
@@ -64,17 +65,26 @@ import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTag
 import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTags.secondaryPartitionKey;
 
 @Slf4j
-@Ignore
-public class IndexingTest extends Fixtures {
+public class DynamodbIndexingTest extends Fixtures {
 
     private final String keyName = "longId";
 
     private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
+    private static Kernel kernel;
 
-    public IndexingTest() {
+    public DynamodbIndexingTest() {
         fixture( fixture );
-        var kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-        kernel.start( pathOfResource( getClass(), "/oap/storage/dynamo/client/test-application.conf" ) );
+    }
+
+    @BeforeClass
+    public static void setUp() {
+        kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
+        kernel.start( pathOfResource( DynamodbIndexingTest.class, "/oap/storage/dynamo/client/test-application.conf" ) );
+    }
+
+    @AfterClass
+    public static void tearDown() {
+        kernel.stop();
     }
 
     @BeforeMethod
@@ -186,7 +196,7 @@ public class IndexingTest extends Fixtures {
                 ) );
         insert100Rows( client, tableName, keyName );
 
-        DynamoDbTable table = client.getEnhancedClient().table( tableName,
+        DynamoDbTable<IndexedRecord> table = client.getEnhancedClient().table( tableName,
             createSchemaForRecord( m -> m //add index attribute
                 .addAttribute( Long.class, a -> a.name( indexColumnName )
                     .getter( IndexedRecord::getTestBin )
@@ -266,14 +276,14 @@ public class IndexingTest extends Fixtures {
                 index2ColumnName, DynamodbDatatype.NUMBER ) );
         insert100Rows( client, tableName, keyName );
 
-        DynamoDbTable table1 = client.getEnhancedClient().table( tableName,
+        DynamoDbTable<IndexedRecord> table1 = client.getEnhancedClient().table( tableName,
             createSchemaForRecord( m -> m //add index attribute along with key
                 .addAttribute( Long.class, a -> a.name( index1ColumnName )
                     .getter( IndexedRecord::getTestBin )
                     .setter( IndexedRecord::setTestBin )
                     .tags( secondaryPartitionKey( index1Name ) ) ) )
         );
-        DynamoDbTable table2 = client.getEnhancedClient().table( tableName,
+        DynamoDbTable<IndexedRecord> table2 = client.getEnhancedClient().table( tableName,
             createSchemaForRecord( m -> m //add index attribute along with key
                 .addAttribute( Long.class, a -> a.name( index2ColumnName )
                     .getter( IndexedRecord::getAaa )
@@ -309,7 +319,7 @@ public class IndexingTest extends Fixtures {
             );
     }
 
-    private List<IndexedRecord> scanTableUsingIndex( DynamoDbTable dynamoDbTable, String indexName, Long valueToSearch ) {
+    private List<IndexedRecord> scanTableUsingIndex( DynamoDbTable<IndexedRecord> dynamoDbTable, String indexName, Long valueToSearch ) {
         var resultFuture = ( Stream<Page<IndexedRecord>> ) dynamoDbTable
             .index( indexName )
             .query( QueryEnhancedRequest.builder()

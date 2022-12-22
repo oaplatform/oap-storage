@@ -65,7 +65,7 @@ import static oap.util.Dates.s;
 public class DynamoDbWriter extends DynamoDbHelper {
     private final DynamoDbClient dynamoDbClient;
     private final DynamoDbEnhancedClient enhancedClient;
-    private final ReentrantReadWriteLock.ReadLock readLock;
+    private final ReentrantReadWriteLock.ReadLock readLock; // this lock means READ for all record in a table operations, and WRITE for alter table operations
 
     public DynamoDbWriter( DynamoDbClient dynamoDbClient, DynamoDbEnhancedClient enhancedClient, ReentrantReadWriteLock.ReadLock readLock ) {
         this.dynamoDbClient = dynamoDbClient;

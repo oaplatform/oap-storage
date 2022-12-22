@@ -24,12 +24,14 @@
 
 package oap.storage.dynamo.client.modifiers;
 
+import oap.storage.dynamo.client.annotations.API;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Map;
 import java.util.function.Consumer;
 
 @FunctionalInterface
+@API
 public interface DynamodbBinsModifier extends Consumer<Map<String, AttributeValue>> {
     @Override
     void accept( Map<String, AttributeValue> args );
