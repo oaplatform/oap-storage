@@ -245,7 +245,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
 
     @Test( enabled = false )
     // "1050 sec for 100 k iterations"
-    public void fullTestViaAmazonSDK() throws ReflectiveOperationException {
+    public void fullTestViaAmazonSDK() {
         Map<String, AttributeValue> arguments = createArguments();
         AutonomiousDynamo auto = new PojoBeanFromDynamoCreator<AutonomiousDynamo>().createBean( AutonomiousDynamo.class, arguments );
         arguments.remove( "publicNumberVar" );
@@ -271,7 +271,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
     }
 
     @Test
-    public void fullTestViaAmazonSDKNonGenericMap() throws ReflectiveOperationException {
+    public void fullTestViaAmazonSDKNonGenericMap() {
         Map<String, AttributeValue> arguments = createArguments();
         arguments.put( "mapOfObjects", createAttributeValue( MAP, Maps.of( new Pair<>( "One", 1.0 ), new Pair<>( "Two", false ) ) ) );
         // replaced with Map<String, Object> as DynamoDB sdk needs a properly declared class, not an Object as values

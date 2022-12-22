@@ -43,7 +43,6 @@ import oap.util.Pair;
 import oap.util.Sets;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -132,26 +131,20 @@ public class DynamodbClientTest extends Fixtures {
 
     @Test
     public void testGetSets() throws IOException {
-        var kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-        kernel.start( pathOfResource( getClass(), "/oap/storage/dynamo/client/test-application.conf" ) );
         var client = fixture.getDynamodbClient();
-        try {
-            client.start();
-            client.waitConnectionEstablished();
 
-            client.deleteTable( "setOne" );
-            client.deleteTable( "setTwo" );
+        client.start();
+        client.waitConnectionEstablished();
 
-            client.createTable( "setOne", 2, 1, keyName, "S", null, null, null );
-            client.createTable( "setTwo", 2, 1, keyName, "S", null, null, null );
+        client.deleteTable( "setOne" );
+        client.deleteTable( "setTwo" );
 
-            client.update( new Key( "setOne", "longId", "id1" ), "b1", "v1" );
-            client.update( new Key( "setTwo", "longId", "id1" ), "b1", "v1" );
-            assertThat( client.getTables().successValue ).contains( "setOne", "setTwo" );
+        client.createTable( "setOne", 2, 1, keyName, "S", null, null, null );
+        client.createTable( "setTwo", 2, 1, keyName, "S", null, null, null );
 
-        } finally {
-            kernel.stop();
-        }
+        client.update( new Key( "setOne", "longId", "id1" ), "b1", "v1" );
+        client.update( new Key( "setTwo", "longId", "id1" ), "b1", "v1" );
+        assertThat( client.getTables().successValue ).contains( "setOne", "setTwo" );
     }
 
     @Test
