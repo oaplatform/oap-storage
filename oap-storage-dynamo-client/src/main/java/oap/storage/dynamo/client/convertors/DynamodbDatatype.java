@@ -54,7 +54,7 @@ public enum DynamodbDatatype {
         ( o, value, convertor ) -> o.bool( ( Boolean ) value ),
         ( o, convertor ) -> o == null || o.bool() == null ? null : o.bool(),
         o -> 1
-        ),
+    ),
     STRING( "S",
         ( o, value, convertor ) -> o.s( ( String ) value ),
         ( o, convertor ) -> o == null ? null : o.s(),
@@ -91,17 +91,17 @@ public enum DynamodbDatatype {
         ( o, value, convertor ) -> o.bs( ( ( List<byte[]> ) value ).stream().map( SdkBytes::fromByteArray ).collect( Collectors.toList() ) ),
         ( o, convertor ) -> {
             if( o == null || o.bs() == null && o.l() == null ) return null;
-            return o.bs() != null
+            return o.bs() != null && !o.bs().isEmpty()
                     ?  o.bs().stream().map( BytesWrapper::asByteArray ).collect( Collectors.toList() )
                     :  o.l().stream().map( av -> av.b().asByteArray() ).collect( Collectors.toList() );
         },
         o -> o == null ? 0 : ( ( List<byte[]> ) o ).stream().map( v -> v.length ).reduce( 0, Integer::sum )
-        ),
+    ),
     SET_OF_STRINGS( "SS",
         ( o, value, convertor ) -> o.ss( new ArrayList<>( ( Collection<String> ) value ) ),
         ( o, convertor ) -> {
             if ( o == null || o.ss() == null && o.l() == null ) return null;
-            return o.ss() != null
+            return o.ss() != null && !o.ss().isEmpty()
                     ? o.ss()
                     : o.l().stream().map( AttributeValue::s ).collect( Collectors.toList() );
         },
@@ -111,7 +111,7 @@ public enum DynamodbDatatype {
         ( o, value, convertor ) -> o.ns( new ArrayList<>( ( Collection<Number> ) value ).stream().map( String::valueOf ).collect( Collectors.toList() ) ),
         ( o, convertor ) -> {
             if ( o == null || o.ns() == null && o.l() == null ) return null;
-            return o.ns() != null
+            return o.ns() != null && !o.ns().isEmpty()
                     ? o.ns().stream().map( Double::parseDouble ).collect( Collectors.toList() )
                     : o.l().stream().map( v -> Double.parseDouble( v.n() ) ).collect( Collectors.toList() );
         },
