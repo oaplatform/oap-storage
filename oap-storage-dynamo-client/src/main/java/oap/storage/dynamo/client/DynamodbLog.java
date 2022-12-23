@@ -27,14 +27,25 @@ package oap.storage.dynamo.client;
 
 import ch.qos.logback.classic.LoggerContext;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.Level;
 
 @Slf4j
 public class DynamodbLog {
 
-    public DynamodbLog( String level ) {
-        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+    public DynamodbLog( String level, String clientLevel ) {
+        LoggerContext loggerContext = ( LoggerContext ) LoggerFactory.getILoggerFactory();
+        Level logLevel = getLevel( level );
+        log.info( "DynamoDB server log (software.amazon.awssdk) level set to {}", logLevel );
+        loggerContext.getLogger( "software.amazon.awssdk" ).setLevel( logLevel );
+        logLevel = getLevel( clientLevel );
+        log.info( "DynamoDB client log (oap.storage.dynamo.client) level set to {}", logLevel );
+        loggerContext.getLogger( "oap.storage.dynamo.client" ).setLevel( logLevel );
+    }
+
+    @NotNull
+    private Level getLevel( String level ) {
         Level logLevel = switch( level ) {
             case "ALL" -> Level.ALL;
             case "DEBUG" -> Level.DEBUG;
@@ -44,7 +55,6 @@ public class DynamodbLog {
             case "OFF" -> Level.OFF;
             default -> Level.TRACE;
         };
-        log.info( "DynamoDB log (software.amazon.awssdk) level set to {}", logLevel );
-        loggerContext.getLogger("software.amazon.awssdk").setLevel( logLevel );
+        return logLevel;
     }
 }

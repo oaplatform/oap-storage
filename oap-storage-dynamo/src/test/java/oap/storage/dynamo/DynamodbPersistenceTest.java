@@ -27,7 +27,6 @@ package oap.storage.dynamo;
 import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
-import oap.application.module.Module;
 import oap.storage.dynamo.client.AbstractDynamodbFixture;
 import oap.storage.dynamo.client.Key;
 import oap.storage.dynamo.client.TestContainerDynamodbFixture;
@@ -46,13 +45,13 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.StreamSpecification;
 import software.amazon.awssdk.services.dynamodb.model.StreamViewType;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static oap.application.module.Module.CONFIGURATION;
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Asserts.pathOfResource;
@@ -69,16 +68,16 @@ public class DynamodbPersistenceTest extends Fixtures {
         fixture( TestDirectoryFixture.FIXTURE );
     }
 
-//    @BeforeClass
-//    public static void setUp() {
-//        kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-//        kernel.start( pathOfResource( DynamodbPersistenceTest.class, "/oap/storage/dynamo/test-application.conf" ) );
-//    }
-//
-//    @AfterClass
-//    public static void tearDown() {
-//        kernel.stop();
-//    }
+    @BeforeClass
+    public static void setUp() {
+        kernel = new Kernel( CONFIGURATION.urlsFromClassPath() );
+        kernel.start( pathOfResource( DynamodbPersistenceTest.class, "/oap/storage/dynamo/test-application.conf" ) );
+    }
+
+    @AfterClass
+    public static void tearDown() {
+        kernel.stop();
+    }
 
     private final Identifier<String, Bean> beanIdentifier =
         Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
@@ -98,7 +97,7 @@ public class DynamodbPersistenceTest extends Fixtures {
     };
 
     @Test
-    public void load() throws IOException {
+    public void load() {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
         var dynamodbClient = fixture.getDynamodbClient();
         dynamodbClient.start();
@@ -117,7 +116,7 @@ public class DynamodbPersistenceTest extends Fixtures {
     }
 
     @Test
-    public void watch() throws IOException {
+    public void watch() {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
         var dynamodbClient = fixture.getDynamodbClient();
 
@@ -137,7 +136,7 @@ public class DynamodbPersistenceTest extends Fixtures {
     }
 
     @Test
-    public void sync() throws IOException {
+    public void sync() {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
         var dynamodbClient = fixture.getDynamodbClient();
         dynamodbClient.start();
@@ -159,7 +158,7 @@ public class DynamodbPersistenceTest extends Fixtures {
     }
 
     @Test
-    public void syncWithDeletedItems() throws IOException {
+    public void syncWithDeletedItems() {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
         var dynamodbClient = fixture.getDynamodbClient();
         dynamodbClient.start();
@@ -181,7 +180,7 @@ public class DynamodbPersistenceTest extends Fixtures {
     }
 
     @Test
-    public void bothStoragesShouldBeEmpty() throws IOException {
+    public void bothStoragesShouldBeEmpty() {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
         var dynamodbClient = fixture.getDynamodbClient();
         dynamodbClient.start();

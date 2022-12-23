@@ -173,6 +173,7 @@ public class MongoPersistenceTest extends Fixtures {
              var persistence = new MongoPersistence<>( mongoClient, table, 6000, storage, crashDumpPath ) ) {
             mongoClient.preStart();
             persistence.preStart();
+            //this generates 16 MiB of XXXXXXXXXXXXXXXXXXXXXXX
             storage.store( new Bean( "X".repeat( 16793600 + 1 ) ) );
         }
         assertThat( Files.wildcard( crashDumpPath.resolve( table ), "*.json.gz" ) ).hasSize( 1 );

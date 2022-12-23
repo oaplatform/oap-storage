@@ -107,7 +107,7 @@ public class DynamodbEntityHelper {
      */
     @API
     public <T> Result<UpdateItemResponse, DynamodbClient.State> updateOrCreateItem( Key key, T item, UpdateItemRequestModifier modifier ) throws Exception {
-        Pair<String, Map<String, AttributeValue>> binNamesAndValues = new PojoBeanToDynamoCreator().createExpressionsFromBean( item, ":" );
+        Pair<String, Map<String, AttributeValue>> binNamesAndValues = new PojoBeanToDynamoCreator<>().createExpressionsFromBean( item, ":" );
         binNamesAndValues._2().remove( ":" + key.getColumnName() ); //remove key from expression
 
         String expression = binNamesAndValues._1();
