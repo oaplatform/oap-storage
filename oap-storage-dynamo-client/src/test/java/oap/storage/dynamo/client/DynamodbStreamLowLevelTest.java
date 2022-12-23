@@ -25,14 +25,9 @@
 package oap.storage.dynamo.client;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.application.Kernel;
-import oap.application.module.Module;
 import oap.storage.dynamo.client.streams.DynamodbStreamsRecordProcessor;
 import oap.testng.Fixtures;
-import oap.testng.TestDirectoryFixture;
 import org.jetbrains.annotations.NotNull;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.StreamSpecification;
@@ -47,7 +42,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
@@ -57,22 +51,9 @@ public class DynamodbStreamLowLevelTest extends Fixtures {
     private final String longId = "787846fd-6e98-4ca9-a2d4-236ff93aa027";
 
     private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
-    private static Kernel kernel;
 
     public DynamodbStreamLowLevelTest() {
         fixture( fixture );
-    }
-
-    @BeforeClass
-    public static void setUp() {
-        kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-        kernel.start( pathOfResource( DynamodbStreamLowLevelTest.class, "/oap/storage/dynamo/client/test-application.conf" ) );
-        System.setProperty( "TMP_PATH", TestDirectoryFixture.testDirectory().toAbsolutePath().toString().replace( '\\', '/' ) );
-    }
-
-    @AfterClass
-    public static void tearDown() {
-        kernel.stop();
     }
 
     @Test

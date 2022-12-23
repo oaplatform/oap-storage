@@ -58,6 +58,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -92,6 +93,7 @@ public class DynamoPersistence<I, T> implements Closeable {
     private volatile long lastExecuted = -1;
     private final Function<Map<String, AttributeValue>, Metadata<T>> convertFromDynamoItem;
     private final Function<Metadata<T>, Map<String, Object>> convertToDynamoItem;
+    private volatile boolean stopped = false;
 
     public DynamoPersistence( DynamodbClient dynamodbClient,
                               String tableName,
@@ -125,7 +127,6 @@ public class DynamoPersistence<I, T> implements Closeable {
 
         synchronizedOn( lock, () -> {
             this.load();
-
             scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, serviceName );
             scheduler.scheduleWithFixedDelay( this::fsync, delay, delay, TimeUnit.MILLISECONDS );
         } );
@@ -134,6 +135,7 @@ public class DynamoPersistence<I, T> implements Closeable {
             watchExecutor = Executors.newSingleThreadExecutor();
 
             watchExecutor.execute( () -> {
+                if ( stopped ) return;
                 Threads.notifyAllFor( watchExecutor );
                 TableDescription table = dynamodbClient.describeTable( tableName, null );
                 String streamArn = table.latestStreamArn();
@@ -172,17 +174,23 @@ public class DynamoPersistence<I, T> implements Closeable {
     private void fsync() {
         var time = DateTimeUtils.currentTimeMillis();
         synchronizedOn( lock, () -> {
-            log.trace( "fsyncing, last: {}, objects in storage: {}", lastExecuted, storage.size() );
+            if ( stopped ) return;
             var list = new ArrayList<AbstractOperation>( batchSize );
             var deletedIds = new ArrayList<I>( batchSize );
+            AtomicInteger updated = new AtomicInteger();
             storage.memory.selectUpdatedSince( lastExecuted ).forEach( ( id, m ) -> {
+                updated.incrementAndGet();
                 if( m.isDeleted() ) {
                     deletedIds.add( id );
                     list.add( new DeleteItemOperation( new Key( tableName, "id", id.toString() ) ) );
                 } else
                     list.add( new UpdateItemOperation( new Key( tableName, "id", id.toString() ), convertToDynamoItem.apply( m ) ) );
-                if( list.size() >= batchSize ) persist( deletedIds, list );
+                if( list.size() >= batchSize ) {
+                    persist( deletedIds, list );
+                    list.clear();
+                }
             } );
+            log.trace( "fsyncing, last: {}, updated objects in storage: {}, total in storage: {}", lastExecuted, updated.get(), storage.size() );
             persist( deletedIds, list );
             lastExecuted = time;
         } );
@@ -191,17 +199,18 @@ public class DynamoPersistence<I, T> implements Closeable {
     @Override
     public void close() {
         log.debug( "closing {}...", this );
-        if( scheduler != null && storage != null ) synchronizedOn( lock, () -> {
-            Closeables.close( scheduler );
+        if( watch ) Closeables.close( watchExecutor );
+        synchronizedOn( lock, () -> {
+            scheduler.shutdown( 1, TimeUnit.SECONDS );
+            Closeables.close( scheduler ); // no more sync after that
             fsync();
+            stopped = true;
             log.debug( "closed {}...", this );
         } );
-        else log.debug( "this {} was't started or already closed", this );
-
-        if( watch ) Closeables.close( watchExecutor );
     }
 
     private void persist( List<I> deletedIds, List<AbstractOperation> list ) {
+        if ( stopped ) return;
         if( !list.isEmpty() ) try {
             batchWriter.addOperations( list );
             batchWriter.write();

@@ -24,8 +24,7 @@
 
 package oap.storage.dynamo.client;
 
-import oap.application.Kernel;
-import oap.application.module.Module;
+
 import oap.storage.dynamo.client.modifiers.GetItemRequestModifier;
 import oap.storage.dynamo.client.modifiers.UpdateItemRequestModifier;
 import oap.testng.Fixtures;
@@ -33,8 +32,6 @@ import oap.util.HashMaps;
 import oap.util.Result;
 import oap.util.Sets;
 import org.jetbrains.annotations.NotNull;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
@@ -44,7 +41,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class DynamodbRetryClientTest extends Fixtures {
@@ -53,7 +49,6 @@ public class DynamodbRetryClientTest extends Fixtures {
     public static final String ID_COLUMN_NAME = "id";
 
     private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
-    private static Kernel kernel;
 
     public DynamodbRetryClientTest() {
         fixture( fixture );
@@ -65,17 +60,6 @@ public class DynamodbRetryClientTest extends Fixtures {
         "bin1", AttributeValue.fromS( "Adam Smith" ),
         "bin2", AttributeValue.fromS( "Samuel Collins" )
     );
-
-    @BeforeClass
-    public static void setUp() {
-        kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-        kernel.start( pathOfResource( DynamodbRetryClientTest.class, "/oap/storage/dynamo/client/test-application.conf" ) );
-    }
-
-    @AfterClass
-    public static void tearDown() {
-        kernel.stop();
-    }
 
     @NotNull
     private DynamodbClient createClient() {

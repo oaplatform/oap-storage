@@ -25,9 +25,6 @@
 package oap.storage.dynamo.client;
 
 import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import oap.application.Kernel;
-import oap.application.module.Module;
 import oap.storage.dynamo.client.convertors.DynamodbDatatype;
 import oap.storage.dynamo.client.modifiers.TableSchemaModifier;
 import oap.storage.dynamo.client.modifiers.UpdateTableRequestModifier;
@@ -36,8 +33,6 @@ import oap.testng.TestDirectoryFixture;
 import oap.util.Maps;
 import oap.util.Pair;
 import org.jetbrains.annotations.NotNull;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -59,32 +54,17 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTags.primaryPartitionKey;
 import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTags.secondaryPartitionKey;
 
-@Slf4j
 public class DynamodbIndexingTest extends Fixtures {
 
     private final String keyName = "longId";
-
     private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
-    private static Kernel kernel;
 
     public DynamodbIndexingTest() {
         fixture( fixture );
-    }
-
-    @BeforeClass
-    public static void setUp() {
-        kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-        kernel.start( pathOfResource( DynamodbIndexingTest.class, "/oap/storage/dynamo/client/test-application.conf" ) );
-    }
-
-    @AfterClass
-    public static void tearDown() {
-        kernel.stop();
     }
 
     @BeforeMethod
@@ -337,7 +317,6 @@ public class DynamodbIndexingTest extends Fixtures {
             client.update( key, "test_bin", i % 5 );
             client.update( key, "aaa", i );
         }
-        log.info( "All 100 rows are inserted" );
     }
 
     private Stream<Map<String, AttributeValue>> defineScanTableStream( DynamodbClient client, String tableName, String indexName, String valueToSelect ) {

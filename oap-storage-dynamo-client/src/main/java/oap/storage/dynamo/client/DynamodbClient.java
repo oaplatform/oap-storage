@@ -297,7 +297,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
     public void waitConnectionEstablished() {
         try {
             if ( connectionIsReady.await( 1, TimeUnit.MINUTES ) ) {
-                log.info( "DynamoDB clients is ready" );
+                log.info( "DynamoDB clients are ready" );
                 return;
             }
         } catch( InterruptedException e ) {

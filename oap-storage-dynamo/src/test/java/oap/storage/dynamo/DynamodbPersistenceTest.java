@@ -26,7 +26,6 @@ package oap.storage.dynamo;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
-import oap.application.Kernel;
 import oap.storage.dynamo.client.AbstractDynamodbFixture;
 import oap.storage.dynamo.client.Key;
 import oap.storage.dynamo.client.TestContainerDynamodbFixture;
@@ -38,8 +37,6 @@ import oap.storage.MemoryStorage;
 import oap.storage.Metadata;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.StreamSpecification;
@@ -51,32 +48,18 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static oap.application.module.Module.CONFIGURATION;
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
-import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class DynamodbPersistenceTest extends Fixtures {
 
     private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
-    private static Kernel kernel;
 
     public DynamodbPersistenceTest() {
         fixture( fixture );
         fixture( TestDirectoryFixture.FIXTURE );
-    }
-
-    @BeforeClass
-    public static void setUp() {
-        kernel = new Kernel( CONFIGURATION.urlsFromClassPath() );
-        kernel.start( pathOfResource( DynamodbPersistenceTest.class, "/oap/storage/dynamo/test-application.conf" ) );
-    }
-
-    @AfterClass
-    public static void tearDown() {
-        kernel.stop();
     }
 
     private final Identifier<String, Bean> beanIdentifier =
@@ -101,38 +84,40 @@ public class DynamodbPersistenceTest extends Fixtures {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
         var dynamodbClient = fixture.getDynamodbClient();
         dynamodbClient.start();
-
-        var persistence = new DynamoPersistence<>( dynamodbClient, "test", 6000, storage, fromDynamo, toDynamo );
         dynamodbClient.waitConnectionEstablished();
         dynamodbClient.createTable( "test", 2, 1, "id", "S", null, null, null );
-        final WriteBatchOperationHelper batchWriter = new WriteBatchOperationHelper( dynamodbClient );
+
+        WriteBatchOperationHelper batchWriter = new WriteBatchOperationHelper( dynamodbClient );
         batchWriter.addOperation( new CreateItemOperation( new Key( "test", "id", "1" ), ImmutableMap.of( "firstName", "John" ) ) );
         batchWriter.write();
 
+        var persistence = new DynamoPersistence<>( dynamodbClient, "test", 6000, storage, fromDynamo, toDynamo );
         persistence.watch = false;
         persistence.preStart();
 
         assertThat( storage ).containsExactly( new Bean( "1", "John" ) );
+
+        persistence.close();
     }
 
     @Test
     public void watch() {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
         var dynamodbClient = fixture.getDynamodbClient();
-
         dynamodbClient.start();
         dynamodbClient.waitConnectionEstablished();
-
-        var persistence = new DynamoPersistence<>( dynamodbClient, "test", 6000, storage, fromDynamo, toDynamo );
         dynamodbClient.createTable( "test", 2, 1, "id", "S", null, null, builder -> builder.streamSpecification( StreamSpecification.builder().streamEnabled( true ).streamViewType( StreamViewType.NEW_AND_OLD_IMAGES ).build() ) );
 
+        var persistence = new DynamoPersistence<>( dynamodbClient, "test", 6000, storage, fromDynamo, toDynamo );
         persistence.watch = true;
         persistence.preStart();
+
         dynamodbClient.update( new Key( "test", "id", "1" ), "firstName", "John" );
         assertEventually( 500, 10, () -> assertThat( storage ).containsExactly( new Bean( "1", "John" ) ) );
 
         dynamodbClient.update( new Key( "test", "id", "1" ), "firstName", "Ann" );
         assertEventually( 500, 10, () -> assertThat( storage ).containsExactly( new Bean( "1", "Ann" ) ) );
+        persistence.close();
     }
 
     @Test
@@ -141,20 +126,22 @@ public class DynamodbPersistenceTest extends Fixtures {
         var dynamodbClient = fixture.getDynamodbClient();
         dynamodbClient.start();
         dynamodbClient.waitConnectionEstablished();
+        dynamodbClient.createTable( "test", 2, 1, "id", "S", null, null, builder -> builder.streamSpecification( StreamSpecification.builder().streamEnabled( true ).streamViewType( StreamViewType.NEW_AND_OLD_IMAGES ).build() ) );
+
+        dynamodbClient.update( new Key( "test", "id", "1" ), "firstName", "John" );
 
         var persistence = new DynamoPersistence<>( dynamodbClient, "test", 500, storage, fromDynamo, toDynamo );
-        dynamodbClient.createTable( "test", 2, 1, "id", "S", null, null, builder -> builder.streamSpecification( StreamSpecification.builder().streamEnabled( true ).streamViewType( StreamViewType.NEW_AND_OLD_IMAGES ).build() ) );
-        dynamodbClient.update( new Key( "test", "id", "1" ), "firstName", "John" );
         persistence.preStart();
 
         storage.store( new Bean( "2", "AnnaStore" ) );
         storage.store( new Bean( "1", "JohnUpdated" ) );
 
         final List<Map<String, AttributeValue>> mapList = getMapList( storage );
-
         assertEventually( 500, 10, () ->
             assertThat( dynamodbClient.getRecord( "test", 10, "id", null ).getRecords() )
                 .containsExactly( mapList.get( 0 ), mapList.get( 1 ) ) );
+
+        persistence.close();
     }
 
     @Test
@@ -164,19 +151,21 @@ public class DynamodbPersistenceTest extends Fixtures {
         dynamodbClient.start();
         dynamodbClient.waitConnectionEstablished();
 
-        var persistence = new DynamoPersistence<>( dynamodbClient, "test", 500, storage, fromDynamo, toDynamo );
         dynamodbClient.createTable( "test", 2, 1, "id", "S", null, null, builder -> builder.streamSpecification( StreamSpecification.builder().streamEnabled( true ).streamViewType( StreamViewType.NEW_AND_OLD_IMAGES ).build() ) );
-        dynamodbClient.update( new Key( "test", "id", "1" ), "name", "John" );
+        dynamodbClient.update( new Key( "test", "id", "1" ), "firstName", "John" );
+
+        var persistence = new DynamoPersistence<>( dynamodbClient, "test", 500, storage, fromDynamo, toDynamo );
         persistence.preStart();
 
         storage.store( new Bean( "2", "AnnaStore" ) );
         storage.delete( "1" );
 
         final List<Map<String, AttributeValue>> mapList = getMapList( storage );
-
         assertEventually( 500, 10, () ->
             assertThat( dynamodbClient.getRecord( "test", 10, "id", null ).getRecords() )
                 .containsExactly( mapList.get( 0 ) ) );
+
+        persistence.close();
     }
 
     @Test
@@ -185,21 +174,27 @@ public class DynamodbPersistenceTest extends Fixtures {
         var dynamodbClient = fixture.getDynamodbClient();
         dynamodbClient.start();
         dynamodbClient.waitConnectionEstablished();
-
-        var persistence = new DynamoPersistence<>( dynamodbClient, "test", 500, storage, fromDynamo, toDynamo );
         dynamodbClient.createTable( "test", 2, 1, "id", "S", null, null, builder -> builder.streamSpecification( StreamSpecification.builder().streamEnabled( true ).streamViewType( StreamViewType.NEW_AND_OLD_IMAGES ).build() ) );
+
         dynamodbClient.update( new Key( "test", "id", "1" ), "firstName", "John" );
         dynamodbClient.update( new Key( "test", "id", "2" ), "firstName", "Anna" );
+
+        var persistence = new DynamoPersistence<>( dynamodbClient, "test", 500, storage, fromDynamo, toDynamo );
         persistence.watch = true;
         persistence.preStart();
+
         dynamodbClient.delete( new Key( "test", "id", "1" ), null );
+
         assertEventually( 500, 10, () -> assertThat( storage ).containsExactly( new Bean( "2", "Anna" ) ) );
         assertEventually( 500, 10, () -> assertThat( dynamodbClient.getRecord( "test", 10, "id", null ).getRecords() )
             .containsExactly( ImmutableMap.of( "id", AttributeValue.builder().s( "2" ).build(), "firstName", AttributeValue.builder().s( "Anna" ).build() ) ) );
+
         storage.delete( "2" );
 
         assertEventually( 500, 10, () -> assertThat( storage.size() ).isEqualTo( 0 ) );
         assertEventually( 500, 10, () -> assertThat( dynamodbClient.getRecord( "test", 10, "id", null ).getRecords().size() ).isEqualTo( 0 ) );
+
+        persistence.close();
     }
 
     private List<Map<String, AttributeValue>> getMapList( MemoryStorage<String, Bean> storage ) {

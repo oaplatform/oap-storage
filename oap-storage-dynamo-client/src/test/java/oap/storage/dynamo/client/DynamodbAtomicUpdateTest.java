@@ -24,15 +24,10 @@
 
 package oap.storage.dynamo.client;
 
-import oap.application.Kernel;
-import oap.application.module.Module;
 import oap.testng.Fixtures;
-import oap.testng.TestDirectoryFixture;
 import oap.util.HashMaps;
 import oap.util.Result;
 import oap.util.Sets;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
@@ -45,30 +40,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
 
 public class DynamodbAtomicUpdateTest extends Fixtures {
 
     public static final String TABLE_NAME = "atomicUpdateTest";
     public static final String ID_COLUMN_NAME = "id";
     private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
-    private static Kernel kernel;
 
     public DynamodbAtomicUpdateTest() {
         fixture( fixture );
-    }
-
-    @BeforeClass
-    public static void setUp() {
-        kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-        kernel.start( pathOfResource( DynamodbAtomicUpdateTest.class, "/oap/storage/dynamo/client/test-application.conf" ) );
-        System.setProperty( "TMP_PATH", TestDirectoryFixture.testDirectory().toAbsolutePath().toString().replace( '\\', '/' ) );
-    }
-
-    @AfterClass
-    public static void tearDown() {
-        kernel.stop();
     }
 
     @Test
