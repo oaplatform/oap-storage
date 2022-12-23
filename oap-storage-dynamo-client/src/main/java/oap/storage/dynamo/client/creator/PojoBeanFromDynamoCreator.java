@@ -286,6 +286,8 @@ public class PojoBeanFromDynamoCreator<T> {
                 value = ( ( List<Double> ) value ).stream().map( Double::longValue ).collect( Collectors.toSet() );
             } else if ( field.getGenericType().toString().startsWith( "java.util.Set<java.lang.Float>" ) ) {
                 value = ( ( List<Double> ) value ).stream().map( Double::floatValue ).collect( Collectors.toSet() );
+            } else if ( field.getGenericType().toString().startsWith( "java.util.Set<java.lang.Double>" ) ) {
+                value = ( ( List<Double> ) value ).stream().collect( Collectors.toSet() );
             }
         }
         return value;
