@@ -24,6 +24,7 @@
 
 package oap.storage.dynamo.client;
 
+import oap.storage.dynamo.client.atomic.AtomicUpdateFieldAndValue;
 import oap.testng.Fixtures;
 import oap.util.HashMaps;
 import oap.util.Result;
@@ -62,17 +63,16 @@ public class DynamodbAtomicUpdateTest extends Fixtures {
         client.deleteTableIfExists( TABLE_NAME );
         client.createTableIfNotExist( TABLE_NAME, ID_COLUMN_NAME );
         Key key = new Key( TABLE_NAME, ID_COLUMN_NAME, "IFA" );
-
         client.updateRecordAtomic(
             key,
             Collections.singletonMap( "vvvv", AttributeValue.fromS( "vvv" ) ),
             null,
-            -1 );
+            new AtomicUpdateFieldAndValue( "recVersion", -1 ) );
 
         Result<Map<String, AttributeValue>, DynamodbClient.State> result = client.getRecord( key, null );
         assertThat( result.isSuccess() ).isTrue();
         //first update is 0 + 1 = 1
-        assertThat( result.getSuccessValue().get( "generation" ).n() ).isEqualTo( "1" );
+        assertThat( result.getSuccessValue().get( "recVersion" ).n() ).isEqualTo( "1" );
     }
 
     @Test
@@ -85,23 +85,24 @@ public class DynamodbAtomicUpdateTest extends Fixtures {
         client.createTableIfNotExist( TABLE_NAME, ID_COLUMN_NAME );
         Key key = new Key( TABLE_NAME, ID_COLUMN_NAME, "IFA" );
 
+        AtomicUpdateFieldAndValue serializedRecordVersion = new AtomicUpdateFieldAndValue( "serializedRecordVersion", 20 );
         client.updateRecordAtomic(
             key,
             Collections.singletonMap( "vvvv", AttributeValue.fromS( "vvv" ) ),
             null,
-            20 );
+            serializedRecordVersion );
 
         Result<Map<String, AttributeValue>, DynamodbClient.State> result = client.getRecord( key, null );
-        assertThat( result.getSuccessValue().get( "generation" ).n() ).isEqualTo( "1" );
+        assertThat( serializedRecordVersion.getValueFromRecord( result ) ).isEqualTo( "1" );
 
         client.updateRecordAtomic(
             key,
             Collections.singletonMap( "vvvv", AttributeValue.fromS( "vvv" ) ),
             null,
-            1 );
+            new AtomicUpdateFieldAndValue( "serializedRecordVersion", 1 ) );
 
         result = client.getRecord( key, null );
-        assertThat( result.getSuccessValue().get( "generation" ).n() ).isEqualTo( "2" );
+        assertThat( serializedRecordVersion.getValueFromRecord( result ) ).isEqualTo( "2" );
     }
 
     @Test
@@ -120,23 +121,24 @@ public class DynamodbAtomicUpdateTest extends Fixtures {
                 "vvvv", AttributeValue.fromS( "v1" )
             ),
             null,
-            39 ).isSuccess() ).isTrue(); //any number for first update
+            new AtomicUpdateFieldAndValue( 39 ) ).isSuccess() ).isTrue(); //any number for first update
 
         Result<Map<String, AttributeValue>, DynamodbClient.State> result = client.getRecord( key, null );
-        assertThat( result.getSuccessValue().get( "generation" ).n() ).isEqualTo( "1" );
+        assertThat( result.getSuccessValue().get( AtomicUpdateFieldAndValue.DEFAULT_NAME ).n() ).isEqualTo( "1" );
 
+        AtomicUpdateFieldAndValue generation = new AtomicUpdateFieldAndValue( 18 );
         Result<UpdateItemResponse, DynamodbClient.State> resultOfInvalidOperation = client.updateRecordAtomic(
             key,
             HashMaps.of(
                 "vvvv", AttributeValue.fromS( "v2" )
             ),
             null,
-            18 ); //number is not equal to actual 19, so update should not happen
+            generation ); //number is not equal to actual 19, so update should not happen
         assertThat( resultOfInvalidOperation.isSuccess() ).isFalse();
         assertThat( resultOfInvalidOperation.getFailureValue() ).isEqualTo( DynamodbClient.State.VERSION_CHECK_FAILED );
 
         result = client.getRecord( key, null );
-        assertThat( result.getSuccessValue().get( "generation" ).n() ).isEqualTo( "1" );
+        assertThat( generation.getValueFromRecord( result ) ).isEqualTo( "1" );
         assertThat( result.getSuccessValue().get( "vvvv" ).s() ).isEqualTo( "v1" );
     }
 
@@ -163,26 +165,27 @@ public class DynamodbAtomicUpdateTest extends Fixtures {
                         return res;
                     },
                     1000,
-                    counter.get() );
+                    new AtomicUpdateFieldAndValue( counter.get() ) );
                 if( result.isSuccess() ) counter.incrementAndGet();
-                if( counter.get() % 5 == 0 || !result.isSuccess() )
-                    System.err.println( "#" + counter.get() + " -> " + result.isSuccess() );
                 Result<Map<String, AttributeValue>, DynamodbClient.State> record = client.getRecord( key, null );
+                if( counter.get() % 5 == 0 || !result.isSuccess() )
+                    System.err.println( "#" + counter.get() + " -> " + result.isSuccess() + " (" + record.getSuccessValue().get( "version" ) + ")" );
             } );
         }
         service.shutdown();
         assertThat( service.awaitTermination( 1, TimeUnit.MINUTES ) ).isTrue();
 
         Result<Map<String, AttributeValue>, DynamodbClient.State> result = client.getRecord( key, null );
-        assertThat( result.getSuccessValue().get( "generation" ).n() ).isEqualTo( "" + counter.get() );
+        AtomicUpdateFieldAndValue generation = new AtomicUpdateFieldAndValue( 0 );
+        assertThat( Long.parseLong( generation.getValueFromRecord( result ) ) ).isEqualTo( counter.get() );
 
         client.updateRecordAtomic(
             key,
             Collections.singletonMap( "version", AttributeValue.fromS( "final" ) ),
             null,
-            counter.get() );
+            new AtomicUpdateFieldAndValue( counter.get() ) );
 
         result = client.getRecord( key, null );
-        assertThat( result.getSuccessValue().get( "generation" ).n() ).isGreaterThanOrEqualTo( "" + ( counter.get() ) );
+        assertThat( Long.parseLong( generation.getValueFromRecord( result ) ) ).isGreaterThanOrEqualTo( counter.get() );
     }
 }

@@ -36,9 +36,9 @@ import java.util.Objects;
 
 @API
 public class AtomicUpdateRecordSupporter implements UpdateItemRequestModifier {
-    private String recordVersionColumnName = "generation";
-    private long generation = 0;
-    private Map<String, AttributeValue> atomicUpdates = new LinkedHashMap<>();
+
+    private AtomicUpdateFieldAndValue atomicUpdateFieldAndValue = new AtomicUpdateFieldAndValue( 0 );
+    private final Map<String, AttributeValue> atomicUpdates = new LinkedHashMap<>();
 
     public AtomicUpdateRecordSupporter() {
     }
@@ -52,7 +52,7 @@ public class AtomicUpdateRecordSupporter implements UpdateItemRequestModifier {
     /**
      * Prepares UpdateItemRequest for updating a record in DynamoDB. It also adds a feature to support read/check/write
      * functionality with #recordVersionColumnName field (a.k.a. generation or version). If a record in DynamoDB
-     * has such field the given value ('generation') should be equal to DynamoDB field value, otherwise
+     * has such field, the given value ('generation') should be equal to DynamoDB field value, otherwise
      * update will fail with ConditionalCheckFailedException
      * @param builder an UpdateItemRequest.Builder to modify
      * Note: generation version number of a record to be equal in order to make update happen
@@ -61,15 +61,15 @@ public class AtomicUpdateRecordSupporter implements UpdateItemRequestModifier {
     public void accept( UpdateItemRequest.Builder builder ) {
         Objects.requireNonNull( builder );
         StringBuilder toSetExpression = new StringBuilder();
-        Map<String, String> expressionAttributeNames = HashMaps.of( "#gen", recordVersionColumnName );
+        Map<String, String> expressionAttributeNames = HashMaps.of( "#gen", atomicUpdateFieldAndValue.getFieldName() );
         Map<String, AttributeValue> expressionAttributeValues = HashMaps.of(
                 ":inc", AttributeValue.fromN( "1" ),
                 ":null", AttributeValue.fromNul( true ),
-                ":gen", AttributeValue.fromN( String.valueOf( generation ) ) );
+                ":gen", AttributeValue.fromN( String.valueOf( atomicUpdateFieldAndValue.getValue() ) ) );
 
         int counter = 0;
         for ( Map.Entry<String, AttributeValue> atomicUpdate :  atomicUpdates.entrySet() ) {
-            toSetExpression.append( "#var" + counter + " = :var" + counter + ", " );
+            toSetExpression.append( "#var" ).append( counter ).append( " = :var" ).append( counter ).append( ", " );
             expressionAttributeNames.put( "#var" + counter, atomicUpdate.getKey() );
             expressionAttributeValues.put( ":var" + counter, atomicUpdate.getValue() );
             counter++;
@@ -86,16 +86,8 @@ public class AtomicUpdateRecordSupporter implements UpdateItemRequestModifier {
                 .expressionAttributeValues( expressionAttributeValues );
     }
 
-    public void setRecordVersionColumnName( String recordVersionColumnName ) {
-        Objects.requireNonNull( recordVersionColumnName );
-        this.recordVersionColumnName = recordVersionColumnName;
-    }
-
-    public void setGeneration( long generation ) {
-        if ( generation < 0 ) {
-            this.generation = 0;
-            return;
-        }
-        this.generation = generation;
+    public void setAtomicUpdateFieldAndValue( AtomicUpdateFieldAndValue fieldAndValue ) {
+        Objects.requireNonNull( fieldAndValue );
+        this.atomicUpdateFieldAndValue = fieldAndValue;
     }
 }

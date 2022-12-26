@@ -25,6 +25,7 @@
 package oap.storage.dynamo.client;
 
 
+import oap.storage.dynamo.client.atomic.AtomicUpdateFieldAndValue;
 import oap.storage.dynamo.client.modifiers.GetItemRequestModifier;
 import oap.storage.dynamo.client.modifiers.UpdateItemRequestModifier;
 import oap.testng.Fixtures;
@@ -56,7 +57,7 @@ public class DynamodbRetryClientTest extends Fixtures {
 
     private AtomicInteger counter = new AtomicInteger();
     private Map<String, AttributeValue> attributeValueMap = HashMaps.of(
-        "generation", AttributeValue.fromN( "2" ),
+        AtomicUpdateFieldAndValue.DEFAULT_NAME, AttributeValue.fromN( "2" ),
         "bin1", AttributeValue.fromS( "Adam Smith" ),
         "bin2", AttributeValue.fromS( "Samuel Collins" )
     );
@@ -68,10 +69,11 @@ public class DynamodbRetryClientTest extends Fixtures {
                 return Result.success( attributeValueMap );
             }
 
-            public Result<UpdateItemResponse, DynamodbClient.State> updateRecordAtomic( Key key, Map<String, AttributeValue> binNamesAndValues, UpdateItemRequestModifier modifier, int generation ) {
+            @Override
+            public Result<UpdateItemResponse, DynamodbClient.State> updateRecordAtomic( Key key, Map<String, AttributeValue> binNamesAndValues, UpdateItemRequestModifier modifier, AtomicUpdateFieldAndValue generation ) {
                 counter.incrementAndGet();
                 if( counter.get() == 5 ) {
-                    attributeValueMap.put( "generation", AttributeValue.fromN( "2" ) );
+                    attributeValueMap.put( AtomicUpdateFieldAndValue.DEFAULT_NAME, AttributeValue.fromN( "2" ) );
                     attributeValueMap.put( "bin3", AttributeValue.fromS( "v2" ) );
                     return Result.success( UpdateItemResponse.builder().attributes( attributeValueMap ).build() );
                 }
@@ -92,6 +94,7 @@ public class DynamodbRetryClientTest extends Fixtures {
         //attempt to write v1, but there actually is v2, so we have to repeat 5 attempts
         Map<String, AttributeValue> attributes = Collections.singletonMap( "bin3", AttributeValue.fromS( "v1" ) );
 
+        AtomicUpdateFieldAndValue generation = new AtomicUpdateFieldAndValue( 1 );
         Result<UpdateItemResponse, DynamodbClient.State> result = client.updateRecordAtomicWithRetry( key,
             Sets.of( "bin1", "bin2" ),
             attributeValueMap -> {
@@ -100,11 +103,11 @@ public class DynamodbRetryClientTest extends Fixtures {
                 return attributes;
             },
             5,
-            1 );
+            generation );
 
         assertThat( counter.get() ).isEqualTo( 5 );
         assertThat( result.isSuccess() ).isTrue();
         assertThat( result.getSuccessValue().attributes().get( "bin3" ).s() ).isEqualTo( "v2" );
-        assertThat( result.getSuccessValue().attributes().get( "generation" ).n() ).isEqualTo( "2" );
+        assertThat( generation.getValueFromAtomicUpdate( result ) ).isEqualTo( "2" );
     }
 }
