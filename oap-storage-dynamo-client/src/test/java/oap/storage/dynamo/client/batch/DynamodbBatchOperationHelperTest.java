@@ -45,7 +45,6 @@ import oap.util.Result;
 import oap.util.Sets;
 import org.jetbrains.annotations.NotNull;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -59,15 +58,14 @@ import java.util.Random;
 import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Ignore
-public class BatchOperationHelperTest extends Fixtures {
+public class DynamodbBatchOperationHelperTest extends Fixtures {
     private String tableName1 = "batchTable1";
     private String tableName2 = "batchTable2";
     private final String keyName = "longId";
 
     private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
 
-    public BatchOperationHelperTest() {
+    public DynamodbBatchOperationHelperTest() {
         fixture( fixture );
         Kernel kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
         kernel.start( pathOfResource( getClass(), "/oap/storage/dynamo/client/test-application.conf" ) );

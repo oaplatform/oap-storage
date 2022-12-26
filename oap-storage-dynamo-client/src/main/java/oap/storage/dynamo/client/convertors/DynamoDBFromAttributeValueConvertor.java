@@ -27,6 +27,6 @@ package oap.storage.dynamo.client.convertors;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 @FunctionalInterface
-public interface DynamoDBFromAttributeValueConvertor {
-    Object convert( AttributeValue attributeValue, KeyConvertorForMap convertor );
+public interface DynamoDBFromAttributeValueConvertor<T, V> {
+    V convert( AttributeValue attributeValue, KeyConvertorForMap<T, V> convertor );
 }

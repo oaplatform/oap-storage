@@ -63,7 +63,7 @@ public class PojoBeanToDynamoCreator<T> {
 //            }
             Object value = callGetterMethod( bean, field );
             if ( value == null ) {
-                expression.append( field.getName() + "=:" + field.getName() + ", " );
+                expression.append( field.getName() ).append( "=:" ).append( field.getName() ).append( ", " );
                 result.put( prefix + field.getName(), AttributeValue.fromNul( true ) );
                 continue;
             }
@@ -73,21 +73,21 @@ public class PojoBeanToDynamoCreator<T> {
             } else if ( field.getGenericType().toString().equals( "java.util.List<java.lang.String>" ) ) {
                 attributeValue = AttributeValue.fromSs( ( List ) value );
             } else if ( field.getGenericType().toString().equals( "java.util.List<byte[]>" ) ) {
-                attributeValue = AttributeValue.fromBs( ( ( List<byte[]> ) value ).stream().map( b -> SdkBytes.fromByteArray( b ) ).collect( Collectors.toList() ) );
+                attributeValue = AttributeValue.fromBs( ( ( List<byte[]> ) value ).stream().map( SdkBytes::fromByteArray ).collect( Collectors.toList() ) );
             } else if ( field.getGenericType().toString().equals( "java.util.Set<byte[]>" ) ) {
-                attributeValue = AttributeValue.fromBs( ( ( Set<byte[]> ) value ).stream().map( b -> SdkBytes.fromByteArray( b ) ).collect( Collectors.toList() ) );
+                attributeValue = AttributeValue.fromBs( ( ( Set<byte[]> ) value ).stream().map( SdkBytes::fromByteArray ).collect( Collectors.toList() ) );
             } else if ( field.getGenericType().toString().startsWith( "java.util.List<java.lang." ) ) {
                 //numbers
-                List<String> collect = ( ( List<Number> ) value ).stream().map( v -> v.toString() ).collect( Collectors.toList() );
+                List<String> collect = ( ( List<Number> ) value ).stream().map( Object::toString ).collect( Collectors.toList() );
                 attributeValue = AttributeValue.fromNs( collect );
             } else if ( field.getGenericType().toString().startsWith( "java.util.Set<java.lang." ) ) {
                 //numbers
-                List<String> collect = ( ( Set<Number> ) value ).stream().map( v -> v.toString() ).collect( Collectors.toList() );
+                List<String> collect = ( ( Set<Number> ) value ).stream().map( Object::toString ).collect( Collectors.toList() );
                 attributeValue = AttributeValue.fromNs( collect );
             } else {
                 attributeValue = DynamodbDatatype.createAttributeValueFromObject( value );
             }
-            expression.append( field.getName() + "=:" + field.getName() + ", " );
+            expression.append( field.getName() ).append( "=:" ).append( field.getName() ).append( ", " );
             result.put( prefix + field.getName(), attributeValue );
         }
         if ( expression.length() > 2 ) {
@@ -121,14 +121,14 @@ public class PojoBeanToDynamoCreator<T> {
                     try {
                         return method.invoke( bean );
                     } catch ( Exception pex ) {
-                        log.debug( "Cannot find appropriate setter for field '{}':", field.getName(), ex.getMessage() );
+                        log.debug( "Cannot find appropriate setter for field '{}':{}", field.getName(), ex.getMessage() );
                     }
                     exceptionLogged = true;
                     break;
                 }
             }
             if ( !exceptionLogged ) {
-                log.debug( "Cannot find appropriate setter for field '{}':", field.getName(), ex.getMessage() );
+                log.debug( "Cannot find appropriate setter for field '{}':{}", field.getName(), ex.getMessage() );
             }
         }
         return null;
@@ -163,7 +163,7 @@ public class PojoBeanToDynamoCreator<T> {
     }
 
     public Map<String, AttributeValue> fromDynamo( T bean ) {
-        TableSchema schema = TableSchema.fromClass( bean.getClass() );
+        TableSchema<T> schema = TableSchema.fromClass( ( Class<T> ) bean.getClass() );
         return schema.itemToMap( bean, false );
     }
 }

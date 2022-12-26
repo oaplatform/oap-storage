@@ -24,11 +24,13 @@
 
 package oap.storage.dynamo.client.modifiers;
 
+import oap.storage.dynamo.client.annotations.API;
 import software.amazon.awssdk.services.dynamodb.model.UpdateTableRequest;
 
 import java.util.function.Consumer;
 
 @FunctionalInterface
+@API
 public interface UpdateTableRequestModifier extends Consumer<UpdateTableRequest.Builder> {
     @Override
     void accept( UpdateTableRequest.Builder builder );

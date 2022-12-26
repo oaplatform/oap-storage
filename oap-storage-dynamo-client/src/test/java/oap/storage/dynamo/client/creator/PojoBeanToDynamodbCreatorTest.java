@@ -77,7 +77,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
         PrimitivesHolder auto = new PrimitivesHolder();
         auto.setBooleanVar( true );
 
-        Map<String, AttributeValue>  actual = new PojoBeanToDynamoCreator().createFromBean( auto );
+        Map<String, AttributeValue> actual = new PojoBeanToDynamoCreator<>().createFromBean( auto );
 
         assertEquals( createAttributeValue( BOOLEAN, true ), actual.get( "booleanVar" ) );
     }
@@ -87,7 +87,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
         PrimitivesHolder auto = new PrimitivesHolder();
         auto.setIntVar( 123 );
 
-        Map<String, AttributeValue>  actual = new PojoBeanToDynamoCreator().createFromBean( auto );
+        Map<String, AttributeValue> actual = new PojoBeanToDynamoCreator<>().createFromBean( auto );
 
         assertEquals( createAttributeValue( NUMBER, 123 ), actual.get( "intVar" ) );
     }
@@ -97,7 +97,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
         PrimitivesHolder auto = new PrimitivesHolder();
         auto.setLongVar( 123456789L );
 
-        Map<String, AttributeValue>  actual = new PojoBeanToDynamoCreator().createFromBean( auto );
+        Map<String, AttributeValue> actual = new PojoBeanToDynamoCreator<>().createFromBean( auto );
 
         assertEquals( createAttributeValue( NUMBER, 123456789L ), actual.get( "longVar" ) );
     }
@@ -107,7 +107,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
         PrimitivesHolder auto = new PrimitivesHolder();
         auto.setFloatVar( ( float ) 1.123456789 );
 
-        Map<String, AttributeValue>  actual = new PojoBeanToDynamoCreator().createFromBean( auto );
+        Map<String, AttributeValue> actual = new PojoBeanToDynamoCreator<>().createFromBean( auto );
 
         assertEquals( createAttributeValue( NUMBER, 1.1234568 ), actual.get( "floatVar" ) );
     }
@@ -117,7 +117,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
         PrimitivesHolder auto = new PrimitivesHolder();
         auto.setDoubleVar( 1.123456789 );
 
-        Map<String, AttributeValue>  actual = new PojoBeanToDynamoCreator().createFromBean( auto );
+        Map<String, AttributeValue> actual = new PojoBeanToDynamoCreator<PrimitivesHolder>().createFromBean( auto );
 
         assertEquals( createAttributeValue( NUMBER, 1.123456789 ), actual.get( "doubleVar" ) );
     }
@@ -129,7 +129,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
         TestClassWithListOfIntegers auto = new TestClassWithListOfIntegers();
         auto.setField( Lists.of( 1, 2, 3 ) );
 
-        Map<String, AttributeValue>  actual = new PojoBeanToDynamoCreator().createFromBean( auto );
+        Map<String, AttributeValue> actual = new PojoBeanToDynamoCreator<TestClassWithListOfIntegers>().createFromBean( auto );
 
         assertEquals( arguments, actual );
     }
@@ -141,7 +141,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
         TestClassWithSetOfIntegers auto = new TestClassWithSetOfIntegers();
         auto.setField( Sets.of( 1, 2, 1 ) );
 
-        Map<String, AttributeValue>  actual = new PojoBeanToDynamoCreator().createFromBean( auto );
+        Map<String, AttributeValue> actual = new PojoBeanToDynamoCreator<TestClassWithSetOfIntegers>().createFromBean( auto );
 
         assertEquals( arguments, actual );
     }
@@ -153,7 +153,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
         TestClassWithListOfDoubles auto = new TestClassWithListOfDoubles();
         auto.setField( Lists.of( 1.1123456789, 2.2123456789, 3.3123456789 ) );
 
-        Map<String, AttributeValue>  actual = new PojoBeanToDynamoCreator().createFromBean( auto );
+        Map<String, AttributeValue> actual = new PojoBeanToDynamoCreator<TestClassWithListOfDoubles>().createFromBean( auto );
 
         assertEquals( arguments, actual );
     }
@@ -165,7 +165,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
         TestClassWithSetOfDoubles auto = new TestClassWithSetOfDoubles();
         auto.setField( Sets.of( 1.1123456789, 2.2123456789, 1.1123456789 ) );
 
-        Map<String, AttributeValue>  actual = new PojoBeanToDynamoCreator().createFromBean( auto );
+        Map<String, AttributeValue> actual = new PojoBeanToDynamoCreator<TestClassWithSetOfDoubles>().createFromBean( auto );
 
         assertEquals( arguments, actual );
     }
@@ -177,7 +177,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
         TestClassWithListOfLongs auto = new TestClassWithListOfLongs();
         auto.setField( Lists.of( 1L, 2L, 3L ) );
 
-        Map<String, AttributeValue>  actual = new PojoBeanToDynamoCreator().createFromBean( auto );
+        Map<String, AttributeValue> actual = new PojoBeanToDynamoCreator<TestClassWithListOfLongs>().createFromBean( auto );
 
         assertEquals( arguments, actual );
     }
@@ -189,7 +189,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
         TestClassWithSetOfLongs auto = new TestClassWithSetOfLongs();
         auto.setField( Sets.of( 1L, 2L, 3L ) );
 
-        Map<String, AttributeValue>  actual = new PojoBeanToDynamoCreator().createFromBean( auto );
+        Map<String, AttributeValue> actual = new PojoBeanToDynamoCreator<TestClassWithSetOfLongs>().createFromBean( auto );
 
         assertEquals( arguments, actual );
     }
@@ -201,7 +201,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
         TestClassWithListOfFloats auto = new TestClassWithListOfFloats();
         auto.setField( Lists.of( ( float ) 1.1123456789, ( float ) 2.2123456789, ( float ) 3.3123456789 ) );
 
-        Map<String, AttributeValue>  actual = new PojoBeanToDynamoCreator().createFromBean( auto );
+        Map<String, AttributeValue> actual = new PojoBeanToDynamoCreator<TestClassWithListOfFloats>().createFromBean( auto );
 
         assertEquals( arguments, actual );
     }
@@ -213,7 +213,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
         TestClassWithSetOfFloats auto = new TestClassWithSetOfFloats();
         auto.setField( Sets.of( ( float ) 1.1123456789, ( float ) 2.2123456789, ( float ) 3.3123456789 ) );
 
-        Map<String, AttributeValue>  actual = new PojoBeanToDynamoCreator().createFromBean( auto );
+        Map<String, AttributeValue> actual = new PojoBeanToDynamoCreator<TestClassWithSetOfFloats>().createFromBean( auto );
 
         assertEquals( arguments, actual );
     }
@@ -224,7 +224,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
         auto.setField( "usual field" );
         auto.setIgnoreField( "to be ignored" );
 
-        Map<String, AttributeValue>  actual = new PojoBeanToDynamoCreator().createFromBean( auto );
+        Map<String, AttributeValue> actual = new PojoBeanToDynamoCreator<UsingIgnoreFieldAnno>().createFromBean( auto );
 
         assertNotNull( actual.get( "field" ) );
         assertThat( actual.get( "ignoreField" ).nul() ).isTrue();
@@ -237,7 +237,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
         Autonomious auto = new PojoBeanFromDynamoCreator<Autonomious>().createBean( Autonomious.class, arguments );
         auto.setNumberVar( 3.1415926535 );
 
-        Map<String, AttributeValue>  actual = new PojoBeanToDynamoCreator().createFromBean( auto );
+        Map<String, AttributeValue> actual = new PojoBeanToDynamoCreator<Autonomious>().createFromBean( auto );
 
         MapDifference<String, AttributeValue> diff = com.google.common.collect.Maps.difference( arguments, actual );
         assertTrue( diff.areEqual() );
@@ -245,7 +245,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
 
     @Test( enabled = false )
     // "1050 sec for 100 k iterations"
-    public void fullTestViaAmazonSDK() throws ReflectiveOperationException {
+    public void fullTestViaAmazonSDK() {
         Map<String, AttributeValue> arguments = createArguments();
         AutonomiousDynamo auto = new PojoBeanFromDynamoCreator<AutonomiousDynamo>().createBean( AutonomiousDynamo.class, arguments );
         arguments.remove( "publicNumberVar" );
@@ -263,7 +263,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
         auto.setMapOfObjects( mapOfStrings );
         arguments.put( "mapOfObjects", AttributeValue.builder().m( mapOfAttributeValues ).build() );
 
-        Map<String, AttributeValue> actual = new HashMap<>( new PojoBeanToDynamoCreator().fromDynamo( auto ) );
+        Map<String, AttributeValue> actual = new HashMap<>( new PojoBeanToDynamoCreator<AutonomiousDynamo>().fromDynamo( auto ) );
         actual.remove( "superVar" );
 
         MapDifference<String, AttributeValue> diff = com.google.common.collect.Maps.difference( arguments, actual );
@@ -271,7 +271,7 @@ public class PojoBeanToDynamodbCreatorTest extends Fixtures {
     }
 
     @Test
-    public void fullTestViaAmazonSDKNonGenericMap() throws ReflectiveOperationException {
+    public void fullTestViaAmazonSDKNonGenericMap() {
         Map<String, AttributeValue> arguments = createArguments();
         arguments.put( "mapOfObjects", createAttributeValue( MAP, Maps.of( new Pair<>( "One", 1.0 ), new Pair<>( "Two", false ) ) ) );
         // replaced with Map<String, Object> as DynamoDB sdk needs a properly declared class, not an Object as values

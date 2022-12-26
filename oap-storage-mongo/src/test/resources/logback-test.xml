@@ -7,7 +7,7 @@
 
     <logger name="org" additivity="false" level="ERROR"/>
 
-    <root level="TRACE">
+    <root level="INFO">
         <appender-ref ref="STDOUT"/>
     </root>
 </configuration>

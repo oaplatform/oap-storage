@@ -36,7 +36,6 @@ import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.ServiceName;
-import oap.concurrent.Threads;
 import oap.concurrent.scheduler.ScheduledExecutorService;
 import oap.io.Closeables;
 import oap.io.Files;
@@ -60,7 +59,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -132,31 +130,37 @@ public class MongoPersistence<I, T> implements Closeable {
         } );
 
         if( watch ) {
-            watchExecutor = Executors.newSingleThreadExecutor();
+             try {
+                 MongoCollection<Document> col = mongoClient.getCollection( collectionName );
+                 log.info( "!!!!!!!!!!             KT0.1" );
+                 MongoCollection<Document> documentMongoCollection = col.withReadConcern( ReadConcern.MAJORITY );
+                 log.info( "!!!!!!!!!!             KT0.2" );
+                 var changeStreamDocuments = documentMongoCollection.watch();
+                 log.info( "!!!!!!!!!!             KT1" );
 
-            watchExecutor.execute( () -> {
-                var changeStreamDocuments = mongoClient.getCollection( collectionName ).withReadConcern( ReadConcern.MAJORITY ).watch();
+                 changeStreamDocuments.forEach( ( Consumer<? super ChangeStreamDocument<Document>> ) csd -> {
+                     log.info( "!!!!!!!!!!             KT2.1" );
+                     log.trace( "mongo notification: {} ", csd );
+                     var op = csd.getOperationType();
+                     var key = csd.getDocumentKey();
+                     if( key == null ) return;
 
-                Threads.notifyAllFor( watchExecutor );
+                     var bid = key.getString( "_id" );
+                     if( bid == null ) return;
 
-                changeStreamDocuments.forEach( ( Consumer<? super ChangeStreamDocument<Document>> ) csd -> {
-                    log.trace( "mongo notification: {} ", csd );
-                    var op = csd.getOperationType();
-                    var key = csd.getDocumentKey();
-                    if( key == null ) return;
+                     var id = bid.getValue();
+                     switch( op ) {
+                         case DELETE -> deleteById( id );
+                         case INSERT, UPDATE -> refreshById( id );
+                     }
+                 } );
 
-                    var bid = key.getString( "_id" );
-                    if( bid == null ) return;
+                 log.info( "!!!!!!!!!!             KT2.2" );
 
-                    var id = bid.getValue();
-                    switch( op ) {
-                        case DELETE -> deleteById( id );
-                        case INSERT, UPDATE -> refreshById( id );
-                    }
-                } );
-            } );
 
-            Threads.waitFor( watchExecutor );
+             } catch( Exception ex ) {
+                 log.error( "Watch failed", ex );
+             }
         }
     }
 

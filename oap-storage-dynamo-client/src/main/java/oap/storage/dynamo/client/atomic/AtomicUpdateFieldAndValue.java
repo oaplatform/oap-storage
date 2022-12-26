@@ -22,17 +22,46 @@
  * SOFTWARE.
  */
 
-package oap.storage.dynamo.client.modifiers;
+package oap.storage.dynamo.client.atomic;
 
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
+import oap.storage.dynamo.client.DynamodbClient;
 import oap.storage.dynamo.client.annotations.API;
+import oap.util.Result;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
 
 import java.util.Map;
-import java.util.function.Consumer;
 
-@FunctionalInterface
+@EqualsAndHashCode
+@ToString
 @API
-public interface DynamodbBinsModifier extends Consumer<Map<String, AttributeValue>> {
-    @Override
-    void accept( Map<String, AttributeValue> args );
+public class AtomicUpdateFieldAndValue {
+    public static final String DEFAULT_NAME = "generation";
+
+    @Getter
+    private final String fieldName;
+    @Getter
+    private final long value;
+
+    public AtomicUpdateFieldAndValue( long value ) {
+        this( DEFAULT_NAME, value );
+    }
+
+    public AtomicUpdateFieldAndValue( String fieldName, long value ) {
+        this.fieldName = fieldName;
+        this.value = Math.max( value, 0 );
+    }
+
+    public String getValueFromAtomicUpdate( Result<UpdateItemResponse, DynamodbClient.State> result ) {
+        if ( result == null || !result.isSuccess() ) throw new IllegalArgumentException();
+        return result.getSuccessValue().attributes().get( fieldName ).n();
+    }
+
+    public String getValueFromRecord( Result<Map<String, AttributeValue>, DynamodbClient.State> result ) {
+        if ( result == null || !result.isSuccess() ) throw new IllegalArgumentException();
+        return result.getSuccessValue().get( fieldName ).n();
+    }
 }

@@ -40,11 +40,12 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 import java.net.URI;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 @Slf4j
 public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
-    private static GenericContainer genericContainer;
+    private GenericContainer genericContainer;
     protected URI uri;
     protected StaticCredentialsProvider provider;
 
@@ -80,10 +81,18 @@ public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
     }
 
     @AfterClass
-    public void tearDown() {
+    public void afterClass() {
         if( genericContainer != null ) {
             genericContainer.stop();
+            log.info( "Container {} stopped", uri.toString() );
+            try {
+                TimeUnit.SECONDS.sleep( 10 );
+            } catch( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( e );
+            }
             genericContainer = null;
+            uri = null;
         }
     }
 }

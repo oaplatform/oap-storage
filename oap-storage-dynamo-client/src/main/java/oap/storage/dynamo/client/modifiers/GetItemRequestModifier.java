@@ -24,11 +24,13 @@
 
 package oap.storage.dynamo.client.modifiers;
 
+import oap.storage.dynamo.client.annotations.API;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 
 import java.util.function.Consumer;
 
 @FunctionalInterface
+@API
 public interface GetItemRequestModifier extends Consumer<GetItemRequest.Builder> {
     @Override
     void accept( GetItemRequest.Builder builder );

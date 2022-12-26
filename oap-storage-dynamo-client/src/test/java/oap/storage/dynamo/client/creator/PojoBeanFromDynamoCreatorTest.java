@@ -69,7 +69,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class PojoBeanFromDynamoCreatorTest extends Fixtures {
 
     @Test
-    public void testPrimitiveBoolean() throws ReflectiveOperationException {
+    public void testPrimitiveBoolean() {
         Map<String, AttributeValue> arguments = new HashMap<>();
         arguments.put( "booleanVar", createAttributeValue( BOOLEAN, true ) );
 
@@ -79,7 +79,7 @@ public class PojoBeanFromDynamoCreatorTest extends Fixtures {
     }
 
     @Test
-    public void testPrimitiveInteger() throws ReflectiveOperationException {
+    public void testPrimitiveInteger() {
         Map<String, AttributeValue> arguments = new HashMap<>();
         arguments.put( "intVar", createAttributeValue( NUMBER, 567 ) );
 
@@ -89,7 +89,7 @@ public class PojoBeanFromDynamoCreatorTest extends Fixtures {
     }
 
     @Test
-    public void testPrimitiveLong() throws ReflectiveOperationException {
+    public void testPrimitiveLong() {
         Map<String, AttributeValue> arguments = new HashMap<>();
         arguments.put( "longVar", createAttributeValue( NUMBER, 123456789L ) );
 
@@ -99,27 +99,27 @@ public class PojoBeanFromDynamoCreatorTest extends Fixtures {
     }
 
     @Test
-    public void testPrimitiveFloat() throws ReflectiveOperationException {
+    public void testPrimitiveFloat() {
         Map<String, AttributeValue> arguments = new HashMap<>();
         arguments.put( "floatVar", createAttributeValue( NUMBER, 1.123456789 ) );
 
         PrimitivesHolder auto = new PojoBeanFromDynamoCreator<PrimitivesHolder>().createBean( PrimitivesHolder.class, arguments );
 
-        assertEquals( Float.valueOf( ( float ) 1.1234568 ), auto.getFloatVar() );
+        assertEquals( ( float ) 1.1234568, auto.getFloatVar() );
     }
 
     @Test
-    public void testPrimitiveDouble() throws ReflectiveOperationException {
+    public void testPrimitiveDouble() {
         Map<String, AttributeValue> arguments = new HashMap<>();
         arguments.put( "doubleVar", createAttributeValue( NUMBER, 1.123456789 ) );
 
         PrimitivesHolder auto = new PojoBeanFromDynamoCreator<PrimitivesHolder>().createBean( PrimitivesHolder.class, arguments );
 
-        assertEquals( Double.valueOf( 1.123456789 ), auto.getDoubleVar() );
+        assertEquals( 1.123456789, auto.getDoubleVar() );
     }
 
     @Test
-    public void testListOfIntegers() throws ReflectiveOperationException {
+    public void testListOfIntegers() {
         Map<String, AttributeValue> arguments = new HashMap<>();
         arguments.put( "field", createAttributeValue( SET_OF_NUMBERS, Lists.of( 1.1123456789, 2.2123456789, 3.3123456789 ) ) );
 
@@ -129,7 +129,7 @@ public class PojoBeanFromDynamoCreatorTest extends Fixtures {
     }
 
     @Test
-    public void testSetOfIntegers() throws ReflectiveOperationException {
+    public void testSetOfIntegers() {
         Map<String, AttributeValue> arguments = new HashMap<>();
         arguments.put( "field", createAttributeValue( SET_OF_NUMBERS, Lists.of( 1.1123456789, 2.2123456789, 1.1123456789 ) ) );
 
@@ -139,7 +139,7 @@ public class PojoBeanFromDynamoCreatorTest extends Fixtures {
     }
 
     @Test
-    public void testListOfDoubles() throws ReflectiveOperationException {
+    public void testListOfDoubles() {
         Map<String, AttributeValue> arguments = new HashMap<>();
         arguments.put( "field", createAttributeValue( SET_OF_NUMBERS, Lists.of( 1.1123456789, 2.2123456789, 3.3123456789 ) ) );
 
@@ -149,7 +149,7 @@ public class PojoBeanFromDynamoCreatorTest extends Fixtures {
     }
 
     @Test
-    public void testSetOfDoubles() throws ReflectiveOperationException {
+    public void testSetOfDoubles() {
         Map<String, AttributeValue> arguments = new HashMap<>();
         arguments.put( "field", createAttributeValue( SET_OF_NUMBERS, Lists.of( 1.1123456789, 2.2123456789, 1.1123456789 ) ) );
 
@@ -159,7 +159,7 @@ public class PojoBeanFromDynamoCreatorTest extends Fixtures {
     }
 
     @Test
-    public void testListOfLongs() throws ReflectiveOperationException {
+    public void testListOfLongs() {
         Map<String, AttributeValue> arguments = new HashMap<>();
         arguments.put( "field", createAttributeValue( SET_OF_NUMBERS, Lists.of( 1.1, 2.2, 3.3 ) ) );
 
@@ -169,7 +169,7 @@ public class PojoBeanFromDynamoCreatorTest extends Fixtures {
     }
 
     @Test
-    public void testSetOfLongs() throws ReflectiveOperationException {
+    public void testSetOfLongs() {
         Map<String, AttributeValue> arguments = new HashMap<>();
         arguments.put( "field", createAttributeValue( SET_OF_NUMBERS, Lists.of( 1.1, 2.2, 1.1 ) ) );
 
@@ -179,7 +179,7 @@ public class PojoBeanFromDynamoCreatorTest extends Fixtures {
     }
 
     @Test
-    public void testListOfFloats() throws ReflectiveOperationException {
+    public void testListOfFloats() {
         Map<String, AttributeValue> arguments = new HashMap<>();
         arguments.put( "field", createAttributeValue( SET_OF_NUMBERS, Lists.of( 1.1123456789, 2.2123456789, 3.3123456789 ) ) );
 
@@ -189,7 +189,7 @@ public class PojoBeanFromDynamoCreatorTest extends Fixtures {
     }
 
     @Test
-    public void testSetOfFloats() throws ReflectiveOperationException {
+    public void testSetOfFloats() {
         Map<String, AttributeValue> arguments = new HashMap<>();
         arguments.put( "field", createAttributeValue( SET_OF_NUMBERS, Lists.of( 1.1123456789, 2.2123456789, 1.1123456789 ) ) );
 
@@ -199,7 +199,7 @@ public class PojoBeanFromDynamoCreatorTest extends Fixtures {
     }
 
     @Test
-    public void testIgnoreField() throws ReflectiveOperationException {
+    public void testIgnoreField() {
         Map<String, AttributeValue> arguments = new HashMap<>();
         arguments.put( "field", createAttributeValue( STRING, "field1" ) );
         arguments.put( "ignoreField", createAttributeValue( STRING, "field2" ) );
@@ -212,7 +212,7 @@ public class PojoBeanFromDynamoCreatorTest extends Fixtures {
 
     @Test
     // "10.5 sec for 100 k iterations"
-    public void fullTestViaReflection() throws ReflectiveOperationException {
+    public void fullTestViaReflection() {
         Map<String, AttributeValue> arguments = createArguments();
 
         Autonomious auto = new PojoBeanFromDynamoCreator<Autonomious>().createBean( Autonomious.class, arguments );
@@ -237,7 +237,7 @@ public class PojoBeanFromDynamoCreatorTest extends Fixtures {
     }
 
     @Test
-    public void fullTestViaReflectionNonGenericMap() throws ReflectiveOperationException {
+    public void fullTestViaReflectionNonGenericMap() {
         Map<String, AttributeValue> arguments = createArguments();
         arguments.put( "mapOfObjects", createAttributeValue( MAP, Maps.of( new Pair<>( "One", 1.0 ), new Pair<>( "Two", false ) ) ) );
 
@@ -247,10 +247,9 @@ public class PojoBeanFromDynamoCreatorTest extends Fixtures {
                 auto.toString() );
     }
 
-
     @Test
     // "1050 sec for 100 k iterations"
-    public void fullTestViaAmazonSDK() throws ReflectiveOperationException {
+    public void fullTestViaAmazonSDK() {
         Map<String, AttributeValue> arguments = createArguments();
 
         AutonomiousDynamo auto = new PojoBeanFromDynamoCreator<AutonomiousDynamo>().fromDynamo( AutonomiousDynamo.class, arguments );
@@ -260,7 +259,7 @@ public class PojoBeanFromDynamoCreatorTest extends Fixtures {
     }
 
     @Test
-    public void fullTestViaAmazonSDKNonGenericMap() throws ReflectiveOperationException {
+    public void fullTestViaAmazonSDKNonGenericMap() {
         Map<String, AttributeValue> arguments = createArguments();
         arguments.put( "mapOfObjects", createAttributeValue( MAP, Maps.of( new Pair<>( "One", 1.0 ), new Pair<>( "Two", false ) ) ) );
         // replaced with Map<String, Object> as DynamoDB sdk needs a properly declared class, not an Object as values

@@ -103,7 +103,7 @@ public class DynamoDbTableModifier {
         this.writeLock = writeLock;
     }
 
-    private TableSchema createSchemaForRecord( TableSchemaModifier<Record> modifier ) {
+    private TableSchema<Record> createSchemaForRecord( TableSchemaModifier<Record> modifier ) {
         StaticTableSchema.Builder<Record> builder = StaticTableSchema.builder( Record.class )
                 .newItemSupplier( Record::new )
                 .addAttribute( String.class, a -> a.name( "id" )
@@ -128,7 +128,7 @@ public class DynamoDbTableModifier {
      * @param modifier
      * @return
      */
-    public DynamoDbTable<Record> createTableWithSchema( String tableName, long read, long write, String indexName, TableSchemaModifier modifier ) {
+    public DynamoDbTable<Record> createTableWithSchema( String tableName, long read, long write, String indexName, TableSchemaModifier<Record> modifier ) {
         DynamoDbTable<Record> mappedTable = enhancedClient.table( tableName, createSchemaForRecord( modifier ) );
         mappedTable
                 .createTable( r -> r.provisionedThroughput( createProvisionedThroughput( read, write ) )
@@ -151,7 +151,6 @@ public class DynamoDbTableModifier {
                 .readCapacityUnits( read )
                 .writeCapacityUnits( write )
                 .build();
-
     }
 
     @API

@@ -28,6 +28,7 @@ package oap.storage.dynamo.client;
 import com.google.common.base.Joiner;
 import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
+import oap.storage.dynamo.client.atomic.AtomicUpdateFieldAndValue;
 import oap.storage.dynamo.client.crud.DynamoDbTableModifier;
 import oap.storage.dynamo.client.annotations.API;
 import oap.storage.dynamo.client.atomic.AtomicUpdateRecordSupporter;
@@ -297,7 +298,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
     public void waitConnectionEstablished() {
         try {
             if ( connectionIsReady.await( 1, TimeUnit.MINUTES ) ) {
-                log.info( "DynamoDB clients is ready" );
+                log.info( "DynamoDB clients are ready" );
                 return;
             }
         } catch( InterruptedException e ) {
@@ -449,15 +450,20 @@ public class DynamodbClient implements AutoCloseable, Closeable {
         return writer.updateRecord( key, binNamesAndValues, modifier );
     }
 
-    public Result<UpdateItemResponse, DynamodbClient.State> updateRecordAtomic( Key key, Map<String, AttributeValue> binNamesAndValues, UpdateItemRequestModifier modifier, int generation ) {
+    public Result<UpdateItemResponse, DynamodbClient.State> updateRecordAtomic( Key key, Map<String, AttributeValue> binNamesAndValues, UpdateItemRequestModifier modifier, AtomicUpdateFieldAndValue generation ) {
+        Objects.requireNonNull( key );
+        Objects.requireNonNull( binNamesAndValues );
+        Objects.requireNonNull( generation );
         AtomicUpdateRecordSupporter supporter = new AtomicUpdateRecordSupporter();
-        supporter.setGeneration( generation );
-        if ( modifier != null ) supporter.andThen( modifier );
-        binNamesAndValues.forEach( ( k, v ) -> supporter.addAtomicUpdateFor( k, v ) );
+        supporter.setAtomicUpdateFieldAndValue( generation );
+        if ( modifier != null ) {
+            supporter.andThen( modifier );
+        }
+        binNamesAndValues.forEach( supporter::addAtomicUpdateFor );
         return writer.updateRecord( key, binNamesAndValues, supporter );
     }
 
-    public Result<UpdateItemResponse, DynamodbClient.State> updateRecordAtomicWithRetry( Key key, Set<String> binNames, AttributesModifier modifier, int retries, int generation ) {
+    public Result<UpdateItemResponse, DynamodbClient.State> updateRecordAtomicWithRetry( Key key, Set<String> binNames, AttributesModifier modifier, int retries, AtomicUpdateFieldAndValue generation ) {
         Objects.requireNonNull( key );
         Objects.requireNonNull( modifier );
         int retryCount = retries;
@@ -465,7 +471,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
         do {
             Result<Map<String, AttributeValue>, DynamodbClient.State> foundResult = getRecord( key, m -> {
                 if ( binNames != null && !binNames.isEmpty() ) {
-                    binNames.remove( "generation" );
+                    binNames.remove( generation.getFieldName() );
                     m.projectionExpression( Joiner.on( "," ).skipNulls().join( binNames ) );
                 }
             } );
@@ -473,7 +479,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
             AttributeValue genValue = null;
             try {
                 if ( foundResult.isSuccess() ) {
-                    genValue = foundResult.getSuccessValue().get( "generation" );
+                    genValue = foundResult.getSuccessValue().get( generation.getFieldName() );
                     successValue = modifier.apply( foundResult.getSuccessValue() );
                 } else {
                     successValue = modifier.apply( new HashMap<>() );
@@ -483,8 +489,8 @@ public class DynamodbClient implements AutoCloseable, Closeable {
             }
             //remove key from map - it's necessary
             successValue.remove( key.getColumnName() );
-            int gen = genValue != null ? Integer.parseInt( genValue.n() ) : generation;
-            ret = updateRecordAtomic( key, successValue, null, gen );
+            long gen = genValue != null ? Long.parseLong( genValue.n() ) : generation.getValue();
+            ret = updateRecordAtomic( key, successValue, null, new AtomicUpdateFieldAndValue( gen ) );
         } while( retryCount-- > 0 && ret != null && ret.failureValue == DynamodbClient.State.VERSION_CHECK_FAILED );
         return ret;
     }
