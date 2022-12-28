@@ -37,6 +37,7 @@ import oap.storage.dynamo.client.modifiers.CreateTableRequestModifier;
 import oap.storage.dynamo.client.modifiers.DescribeTableResponseModifier;
 import oap.storage.dynamo.client.modifiers.TableSchemaModifier;
 import oap.storage.dynamo.client.modifiers.UpdateTableRequestModifier;
+import oap.storage.dynamo.client.restrictions.ReservedWords;
 import oap.util.Pair;
 import oap.util.Result;
 import org.slf4j.event.Level;
@@ -92,7 +93,7 @@ import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTag
 public class DynamoDbTableModifier {
 
     private final DynamoDbClient dynamoDbClient;
-    private DynamoDbEnhancedClient enhancedClient;
+    private final DynamoDbEnhancedClient enhancedClient;
     private final ReentrantReadWriteLock.ReadLock readLock;
     private final ReentrantReadWriteLock.WriteLock writeLock;
 
@@ -129,6 +130,14 @@ public class DynamoDbTableModifier {
      * @return
      */
     public DynamoDbTable<Record> createTableWithSchema( String tableName, long read, long write, String indexName, TableSchemaModifier<Record> modifier ) {
+        Objects.requireNonNull( tableName );
+        Objects.requireNonNull( indexName );
+        if ( !ReservedWords.isTableNameOrIndexAppropriate( tableName ) ) {
+            throw new IllegalArgumentException( "Table '" + tableName + "' is forbidden in DynamoDB" );
+        }
+        if ( !ReservedWords.isTableNameOrIndexAppropriate( indexName ) ) {
+            throw new IllegalArgumentException( "Table '" + tableName + "' is forbidden in DynamoDB" );
+        }
         DynamoDbTable<Record> mappedTable = enhancedClient.table( tableName, createSchemaForRecord( modifier ) );
         mappedTable
                 .createTable( r -> r.provisionedThroughput( createProvisionedThroughput( read, write ) )
@@ -155,6 +164,7 @@ public class DynamoDbTableModifier {
 
     @API
     public Result<DynamodbClient.State, DynamodbClient.State> recreateTable( String tableName, String keyName ) {
+        Objects.requireNonNull( tableName );
         try {
             writeLock.lock();
             TableDescription description = deleteTableIfExists( tableName )._2();
@@ -182,6 +192,7 @@ public class DynamoDbTableModifier {
 
     @API
     public Pair<Boolean, TableDescription> deleteTableIfExists( String tableName ) {
+        Objects.requireNonNull( tableName );
         if( !tableExists( tableName ) ) {
             return new Pair<>( true, null );
         }
@@ -209,6 +220,7 @@ public class DynamoDbTableModifier {
 
     @API
     public boolean createTableIfNotExist( String tableName, String key ) {
+        Objects.requireNonNull( tableName );
         if( tableExists( tableName ) ) {
             return true;
         }
@@ -217,6 +229,7 @@ public class DynamoDbTableModifier {
 
     @API
     public boolean tableExists( String tableName ) {
+        Objects.requireNonNull( tableName );
         try {
             readLock.lock();
             return dynamoDbClient.listTables().tableNames().stream().filter( name -> name.equals( tableName ) ).findAny().isPresent();
@@ -230,6 +243,9 @@ public class DynamoDbTableModifier {
                                 String partitionKeyName, String partitionKeyType,
                                 String sortKeyName, String sortKeyType,
                                 CreateTableRequestModifier modifier ) {
+        if ( !ReservedWords.isTableNameOrIndexAppropriate( tableName ) ) {
+            throw new IllegalArgumentException( "Table '" + tableName + "' is forbidden in DynamoDB" );
+        }
         long time = System.currentTimeMillis();
         try {
             List<KeySchemaElement> keySchema = new ArrayList<>();
@@ -313,13 +329,16 @@ public class DynamoDbTableModifier {
                                             DynamodbDatatype datatype,
                                             CreateGlobalSecondaryIndexActionModifier indexModifier,
                                             UpdateTableRequestModifier tableUpdateModifier ) {
-        Objects.requireNonNull( key.getTableName() );
         Objects.requireNonNull( indexName );
+        Objects.requireNonNull( key.getTableName() );
         Objects.requireNonNull( columnNameForIndex );
         Objects.requireNonNull( datatype );
         if ( datatype != DynamodbDatatype.NUMBER && datatype != DynamodbDatatype.STRING && datatype != DynamodbDatatype.BINARY ) {
             //see https://stackoverflow.com/questions/33557804/dynamodb-global-secondary-index-on-set-items
             throw new IllegalArgumentException( "Only [ String | Binary | Number ] are supported as SGI in DynamoDB" );
+        }
+        if ( !ReservedWords.isTableNameOrIndexAppropriate( indexName ) ) {
+            throw new IllegalArgumentException( "Index '" + indexName + "' is forbidden in DynamoDB" );
         }
 
         CreateGlobalSecondaryIndexAction.Builder indexUpdareRequestBuilder = CreateGlobalSecondaryIndexAction.builder()
@@ -433,12 +452,14 @@ public class DynamoDbTableModifier {
     }
 
     private static DescribeTableRequest createDescribeTableRequest( String tableName, DescribeTableResponseModifier modifier ) {
+        Objects.requireNonNull( tableName );
         DescribeTableRequest.Builder request = DescribeTableRequest.builder().tableName( tableName );
         if ( modifier != null ) modifier.accept( request );
         return request.build();
     }
 
     private static DeleteTableRequest createDeleteTableRequest( String tableName ) {
+        Objects.requireNonNull( tableName );
         return DeleteTableRequest.builder()
             .tableName( tableName )
             .build();

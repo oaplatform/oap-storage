@@ -69,8 +69,8 @@ import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.util.Pair.__;
 
 @Slf4j
-@ToString( of = { "tableName", "delay" } )
-public class DynamoPersistence<I, T> implements Closeable {
+@ToString( of = { "tableName", "delay", "batchSize", "watch", "serviceName" } )
+public class DynamoPersistence<I, T> implements Closeable, AutoCloseable {
 
     public static final Path DEFAULT_CRASH_DUMP_PATH = Path.of( "/tmp/dynamo-persistance-crash-dump" );
     public static final DateTimeFormatter CRASH_DUMP_PATH_FORMAT_MILLIS = DateTimeFormat

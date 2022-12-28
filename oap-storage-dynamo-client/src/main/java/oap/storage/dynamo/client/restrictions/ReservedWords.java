@@ -55,13 +55,13 @@ public class ReservedWords {
     public static boolean isTableNameOrIndexAppropriate( String name ) {
         if ( name == null || name.isEmpty() ) return false;
         if ( name.length() <= 2 || name.length() >= 255 ) return false;
-        return NAME.matcher( name ).matches() && !isAttributeNameReserved( name );
+        return NAME.matcher( name ).matches() && !isAttributeNameReserved( name.toUpperCase() );
     }
 
     @API
     public static boolean isAttributeNameAppropriate( String name ) {
         if ( name == null || name.isEmpty() ) return false;
         if ( name.length() >= 255 ) return false;
-        return NAME.matcher( name ).matches() && !isAttributeNameReserved( name );
+        return NAME.matcher( name ).matches() && !isAttributeNameReserved( name.toUpperCase() );
     }
 }

@@ -340,10 +340,14 @@ public class DynamodbClient implements AutoCloseable, Closeable {
         return tableModifier.describeTable( tableName, modifier ).table();
     }
 
-    public boolean createTable( String tableName, long readCapacityUnits, long writeCapacityUnits,
-                               String partitionKeyName, String partitionKeyType,
-                               String sortKeyName, String sortKeyType,
-                               CreateTableRequestModifier modifier ) {
+    public boolean createTable( String tableName,
+                                long readCapacityUnits,
+                                long writeCapacityUnits,
+                                String partitionKeyName,
+                                String partitionKeyType,
+                                String sortKeyName,
+                                String sortKeyType,
+                                CreateTableRequestModifier modifier ) {
         return tableModifier.createTable( tableName, readCapacityUnits, writeCapacityUnits,
                 partitionKeyName, partitionKeyType,
                 sortKeyName, sortKeyType, modifier );
