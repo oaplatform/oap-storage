@@ -174,9 +174,8 @@ public class MongoClient implements Closeable {
     public Version databaseVersion() {
         var collection = this.getCollection( "version" );
         var document = collection.find().first();
-        return document != null ? new Version(
-            document.getInteger( "main", 0 ),
-            document.getInteger( "ext", 0 ) )
+        return document != null
+            ? new Version( document.getInteger( "main", 0 ), document.getInteger( "ext", 0 ) )
             : Version.UNDEFINED;
     }
 

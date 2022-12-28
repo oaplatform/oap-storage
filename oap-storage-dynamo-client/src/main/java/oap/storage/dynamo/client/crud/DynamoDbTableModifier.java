@@ -37,6 +37,7 @@ import oap.storage.dynamo.client.modifiers.CreateTableRequestModifier;
 import oap.storage.dynamo.client.modifiers.DescribeTableResponseModifier;
 import oap.storage.dynamo.client.modifiers.TableSchemaModifier;
 import oap.storage.dynamo.client.modifiers.UpdateTableRequestModifier;
+import oap.storage.dynamo.client.restrictions.ReservedNameException;
 import oap.storage.dynamo.client.restrictions.ReservedWords;
 import oap.util.Pair;
 import oap.util.Result;
@@ -133,10 +134,10 @@ public class DynamoDbTableModifier {
         Objects.requireNonNull( tableName );
         Objects.requireNonNull( indexName );
         if ( !ReservedWords.isTableNameOrIndexAppropriate( tableName ) ) {
-            throw new IllegalArgumentException( "Table '" + tableName + "' is forbidden in DynamoDB" );
+            throw new ReservedNameException( "Table '" + tableName + "' is forbidden in DynamoDB" );
         }
         if ( !ReservedWords.isTableNameOrIndexAppropriate( indexName ) ) {
-            throw new IllegalArgumentException( "Table '" + tableName + "' is forbidden in DynamoDB" );
+            throw new ReservedNameException( "Table '" + tableName + "' is forbidden in DynamoDB" );
         }
         DynamoDbTable<Record> mappedTable = enhancedClient.table( tableName, createSchemaForRecord( modifier ) );
         mappedTable
@@ -245,7 +246,7 @@ public class DynamoDbTableModifier {
                                 CreateTableRequestModifier modifier ) {
         Objects.requireNonNull( tableName );
         if ( !ReservedWords.isTableNameOrIndexAppropriate( tableName ) ) {
-            throw new IllegalArgumentException( "Table '" + tableName + "' is forbidden in DynamoDB" );
+            throw new ReservedNameException( "Table '" + tableName + "' is forbidden in DynamoDB" );
         }
         long time = System.currentTimeMillis();
         try {
@@ -336,12 +337,14 @@ public class DynamoDbTableModifier {
         Objects.requireNonNull( key.getTableName() );
         Objects.requireNonNull( columnNameForIndex );
         Objects.requireNonNull( datatype );
-        if ( datatype != DynamodbDatatype.NUMBER && datatype != DynamodbDatatype.STRING && datatype != DynamodbDatatype.BINARY ) {
+        if ( datatype != DynamodbDatatype.NUMBER
+            && datatype != DynamodbDatatype.STRING
+            && datatype != DynamodbDatatype.BINARY ) {
             //see https://stackoverflow.com/questions/33557804/dynamodb-global-secondary-index-on-set-items
             throw new IllegalArgumentException( "Only [ String | Binary | Number ] are supported as SGI in DynamoDB" );
         }
         if ( !ReservedWords.isTableNameOrIndexAppropriate( indexName ) ) {
-            throw new IllegalArgumentException( "Index '" + indexName + "' is forbidden in DynamoDB" );
+            throw new ReservedNameException( "Index '" + indexName + "' is forbidden in DynamoDB" );
         }
 
         CreateGlobalSecondaryIndexAction.Builder indexUpdareRequestBuilder = CreateGlobalSecondaryIndexAction.builder()

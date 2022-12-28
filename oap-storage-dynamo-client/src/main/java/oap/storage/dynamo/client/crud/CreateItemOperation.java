@@ -24,6 +24,7 @@
 
 package oap.storage.dynamo.client.crud;
 
+import lombok.ToString;
 import oap.storage.dynamo.client.Key;
 import oap.storage.dynamo.client.annotations.API;
 
@@ -32,6 +33,7 @@ import java.util.Map;
 import static oap.storage.dynamo.client.crud.OperationType.CREATE;
 
 @API
+@ToString( callSuper = true )
 public class CreateItemOperation extends AbstractOperation {
     public CreateItemOperation( String name ) {
         super( CREATE, name );

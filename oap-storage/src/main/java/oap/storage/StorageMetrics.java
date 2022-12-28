@@ -27,6 +27,7 @@ package oap.storage;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import lombok.ToString;
+import org.openjdk.jol.info.GraphLayout;
 
 import java.util.HashMap;
 import java.util.List;
@@ -98,7 +99,9 @@ public class StorageMetrics<I, T> implements Storage.DataListener<I, T> {
 
         @Override
         public void accept( Storage<I, T> storage ) {
-            size.set( 0 );
+            if( storage instanceof MemoryStorage<?, ?> ) {
+                size.set( GraphLayout.parseInstance( ( ( MemoryStorage<I, T> ) storage ).memory.data ).totalSize() );
+            } else size.set( 0 );
         }
 
         @Override

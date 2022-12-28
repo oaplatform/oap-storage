@@ -135,18 +135,26 @@ public class DynamodbClient implements AutoCloseable, Closeable {
     private DynamoDbReader reader;
     private DynamoDbWriter writer;
     private DynamoDbTableModifier tableModifier;
-
     private DynamodbEntityHelper entityHelper;
 
     public DynamodbClient( DynamoDbClient dynamoDbClient ) {
         this.dynamoDbClient = dynamoDbClient;
         log.info( "Creating DynamoDB enhanced client..." );
         enhancedClient = DynamoDbEnhancedClient.builder().dynamoDbClient( dynamoDbClient ).build();
-        reader = new DynamoDbReader( dynamoDbClient, enhancedClient, readLock );
+        reader = new DynamoDbReader( dynamoDbClient, readLock );
         writer = new DynamoDbWriter( dynamoDbClient, enhancedClient, readLock );
         entityHelper = new DynamodbEntityHelper( reader, writer );
         tableModifier = new DynamoDbTableModifier( dynamoDbClient, enhancedClient, readLock, writeLock );
         connectionIsReady.countDown();
+    }
+
+    @Override
+    @API
+    public void close() throws IOException {
+        initService.shutdownNow();
+        synchronized( connectionIsReady ) {
+            if( dynamoDbClient != null ) dynamoDbClient.close();
+        }
     }
 
     enum ClientSelector {
@@ -154,7 +162,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
         DynamodbClientHttps( "https" ),
         DaxClient( "dax" );
 
-        private String protocol;
+        private final String protocol;
 
         ClientSelector( String protocol ) {
             this.protocol = protocol;
@@ -214,7 +222,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
             enhancedClient = DynamoDbEnhancedClient.builder().dynamoDbClient( dynamoDbClient ).build();
             log.debug( "Creating DynamoDB stream..." );
             streamClient = createStreamClient( uri, provider, region );
-            reader = new DynamoDbReader( dynamoDbClient, enhancedClient, readLock );
+            reader = new DynamoDbReader( dynamoDbClient, readLock );
             writer = new DynamoDbWriter( dynamoDbClient, enhancedClient, readLock );
             entityHelper = new DynamodbEntityHelper( reader, writer );
             tableModifier = new DynamoDbTableModifier( dynamoDbClient, enhancedClient, readLock, writeLock );
@@ -279,13 +287,6 @@ public class DynamodbClient implements AutoCloseable, Closeable {
             .credentialsProvider( provider )
             .region( region )
             .build();
-    }
-
-    @Override
-    @API
-    public void close() throws IOException {
-        initService.shutdownNow();
-        if ( dynamoDbClient != null ) dynamoDbClient.close();
     }
 
     public Result<List<String>, State> getTables( ) {

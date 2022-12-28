@@ -22,20 +22,10 @@
  * SOFTWARE.
  */
 
-package oap.storage.dynamo.client.crud;
+package oap.storage.dynamo.client.restrictions;
 
-import lombok.ToString;
-import oap.storage.dynamo.client.Key;
-import oap.storage.dynamo.client.annotations.API;
-
-@API
-@ToString( callSuper = true )
-public class DeleteItemOperation extends AbstractOperation {
-    public DeleteItemOperation( String name ) {
-        super( OperationType.DELETE, name );
-    }
-
-    public DeleteItemOperation( Key key ) {
-        super( OperationType.DELETE, key, null );
+public class ReservedNameException extends IllegalArgumentException {
+    public ReservedNameException( String message ) {
+        super( message );
     }
 }
