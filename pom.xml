@@ -29,7 +29,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap.maven</artifactId>
-        <version>17.3.4.0</version>
+        <version>17.3.7.5</version>
     </parent>
 
     <packaging>pom</packaging>
@@ -57,7 +57,7 @@
     </repositories>
 
     <properties>
-        <oap-storage.project.version>17.9.16.0</oap-storage.project.version>
+        <oap-storage.project.version>17.9.16.1</oap-storage.project.version>
 
         <oap.deps.oap.version>17.10.37.10</oap.deps.oap.version>
 
