@@ -56,8 +56,8 @@ import static oap.util.Dates.s;
 public class DynamodbEntityHelper {
     private static final Pattern ATTRIBUTES_PATTERN = Pattern.compile( "(\\w+)(=:\\1(,\\s)?)" );
 
-    private DynamoDbReader reader;
-    private DynamoDbWriter writer;
+    private final DynamoDbReader reader;
+    private final DynamoDbWriter writer;
 
     public DynamodbEntityHelper( DynamoDbReader reader, DynamoDbWriter writer ) {
         this.reader = reader;
@@ -116,7 +116,7 @@ public class DynamodbEntityHelper {
         expression = expression.replace( key.getColumnName() + "=:" + key.getColumnName(), "" );
         //process restricted names if any
         Matcher matcher = ATTRIBUTES_PATTERN.matcher( expression );
-        StringBuffer safeExpression = new StringBuffer();
+        StringBuilder safeExpression = new StringBuilder();
         Map<String, String> names = new HashMap<>();
         while( matcher.find() ) {
             matcher.appendReplacement( safeExpression, "#$1$2" );

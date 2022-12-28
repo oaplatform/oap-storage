@@ -29,11 +29,13 @@ import lombok.Getter;
 import lombok.ToString;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.storage.dynamo.client.annotations.API;
+import oap.storage.dynamo.client.restrictions.ReservedWords;
 import oap.util.Result;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
 
 import java.util.Map;
+import java.util.Objects;
 
 @EqualsAndHashCode
 @ToString
@@ -51,6 +53,10 @@ public class AtomicUpdateFieldAndValue {
     }
 
     public AtomicUpdateFieldAndValue( String fieldName, long value ) {
+        Objects.requireNonNull( fieldName );
+        if( !ReservedWords.isAttributeNameAppropriate( fieldName ) ) {
+          throw new IllegalArgumentException( "Column '" + fieldName + "' is prohibited in DynamoDB" );
+        }
         this.fieldName = fieldName;
         this.value = Math.max( value, 0 );
     }

@@ -29,10 +29,12 @@ import lombok.Setter;
 import lombok.ToString;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.storage.dynamo.client.Key;
+import oap.storage.dynamo.client.restrictions.ReservedWords;
 import software.amazon.awssdk.services.dynamodb.model.DeleteRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -50,7 +52,6 @@ public abstract class AbstractOperation {
     @Setter
     private DeleteRequest deleteRequest;
 
-
     protected AbstractOperation( OperationType type, String name ) {
         this.type = type;
         this.name = name;
@@ -61,6 +62,13 @@ public abstract class AbstractOperation {
     protected AbstractOperation( OperationType type, Key key, Map<String, Object> binNamesAndValues ) {
         this.type = type;
         this.key = key;
-        this.binNamesAndValues = binNamesAndValues;
+        this.binNamesAndValues = binNamesAndValues == null ? Collections.emptyMap() : binNamesAndValues;
+        List<String> invalidBinNames = this.binNamesAndValues.keySet()
+            .stream()
+            .filter( o -> !ReservedWords.isAttributeNameAppropriate( o ) )
+            .toList();
+        if ( !invalidBinNames.isEmpty() ) {
+            throw new IllegalArgumentException( "Bins '" + invalidBinNames + "' are prohibited in DynamoDB" );
+        }
     }
 }

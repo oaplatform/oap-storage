@@ -243,6 +243,7 @@ public class DynamoDbTableModifier {
                                 String partitionKeyName, String partitionKeyType,
                                 String sortKeyName, String sortKeyType,
                                 CreateTableRequestModifier modifier ) {
+        Objects.requireNonNull( tableName );
         if ( !ReservedWords.isTableNameOrIndexAppropriate( tableName ) ) {
             throw new IllegalArgumentException( "Table '" + tableName + "' is forbidden in DynamoDB" );
         }
@@ -308,11 +309,13 @@ public class DynamoDbTableModifier {
 
     @API
     public Result<DynamodbClient.State, DynamodbClient.State> deleteTable( String tableName ) {
+        Objects.requireNonNull( tableName );
         deleteTableIfExists( tableName );
         return Result.success( DynamodbClient.State.SUCCESS );
     }
 
     public DescribeTableResponse describeTable( String tableName, DescribeTableResponseModifier modifier ) {
+        Objects.requireNonNull( tableName );
         DescribeTableRequest request = createDescribeTableRequest( tableName, modifier );
         try {
             readLock.lock();
@@ -432,7 +435,7 @@ public class DynamoDbTableModifier {
                             .stream()
                             .filter( idxDesc -> idxDesc.indexName().equals( indexName ) )
                             .findFirst();
-                    if ( !idxDescription.isPresent() ) {
+                    if ( idxDescription.isEmpty() ) {
                         log.info( "Index '{}' on table '{}' is deleted in {} ms", indexName, tableName, System.currentTimeMillis() - time );
                         break;
                     }
