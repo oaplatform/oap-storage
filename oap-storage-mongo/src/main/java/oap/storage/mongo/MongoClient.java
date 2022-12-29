@@ -41,8 +41,12 @@ import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 
 import java.io.Closeable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 import static oap.storage.mongo.MigrationConfig.CONFIGURATION;
@@ -171,18 +175,34 @@ public class MongoClient implements Closeable {
             this.host, this.port, this.database, this.physicalDatabase, this.migrations, this.shell );
     }
 
+    public <R> Optional<R> doIfCollectionExists( String collectionName, Function<MongoCollection<Document>, R> consumer ) {
+        Objects.requireNonNull( collectionName );
+        if ( collectionExists( collectionName ) ) {
+            var collection = this.getCollection( collectionName );
+            return Optional.of( consumer.apply( collection ) );
+        }
+        return Optional.empty();
+    }
+
+    public boolean collectionExists( String collection ) {
+        Objects.requireNonNull( collection );
+        return database
+            .listCollectionNames()
+            .into( new ArrayList<>() )
+            .contains( collection );
+    }
+
     public Version databaseVersion() {
-        var collection = this.getCollection( "version" );
-        var document = collection.find().first();
-        return document != null
-            ? new Version( document.getInteger( "main", 0 ), document.getInteger( "ext", 0 ) )
-            : Version.UNDEFINED;
+        return doIfCollectionExists( "version", collection -> {
+            var document = collection.find().first();
+            return document != null
+                ? new Version( document.getInteger( "main", 0 ), document.getInteger( "ext", 0 ) )
+                : Version.UNDEFINED;
+        } ).orElse( Version.UNDEFINED );
     }
 
     public void preStart() {
-        Version version = databaseVersion();
-        if ( version == Version.UNDEFINED ) return;
-        log.debug( "starting mongo client {}, version {}, performing migration...", this, version );
+        log.debug( "starting mongo client {}, version {}, performing migration...", this, databaseVersion() );
         for( var migration : Migration.of( databaseName, databaseVersion(), migrations ) ) {
             log.debug( "executing migration {}", migration );
             migration.execute( shell, host, port, physicalDatabase, user, password );
@@ -210,7 +230,7 @@ public class MongoClient implements Closeable {
     }
 
     public void updateVersion( Version version ) {
-        this.getCollection( "version" ).replaceOne( new Document( "_id", "version" ),
+        getCollection( "version" ).replaceOne( new Document( "_id", "version" ),
             new Document( Map.of( "main", version.main, "ext", version.ext ) ),
             new ReplaceOptions().upsert( true ) );
     }
