@@ -180,13 +180,16 @@ public class MongoClient implements Closeable {
     }
 
     public void preStart() {
-        log.debug( "starting mongo client {}, version {}", this, databaseVersion() );
+        Version version = databaseVersion();
+        if ( version == Version.UNDEFINED ) return;
+        log.debug( "starting mongo client {}, version {}, performing migration...", this, version );
         for( var migration : Migration.of( databaseName, databaseVersion(), migrations ) ) {
-            log.debug( "executing migration {} for {}", migration, databaseVersion() );
+            log.debug( "executing migration {}", migration );
             migration.execute( shell, host, port, physicalDatabase, user, password );
             updateVersion( migration.version );
+            log.debug( "updating current version to {}", migration.version );
         }
-        log.debug( "migration complete, database is {}", databaseVersion() );
+        log.debug( "migration completed, database is {}", databaseVersion() );
     }
 
     public CodecRegistry getCodecRegistry() {
