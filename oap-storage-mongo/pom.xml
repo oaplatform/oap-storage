@@ -50,7 +50,7 @@
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongo-java-driver</artifactId>
-            <version>${oap.deps.mongo.version}</version>
+            <version>${oap.deps.mongo-java-driver.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
