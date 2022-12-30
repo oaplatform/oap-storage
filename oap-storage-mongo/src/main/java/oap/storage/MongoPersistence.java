@@ -91,8 +91,8 @@ public class MongoPersistence<I, T> implements Closeable {
     public String serviceName;
     public boolean watch = false;
     protected int batchSize = 100;
-    private ExecutorService watchExecutor;
-    private ScheduledExecutorService scheduler;
+    private final ExecutorService watchExecutor = Executors.newSingleThreadExecutor();
+    private final ScheduledExecutorService scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, serviceName );
     private volatile long lastExecuted = -1;
 
     public MongoPersistence( MongoClient mongoClient, String collectionName, long delay, MemoryStorage<I, T> storage ) {
@@ -126,14 +126,10 @@ public class MongoPersistence<I, T> implements Closeable {
 
         synchronizedOn( lock, () -> {
             this.load();
-
-            scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, serviceName );
             scheduler.scheduleWithFixedDelay( this::fsync, delay, delay, TimeUnit.MILLISECONDS );
         } );
 
         if( watch ) {
-            watchExecutor = Executors.newSingleThreadExecutor();
-
             watchExecutor.execute( () -> {
                 var changeStreamDocuments = mongoClient.getCollection( collectionName ).withReadConcern( ReadConcern.MAJORITY ).watch();
 
@@ -192,7 +188,8 @@ public class MongoPersistence<I, T> implements Closeable {
     }
 
     private void persist( List<I> deletedIds, List<WriteModel<Metadata<T>>> list ) {
-        if( !list.isEmpty() ) try {
+        if( list.isEmpty() ) return;
+        try {
             collection.bulkWrite( list, new BulkWriteOptions().ordered( false ) );
             deletedIds.forEach( storage.memory::removePermanently );
             list.clear();
@@ -211,29 +208,28 @@ public class MongoPersistence<I, T> implements Closeable {
     @Override
     public void close() {
         log.debug( "closing {}...", this );
-        if( scheduler != null && storage != null ) synchronizedOn( lock, () -> {
+        synchronizedOn( lock, () -> {
             Closeables.close( scheduler );
-            fsync();
-            log.debug( "closed {}...", this );
+            if( storage != null ) {
+                fsync();
+                log.debug( "closed {}...", this );
+            } else log.debug( "this {} wasn't started or already closed", this );
+            Closeables.close( watchExecutor );
         } );
-        else log.debug( "this {} was't started or already closed", this );
-
-        if( watch ) Closeables.close( watchExecutor );
     }
 
     private void refreshById( String mongoId ) {
         var m = collection.find( eq( "_id", mongoId ) ).first();
-        if( m != null ) {
-            storage.lock.synchronizedOn( mongoId, () -> {
-                var id = storage.identifier.fromString( mongoId );
-                var old = storage.memory.get( id );
-                if( old.isEmpty() || m.modified > old.get().modified ) {
-                    log.debug( "refresh from mongo {}", mongoId );
-                    storage.memory.put( id, m );
-                    if( old.isEmpty() ) storage.fireAdded( id, m.object );
-                    else storage.fireUpdated( id, m.object );
-                } else log.debug( "[{}] m.modified <= oldM.modified", mongoId );
-            } );
-        }
+        if( m == null ) return;
+        storage.lock.synchronizedOn( mongoId, () -> {
+            var id = storage.identifier.fromString( mongoId );
+            var old = storage.memory.get( id );
+            if( old.isEmpty() || m.modified > old.get().modified ) {
+                log.debug( "refresh from mongo {}", mongoId );
+                storage.memory.put( id, m );
+                if( old.isEmpty() ) storage.fireAdded( id, m.object );
+                else storage.fireUpdated( id, m.object );
+            } else log.debug( "[{}] m.modified <= oldM.modified", mongoId );
+        } );
     }
 }

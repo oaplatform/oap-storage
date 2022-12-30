@@ -118,7 +118,6 @@ public class MongoPersistenceTest extends Fixtures {
             );
             assertThat( persistence.collection.countDocuments() ).isEqualTo( 2 );
         }
-
     }
 
     @Test
