@@ -36,7 +36,6 @@ import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.ServiceName;
-import oap.concurrent.Threads;
 import oap.concurrent.scheduler.ScheduledExecutorService;
 import oap.io.Closeables;
 import oap.io.Files;
@@ -59,6 +58,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -130,10 +130,12 @@ public class MongoPersistence<I, T> implements Closeable {
         } );
 
         if( watch ) {
+            CountDownLatch cdl = new CountDownLatch( 1 );
             watchExecutor.execute( () -> {
                 var changeStreamDocuments = mongoClient.getCollection( collectionName ).withReadConcern( ReadConcern.MAJORITY ).watch();
 
-                Threads.notifyAllFor( watchExecutor );
+                cdl.countDown();
+//                Threads.notifyAllFor( watchExecutor );
 
                 changeStreamDocuments.forEach( ( Consumer<? super ChangeStreamDocument<Document>> ) csd -> {
                     log.trace( "mongo notification: {} ", csd );
@@ -151,8 +153,13 @@ public class MongoPersistence<I, T> implements Closeable {
                     }
                 } );
             } );
-
-            Threads.waitFor( watchExecutor );
+            try {
+                cdl.await( 1, TimeUnit.HOURS );
+            } catch( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( e );
+            }
+//            Threads.waitFor( watchExecutor );
         }
     }
 
