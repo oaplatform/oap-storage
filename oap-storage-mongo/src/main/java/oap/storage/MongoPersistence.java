@@ -24,7 +24,6 @@
 
 package oap.storage;
 
-import com.mongodb.MongoNamespace;
 import com.mongodb.ReadConcern;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.BulkWriteOptions;
@@ -107,10 +106,10 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
 
     @Override
     protected void load() {
-        MongoNamespace namespace = collection.getNamespace();
-        log.debug( "loading data from {}", namespace );
+        if ( !collection.getNamespace().equals( tableName ) ) throw new IllegalArgumentException("NOT EQUAL " + collection.getNamespace() + "!= " + tableName);
+        log.debug( "loading data from {}", collection.getNamespace() );
         Consumer<Metadata<T>> cons = metadata -> storage.memory.put( storage.identifier.get( metadata.object ), metadata );
-        log.info( "Load {} documents from [{}] Mongo namespace", collection.countDocuments(), namespace );
+        log.info( "Loading documents from [{}] MongoDB table", collection.getNamespace() );
         collection.find().forEach( cons );
         log.info( storage.size() + " object(s) loaded." );
     }

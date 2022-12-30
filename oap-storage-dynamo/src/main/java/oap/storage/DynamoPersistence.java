@@ -119,7 +119,7 @@ public class DynamoPersistence<I, T> extends AbstractPersistance<I, T> implement
     protected void load() {
         log.debug( "loading data from {}", tableName );
         Consumer<Metadata<T>> cons = metadata -> storage.memory.put( storage.identifier.get( metadata.object ), metadata );
-        log.info( "Load items from [{}] DynamoDB table", tableName );
+        log.info( "Loading documents from [{}] DynamoDB table", tableName );
         dynamodbClient.getRecordsByScan( tableName, null ).map( convertFromDynamoItem ).forEach( cons );
         log.info( storage.size() + " object(s) loaded." );
     }
