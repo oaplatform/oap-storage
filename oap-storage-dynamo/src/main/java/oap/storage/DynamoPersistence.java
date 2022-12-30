@@ -48,7 +48,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -114,10 +113,6 @@ public class DynamoPersistence<I, T> extends AbstractPersistance<I, T> implement
                 case INSERT, MODIFY -> refreshById( id );
             }
         } );
-    }
-
-    private Optional<T> deleteById( String id ) {
-        return storage.delete( storage.identifier.fromString( id ) );
     }
 
     @Override

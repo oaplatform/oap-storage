@@ -35,6 +35,7 @@ import org.joda.time.format.DateTimeFormatter;
 
 import java.io.Closeable;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -96,6 +97,10 @@ public abstract class AbstractPersistance<I, T> implements Closeable, AutoClosea
                 throw new RuntimeException( e );
             }
         }
+    }
+
+    protected Optional<T> deleteById( String id ) {
+        return storage.delete( storage.identifier.fromString( id ) );
     }
 
     protected abstract void load();

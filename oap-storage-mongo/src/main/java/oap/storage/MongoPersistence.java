@@ -50,7 +50,6 @@ import java.io.Closeable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
@@ -104,10 +103,6 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
                 case INSERT, UPDATE -> refreshById( id );
             }
         } );
-    }
-
-    private Optional<T> deleteById( String id ) {
-        return storage.delete( storage.identifier.fromString( id ) );
     }
 
     @Override
