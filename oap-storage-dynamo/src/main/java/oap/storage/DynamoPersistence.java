@@ -63,7 +63,6 @@ import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.util.Pair.__;
 
 @Slf4j
-@ToString( of = { "tableName", "delay", "batchSize", "watch", "serviceName" } )
 public class DynamoPersistence<I, T> extends AbstractPersistance<I, T> implements Closeable, AutoCloseable {
 
     public static final Path DEFAULT_CRASH_DUMP_PATH = Path.of( "/tmp/dynamo-persistance-crash-dump" );
@@ -152,7 +151,8 @@ public class DynamoPersistence<I, T> extends AbstractPersistance<I, T> implement
         log.info( storage.size() + " object(s) loaded." );
     }
 
-    private void fsync() {
+    @Override
+    protected void fsync() {
         var time = DateTimeUtils.currentTimeMillis();
         synchronizedOn( lock, () -> {
             if ( stopped ) return;
@@ -174,22 +174,6 @@ public class DynamoPersistence<I, T> extends AbstractPersistance<I, T> implement
             log.trace( "fsyncing, last: {}, updated objects in storage: {}, total in storage: {}", lastExecuted, updated.get(), storage.size() );
             persist( deletedIds, list );
             lastExecuted = time;
-        } );
-    }
-
-    @Override
-    public void close() {
-        log.debug( "closing {}...", this );
-        synchronizedOn( lock, () -> {
-            scheduler.shutdown( 1, TimeUnit.SECONDS );
-            Closeables.close( scheduler ); // no more sync after that
-            if( storage != null ) {
-                fsync();
-                log.debug( "closed {}...", this );
-            } else log.debug( "this {} wasn't started or already closed", this );
-            Closeables.close( watchExecutor );
-            stopped = true;
-            log.debug( "closed {}...", this );
         } );
     }
 

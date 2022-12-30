@@ -24,17 +24,26 @@
 
 package oap.storage;
 
+import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import oap.application.ServiceName;
 import oap.concurrent.scheduler.ScheduledExecutorService;
+import oap.io.Closeables;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-public class AbstractPersistance<I, T> implements Closeable, AutoCloseable {
+
+import static oap.concurrent.Threads.synchronizedOn;
+
+@Slf4j
+@ToString( of = { "tableName", "delay", "batchSize", "watch", "serviceName" } )
+public abstract class AbstractPersistance<I, T> implements Closeable, AutoCloseable {
 
     protected final Lock lock = new ReentrantLock();
     protected final MemoryStorage<I, T> storage;
@@ -58,7 +67,20 @@ public class AbstractPersistance<I, T> implements Closeable, AutoCloseable {
     }
 
     @Override
-    public void close() throws IOException {
-
+    public void close() {
+        log.debug( "closing {}...", this );
+        synchronizedOn( lock, () -> {
+            scheduler.shutdown( 5, TimeUnit.SECONDS );
+            Closeables.close( scheduler ); // no more sync after that
+            if( storage != null ) {
+                fsync();
+                log.debug( "closed {}...", this );
+            } else log.debug( "this {} wasn't started or already closed", this );
+            Closeables.close( watchExecutor );
+            stopped = true;
+            log.debug( "closed {}...", this );
+        } );
     }
+
+    protected abstract void fsync();
 }

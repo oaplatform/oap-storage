@@ -66,7 +66,6 @@ import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.util.Pair.__;
 
 @Slf4j
-@ToString( of = { "collectionName", "delay" } )
 public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements Closeable, AutoCloseable {
 
     public static final Path DEFAULT_CRASH_DUMP_PATH = Path.of( "/tmp/mongo-persistance-crash-dump" );
@@ -148,7 +147,8 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
         log.info( storage.size() + " object(s) loaded." );
     }
 
-    private void fsync() {
+    @Override
+    protected void fsync() {
         var time = DateTimeUtils.currentTimeMillis();
         synchronizedOn( lock, () -> {
             log.trace( "fsyncing, last: {}, objects in storage: {}", lastExecuted, storage.size() );
@@ -182,21 +182,6 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
                 .toList();
             Files.writeString( filename, GZIP, Binder.json.marshal( dump ) );
         }
-    }
-
-    @Override
-    public void close() {
-        log.debug( "closing {}...", this );
-        synchronizedOn( lock, () -> {
-            scheduler.shutdown( 1, TimeUnit.MINUTES );
-            Closeables.close( scheduler );
-            if( storage != null ) {
-                fsync();
-                log.debug( "closed {}...", this );
-            } else log.debug( "this {} wasn't started or already closed", this );
-            Closeables.close( watchExecutor );
-            log.debug( "closed {}...", this );
-        } );
     }
 
     private void refreshById( String mongoId ) {
