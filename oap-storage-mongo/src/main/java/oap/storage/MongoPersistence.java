@@ -133,7 +133,6 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
                 }
                 if( list.size() >= batchSize ) {
                     persist( deletedIds, list );
-                    list.clear();
                 }
             } );
             log.trace( "fsyncing, last: {}, updated objects in storage: {}, total in storage: {}", lastExecuted, updated.get(), storage.size() );

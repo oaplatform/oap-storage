@@ -143,7 +143,6 @@ public class DynamoPersistence<I, T> extends AbstractPersistance<I, T> implement
                 }
                 if( list.size() >= batchSize ) {
                     persist( deletedIds, list );
-                    list.clear();
                 }
             } );
             log.trace( "fsyncing, last: {}, updated objects in storage: {}, total in storage: {}", lastExecuted, updated.get(), storage.size() );
@@ -173,18 +172,17 @@ public class DynamoPersistence<I, T> extends AbstractPersistance<I, T> implement
 
     private void refreshById( String dynamoId ) {
         var res = dynamodbClient.getRecord( new Key( tableName, "id", dynamoId ), null );
-        if( res != null && res.isSuccess() ) {
-            Metadata<T> m = convertFromDynamoItem.apply( res.getSuccessValue() );
-            storage.lock.synchronizedOn( dynamoId, () -> {
-                var id = storage.identifier.fromString( dynamoId );
-                var old = storage.memory.get( id );
-                if( old.isEmpty() || m.modified > old.get().modified ) {
-                    log.debug( "refresh from dynamo {}", dynamoId );
-                    storage.memory.put( id, m );
-                    if( old.isEmpty() ) storage.fireAdded( id, m.object );
-                    else storage.fireUpdated( id, m.object );
-                } else log.debug( "[{}] m.modified <= oldM.modified", dynamoId );
-            } );
-        }
+        if( res == null || !res.isSuccess() ) return;
+        Metadata<T> m = convertFromDynamoItem.apply( res.getSuccessValue() );
+        storage.lock.synchronizedOn( dynamoId, () -> {
+            var id = storage.identifier.fromString( dynamoId );
+            var old = storage.memory.get( id );
+            if( old.isEmpty() || m.modified > old.get().modified ) {
+                log.debug( "refresh from dynamo {}", dynamoId );
+                storage.memory.put( id, m );
+                if( old.isEmpty() ) storage.fireAdded( id, m.object );
+                else storage.fireUpdated( id, m.object );
+            } else log.debug( "[{}] m.modified <= oldM.modified", dynamoId );
+        } );
     }
 }
