@@ -29,6 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 import oap.application.ServiceName;
 import oap.concurrent.scheduler.ScheduledExecutorService;
 import oap.io.Closeables;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -44,6 +46,11 @@ import static oap.concurrent.Threads.synchronizedOn;
 @Slf4j
 @ToString( of = { "tableName", "delay", "batchSize", "watch", "serviceName" } )
 public abstract class AbstractPersistance<I, T> implements Closeable, AutoCloseable {
+
+    public static final Path DEFAULT_CRASH_DUMP_PATH = Path.of( "/tmp/mongo-persistance-crash-dump" );
+    public static final DateTimeFormatter CRASH_DUMP_PATH_FORMAT_MILLIS = DateTimeFormat
+        .forPattern( "yyyy-MM-dd-HH-mm-ss-SSS" )
+        .withZoneUTC();
 
     protected final Lock lock = new ReentrantLock();
     protected final MemoryStorage<I, T> storage;

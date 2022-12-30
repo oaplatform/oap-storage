@@ -68,10 +68,6 @@ import static oap.util.Pair.__;
 @Slf4j
 public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements Closeable, AutoCloseable {
 
-    public static final Path DEFAULT_CRASH_DUMP_PATH = Path.of( "/tmp/mongo-persistance-crash-dump" );
-    public static final DateTimeFormatter CRASH_DUMP_PATH_FORMAT_MILLIS = DateTimeFormat
-        .forPattern( "yyyy-MM-dd-HH-mm-ss-SSS" )
-        .withZoneUTC();
     private static final ReplaceOptions REPLACE_OPTIONS_UPSERT = new ReplaceOptions().upsert( true );
     final MongoCollection<Metadata<T>> collection;
     private final MongoClient mongoClient;
