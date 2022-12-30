@@ -29,11 +29,13 @@ import lombok.extern.slf4j.Slf4j;
 import oap.application.ServiceName;
 import oap.concurrent.scheduler.ScheduledExecutorService;
 import oap.io.Closeables;
+import oap.util.Dates;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import java.io.Closeable;
 import java.nio.file.Path;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -71,6 +73,34 @@ public abstract class AbstractPersistance<I, T> implements Closeable, AutoClosea
         this.delay = delay;
         this.crashDumpPath = crashDumpPath.resolve( tableName );
     }
+
+    public void preStart() {
+        log.info( "collection = {}, fsync delay = {}, watch = {}, crashDumpPath = {}",
+            tableName, Dates.durationToString( delay ), watch, crashDumpPath );
+
+        synchronizedOn( lock, () -> {
+            this.load();
+            scheduler.scheduleWithFixedDelay( this::fsync, delay, delay, TimeUnit.MILLISECONDS );
+        } );
+
+        if( watch ) {
+            CountDownLatch cdl = new CountDownLatch( 1 );
+            watchExecutor.execute( () -> {
+                if ( stopped ) return;
+                processRecords( cdl );
+            } );
+            try {
+                cdl.await( 1, TimeUnit.MINUTES );
+            } catch( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( e );
+            }
+        }
+    }
+
+    protected abstract void load();
+
+    protected abstract void processRecords( CountDownLatch cdl );
 
     @Override
     public void close() {

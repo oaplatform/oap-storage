@@ -33,23 +33,18 @@ import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
-import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import oap.io.Closeables;
 import oap.io.Files;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
 import oap.storage.mongo.JsonCodec;
 import oap.storage.mongo.MongoClient;
-import oap.util.Dates;
 import oap.util.Pair;
 import oap.util.Stream;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.joda.time.DateTimeUtils;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 
 import java.io.Closeable;
 import java.nio.file.Path;
@@ -57,7 +52,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static com.mongodb.client.model.Filters.eq;
@@ -91,50 +85,33 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
             .withCodecRegistry( codecRegistry );
     }
 
-    public void preStart() {
-        log.info( "collection = {}, fsync delay = {}, watch = {}, crashDumpPath = {}",
-            tableName, Dates.durationToString( delay ), watch, crashDumpPath );
+    @Override
+    protected void processRecords( CountDownLatch cdl ) {
+        var changeStreamDocuments = mongoClient.getCollection( tableName ).withReadConcern( ReadConcern.MAJORITY ).watch();
+        cdl.countDown();
+        changeStreamDocuments.forEach( ( Consumer<? super ChangeStreamDocument<Document>> ) csd -> {
+            log.trace( "mongo notification: {} ", csd );
+            var op = csd.getOperationType();
+            var key = csd.getDocumentKey();
+            if( key == null ) return;
 
-        synchronizedOn( lock, () -> {
-            this.load();
-            scheduler.scheduleWithFixedDelay( this::fsync, delay, delay, TimeUnit.MILLISECONDS );
-        } );
+            var bid = key.getString( "_id" );
+            if( bid == null ) return;
 
-        if( watch ) {
-            CountDownLatch cdl = new CountDownLatch( 1 );
-            watchExecutor.execute( () -> {
-                var changeStreamDocuments = mongoClient.getCollection( tableName ).withReadConcern( ReadConcern.MAJORITY ).watch();
-                cdl.countDown();
-                changeStreamDocuments.forEach( ( Consumer<? super ChangeStreamDocument<Document>> ) csd -> {
-                    log.trace( "mongo notification: {} ", csd );
-                    var op = csd.getOperationType();
-                    var key = csd.getDocumentKey();
-                    if( key == null ) return;
-
-                    var bid = key.getString( "_id" );
-                    if( bid == null ) return;
-
-                    var id = bid.getValue();
-                    switch( op ) {
-                        case DELETE -> deleteById( id );
-                        case INSERT, UPDATE -> refreshById( id );
-                    }
-                } );
-            } );
-            try {
-                cdl.await( 1, TimeUnit.MINUTES );
-            } catch( InterruptedException e ) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException( e );
+            var id = bid.getValue();
+            switch( op ) {
+                case DELETE -> deleteById( id );
+                case INSERT, UPDATE -> refreshById( id );
             }
-        }
+        } );
     }
 
     private Optional<T> deleteById( String id ) {
         return storage.delete( storage.identifier.fromString( id ) );
     }
 
-    private void load() {
+    @Override
+    protected void load() {
         MongoNamespace namespace = collection.getNamespace();
         log.debug( "loading data from {}", namespace );
         Consumer<Metadata<T>> cons = metadata -> storage.memory.put( storage.identifier.get( metadata.object ), metadata );

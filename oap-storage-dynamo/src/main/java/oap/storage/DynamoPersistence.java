@@ -24,7 +24,6 @@
 
 package oap.storage;
 
-import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.storage.dynamo.client.Key;
@@ -34,10 +33,8 @@ import oap.storage.dynamo.client.crud.DeleteItemOperation;
 import oap.storage.dynamo.client.crud.OperationType;
 import oap.storage.dynamo.client.crud.UpdateItemOperation;
 import oap.storage.dynamo.client.streams.DynamodbStreamsRecordProcessor;
-import oap.io.Closeables;
 import oap.io.Files;
 import oap.json.Binder;
-import oap.util.Dates;
 import oap.util.Pair;
 import oap.util.Stream;
 import org.joda.time.DateTimeUtils;
@@ -53,7 +50,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -99,51 +95,33 @@ public class DynamoPersistence<I, T> extends AbstractPersistance<I, T> implement
         this.dynamodbClient = dynamodbClient;
     }
 
-    public void preStart() {
-        log.info( "table = {}, fsync delay = {}, watch = {}, crashDumpPath = {}",
-            tableName, Dates.durationToString( delay ), watch, crashDumpPath );
+    @Override
+    protected void processRecords( CountDownLatch cdl ) {
+        TableDescription table = dynamodbClient.describeTable( tableName, null );
+        String streamArn = table.latestStreamArn();
+        cdl.countDown();
+        streamProcessor.processRecords( streamArn, record -> {
+            log.trace( "dynamoDb notification: {} ", record );
+            var key = record.dynamodb().keys().get( "id" );
+            var op = record.eventName();
 
-        synchronizedOn( lock, () -> {
-            this.load();
-            scheduler.scheduleWithFixedDelay( this::fsync, delay, delay, TimeUnit.MILLISECONDS );
-        } );
+            if( key == null ) return;
+            var id = key.s();
+            if( id == null ) return;
 
-        if( watch ) {
-            CountDownLatch cdl = new CountDownLatch( 1 );
-            watchExecutor.execute( () -> {
-                if ( stopped ) return;
-                TableDescription table = dynamodbClient.describeTable( tableName, null );
-                String streamArn = table.latestStreamArn();
-                cdl.countDown();
-                streamProcessor.processRecords( streamArn, record -> {
-                    log.trace( "dynamoDb notification: {} ", record );
-                    var key = record.dynamodb().keys().get( "id" );
-                    var op = record.eventName();
-
-                    if( key == null ) return;
-                    var id = key.s();
-                    if( id == null ) return;
-
-                    switch( op ) {
-                        case REMOVE -> deleteById( id );
-                        case INSERT, MODIFY -> refreshById( id );
-                    }
-                } );
-            } );
-            try {
-                cdl.await( 1, TimeUnit.MINUTES );
-            } catch( InterruptedException e ) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException( e );
+            switch( op ) {
+                case REMOVE -> deleteById( id );
+                case INSERT, MODIFY -> refreshById( id );
             }
-        }
+        } );
     }
 
     private Optional<T> deleteById( String id ) {
         return storage.delete( storage.identifier.fromString( id ) );
     }
 
-    private void load() {
+    @Override
+    protected void load() {
         log.debug( "loading data from {}", tableName );
         Consumer<Metadata<T>> cons = metadata -> storage.memory.put( storage.identifier.get( metadata.object ), metadata );
         log.info( "Load items from [{}] DynamoDB table", tableName );
