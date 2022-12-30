@@ -151,7 +151,7 @@ public class MongoPersistence<I, T> implements Closeable {
                 } );
             } );
             try {
-                cdl.await( 1, TimeUnit.HOURS );
+                cdl.await( 1, TimeUnit.MINUTES );
             } catch( InterruptedException e ) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException( e );
