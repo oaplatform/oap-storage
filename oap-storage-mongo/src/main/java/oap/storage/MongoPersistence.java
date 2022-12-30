@@ -50,6 +50,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import static com.mongodb.client.model.Filters.eq;
@@ -106,7 +107,6 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
 
     @Override
     protected void load() {
-        if ( !collection.getNamespace().equals( tableName ) ) throw new IllegalArgumentException("NOT EQUAL " + collection.getNamespace() + "!= " + tableName);
         log.debug( "loading data from {}", collection.getNamespace() );
         Consumer<Metadata<T>> cons = metadata -> storage.memory.put( storage.identifier.get( metadata.object ), metadata );
         log.info( "Loading documents from [{}] MongoDB table", collection.getNamespace() );
@@ -118,16 +118,25 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
     protected void fsync() {
         var time = DateTimeUtils.currentTimeMillis();
         synchronizedOn( lock, () -> {
+            if ( stopped ) return;
             log.trace( "fsyncing, last: {}, objects in storage: {}", lastExecuted, storage.size() );
             var list = new ArrayList<WriteModel<Metadata<T>>>( batchSize );
             var deletedIds = new ArrayList<I>( batchSize );
+            AtomicInteger updated = new AtomicInteger();
             storage.memory.selectUpdatedSince( lastExecuted ).forEach( ( id, m ) -> {
+                updated.incrementAndGet();
                 if( m.isDeleted() ) {
                     deletedIds.add( id );
                     list.add( new DeleteOneModel<>( eq( "_id", id ) ) );
-                } else list.add( new ReplaceOneModel<>( eq( "_id", id ), m, REPLACE_OPTIONS_UPSERT ) );
-                if( list.size() >= batchSize ) persist( deletedIds, list );
+                } else {
+                    list.add( new ReplaceOneModel<>( eq( "_id", id ), m, REPLACE_OPTIONS_UPSERT ) );
+                }
+                if( list.size() >= batchSize ) {
+                    persist( deletedIds, list );
+                    list.clear();
+                }
             } );
+            log.trace( "fsyncing, last: {}, updated objects in storage: {}, total in storage: {}", lastExecuted, updated.get(), storage.size() );
             persist( deletedIds, list );
             lastExecuted = time;
         } );

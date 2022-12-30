@@ -129,6 +129,7 @@ public class DynamoPersistence<I, T> extends AbstractPersistance<I, T> implement
         var time = DateTimeUtils.currentTimeMillis();
         synchronizedOn( lock, () -> {
             if ( stopped ) return;
+            log.trace( "fsyncing, last: {}, objects in storage: {}", lastExecuted, storage.size() );
             var list = new ArrayList<AbstractOperation>( batchSize );
             var deletedIds = new ArrayList<I>( batchSize );
             AtomicInteger updated = new AtomicInteger();
@@ -137,8 +138,9 @@ public class DynamoPersistence<I, T> extends AbstractPersistance<I, T> implement
                 if( m.isDeleted() ) {
                     deletedIds.add( id );
                     list.add( new DeleteItemOperation( new Key( tableName, "id", id.toString() ) ) );
-                } else
+                } else {
                     list.add( new UpdateItemOperation( new Key( tableName, "id", id.toString() ), convertToDynamoItem.apply( m ) ) );
+                }
                 if( list.size() >= batchSize ) {
                     persist( deletedIds, list );
                     list.clear();
