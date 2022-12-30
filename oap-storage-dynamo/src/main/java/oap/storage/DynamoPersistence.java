@@ -26,8 +26,6 @@ package oap.storage;
 
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import oap.application.ServiceName;
-import oap.concurrent.scheduler.ScheduledExecutorService;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.storage.dynamo.client.Key;
 import oap.storage.dynamo.client.batch.WriteBatchOperationHelper;
@@ -55,12 +53,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -70,30 +64,18 @@ import static oap.util.Pair.__;
 
 @Slf4j
 @ToString( of = { "tableName", "delay", "batchSize", "watch", "serviceName" } )
-public class DynamoPersistence<I, T> implements Closeable, AutoCloseable {
+public class DynamoPersistence<I, T> extends AbstractPersistance<I, T> implements Closeable, AutoCloseable {
 
     public static final Path DEFAULT_CRASH_DUMP_PATH = Path.of( "/tmp/dynamo-persistance-crash-dump" );
     public static final DateTimeFormatter CRASH_DUMP_PATH_FORMAT_MILLIS = DateTimeFormat
         .forPattern( "yyyy-MM-dd-HH-mm-ss-SSS" )
         .withZoneUTC();
-    private final Lock lock = new ReentrantLock();
+
     private final DynamodbClient dynamodbClient;
     private final DynamodbStreamsRecordProcessor streamProcessor;
     private final WriteBatchOperationHelper batchWriter;
-    private final String tableName;
-    private final long delay;
-    private final MemoryStorage<I, T> storage;
-    private final Path crashDumpPath;
-    @ServiceName
-    public String serviceName;
-    public boolean watch = false;
-    protected int batchSize = 100;
-    private final ExecutorService watchExecutor = Executors.newSingleThreadExecutor();
-    private final ScheduledExecutorService scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, serviceName );
-    private volatile long lastExecuted = -1;
     private final Function<Map<String, AttributeValue>, Metadata<T>> convertFromDynamoItem;
     private final Function<Metadata<T>, Map<String, Object>> convertToDynamoItem;
-    private volatile boolean stopped = false;
 
     public DynamoPersistence( DynamodbClient dynamodbClient,
                               String tableName,
@@ -110,12 +92,9 @@ public class DynamoPersistence<I, T> implements Closeable, AutoCloseable {
                               Function<Map<String, AttributeValue>, Metadata<T>> convertFromDynamoItem,
                               Function<Metadata<T>, Map<String, Object>> convertToDynamoItem,
                               Path crashDumpPath ) {
+        super( storage, tableName, delay, crashDumpPath );
         this.convertFromDynamoItem = convertFromDynamoItem;
         this.convertToDynamoItem = convertToDynamoItem;
-        this.tableName = tableName;
-        this.delay = delay;
-        this.storage = storage;
-        this.crashDumpPath = crashDumpPath;
         this.streamProcessor = DynamodbStreamsRecordProcessor.builder( dynamodbClient ).build();
         batchWriter = new WriteBatchOperationHelper( dynamodbClient );
         this.dynamodbClient = dynamodbClient;

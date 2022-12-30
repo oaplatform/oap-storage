@@ -35,8 +35,6 @@ import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import oap.application.ServiceName;
-import oap.concurrent.scheduler.ScheduledExecutorService;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.json.Binder;
@@ -59,11 +57,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
 import static com.mongodb.client.model.Filters.eq;
@@ -73,7 +67,7 @@ import static oap.util.Pair.__;
 
 @Slf4j
 @ToString( of = { "collectionName", "delay" } )
-public class MongoPersistence<I, T> implements Closeable {
+public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements Closeable, AutoCloseable {
 
     public static final Path DEFAULT_CRASH_DUMP_PATH = Path.of( "/tmp/mongo-persistance-crash-dump" );
     public static final DateTimeFormatter CRASH_DUMP_PATH_FORMAT_MILLIS = DateTimeFormat
@@ -81,48 +75,30 @@ public class MongoPersistence<I, T> implements Closeable {
         .withZoneUTC();
     private static final ReplaceOptions REPLACE_OPTIONS_UPSERT = new ReplaceOptions().upsert( true );
     final MongoCollection<Metadata<T>> collection;
-    private final Lock lock = new ReentrantLock();
     private final MongoClient mongoClient;
-    private final String collectionName;
-    private final long delay;
-    private final MemoryStorage<I, T> storage;
-    private final Path crashDumpPath;
-    @ServiceName
-    public String serviceName;
-    public boolean watch = false;
-    protected int batchSize = 100;
-    private final ExecutorService watchExecutor = Executors.newSingleThreadExecutor();
-    private final ScheduledExecutorService scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, serviceName );
-    private volatile long lastExecuted = -1;
 
-    public MongoPersistence( MongoClient mongoClient, String collectionName, long delay, MemoryStorage<I, T> storage ) {
-        this( mongoClient, collectionName, delay, storage, DEFAULT_CRASH_DUMP_PATH );
+    public MongoPersistence( MongoClient mongoClient, String tableName, long delay, MemoryStorage<I, T> storage ) {
+        this( mongoClient, tableName, delay, storage, DEFAULT_CRASH_DUMP_PATH );
     }
 
-    public MongoPersistence( MongoClient mongoClient, String collectionName, long delay, MemoryStorage<I, T> storage, Path crashDumpPath ) {
+    public MongoPersistence( MongoClient mongoClient, String tableName, long delay, MemoryStorage<I, T> storage, Path crashDumpPath ) {
+        super( storage, tableName, delay, crashDumpPath );
         this.mongoClient = mongoClient;
-        this.collectionName = collectionName;
-        this.delay = delay;
-        this.storage = storage;
-
         TypeRef<Metadata<T>> ref = new TypeRef<>() {};
-
         CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
             CodecRegistries.fromCodecs( new JsonCodec<>( ref,
                 m -> this.storage.identifier.get( m.object ),
                 this.storage.identifier::toString ) ),
             mongoClient.getCodecRegistry()
         );
-
         this.collection = mongoClient
-            .getCollection( collectionName, ref.clazz() )
+            .getCollection( tableName, ref.clazz() )
             .withCodecRegistry( codecRegistry );
-        this.crashDumpPath = crashDumpPath.resolve( collectionName );
     }
 
     public void preStart() {
         log.info( "collection = {}, fsync delay = {}, watch = {}, crashDumpPath = {}",
-            collectionName, Dates.durationToString( delay ), watch, crashDumpPath );
+            tableName, Dates.durationToString( delay ), watch, crashDumpPath );
 
         synchronizedOn( lock, () -> {
             this.load();
@@ -132,7 +108,7 @@ public class MongoPersistence<I, T> implements Closeable {
         if( watch ) {
             CountDownLatch cdl = new CountDownLatch( 1 );
             watchExecutor.execute( () -> {
-                var changeStreamDocuments = mongoClient.getCollection( collectionName ).withReadConcern( ReadConcern.MAJORITY ).watch();
+                var changeStreamDocuments = mongoClient.getCollection( tableName ).withReadConcern( ReadConcern.MAJORITY ).watch();
                 cdl.countDown();
                 changeStreamDocuments.forEach( ( Consumer<? super ChangeStreamDocument<Document>> ) csd -> {
                     log.trace( "mongo notification: {} ", csd );
