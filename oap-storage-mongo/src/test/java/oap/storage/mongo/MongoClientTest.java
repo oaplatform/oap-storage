@@ -29,6 +29,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.util.Objects;
 
 import static com.mongodb.client.model.Filters.eq;
 import static oap.storage.mongo.MigrationConfig.CONFIGURATION;
@@ -71,8 +72,9 @@ public class MongoClientTest extends Fixtures {
     }
 
     private static Integer getDocumentField( MongoClient mongoClient, String id, String field ) {
-        return mongoClient.getCollection( "test" ).find( eq( "_id", id ) )
-            .first()
-            .getInteger( field );
+        return mongoClient.doWithCollectionIfExist( "test", collection ->
+            Objects.requireNonNull( collection
+                .find( eq( "_id", id ) )
+                .first() ).getInteger( field ) ).orElseThrow();
     }
 }

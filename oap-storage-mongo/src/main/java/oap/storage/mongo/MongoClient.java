@@ -175,7 +175,14 @@ public class MongoClient implements Closeable {
             this.host, this.port, this.database, this.physicalDatabase, this.migrations, this.shell );
     }
 
-    public <R> Optional<R> doIfCollectionExists( String collectionName, Function<MongoCollection<Document>, R> consumer ) {
+    /**
+     * Runs action with given collection if it exists, skipping action otherwise.
+     * @param collectionName name of collection in MongoDB database
+     * @param consumer lamda action to be performed
+     * @return result of function or null otherwise
+     * @param <R>
+     */
+    public <R> Optional<R> doWithCollectionIfExist( String collectionName, Function<MongoCollection<Document>, R> consumer ) {
         Objects.requireNonNull( collectionName );
         if ( collectionExists( collectionName ) ) {
             var collection = this.getCollection( collectionName );
@@ -193,7 +200,7 @@ public class MongoClient implements Closeable {
     }
 
     public Version databaseVersion() {
-        return doIfCollectionExists( "version", collection -> {
+        return doWithCollectionIfExist( "version", collection -> {
             var document = collection.find().first();
             return document != null
                 ? new Version( document.getInteger( "main", 0 ), document.getInteger( "ext", 0 ) )
