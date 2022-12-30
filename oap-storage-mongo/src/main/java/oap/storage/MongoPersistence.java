@@ -89,10 +89,10 @@ public class MongoPersistence<I, T> implements Closeable {
     private final Path crashDumpPath;
     @ServiceName
     public String serviceName;
-    public volatile boolean watch = false;
+    public boolean watch = false;
     protected int batchSize = 100;
     private ExecutorService watchExecutor;
-    private volatile ScheduledExecutorService scheduler;
+    private ScheduledExecutorService scheduler;
     private volatile long lastExecuted = -1;
 
     public MongoPersistence( MongoClient mongoClient, String collectionName, long delay, MemoryStorage<I, T> storage ) {
@@ -123,9 +123,11 @@ public class MongoPersistence<I, T> implements Closeable {
     public void preStart() {
         log.info( "collection = {}, fsync delay = {}, watch = {}, crashDumpPath = {}",
             collectionName, Dates.durationToString( delay ), watch, crashDumpPath );
-        scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, serviceName );
+
         synchronizedOn( lock, () -> {
             this.load();
+
+            scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, serviceName );
             scheduler.scheduleWithFixedDelay( this::fsync, delay, delay, TimeUnit.MILLISECONDS );
         } );
 
@@ -214,7 +216,7 @@ public class MongoPersistence<I, T> implements Closeable {
             fsync();
             log.debug( "closed {}...", this );
         } );
-        else log.debug( "this {} wasn't started or already closed", this );
+        else log.debug( "this {} was't started or already closed", this );
 
         if( watch ) Closeables.close( watchExecutor );
     }
