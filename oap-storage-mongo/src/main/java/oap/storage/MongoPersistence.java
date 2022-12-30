@@ -133,10 +133,7 @@ public class MongoPersistence<I, T> implements Closeable {
             CountDownLatch cdl = new CountDownLatch( 1 );
             watchExecutor.execute( () -> {
                 var changeStreamDocuments = mongoClient.getCollection( collectionName ).withReadConcern( ReadConcern.MAJORITY ).watch();
-
                 cdl.countDown();
-//                Threads.notifyAllFor( watchExecutor );
-
                 changeStreamDocuments.forEach( ( Consumer<? super ChangeStreamDocument<Document>> ) csd -> {
                     log.trace( "mongo notification: {} ", csd );
                     var op = csd.getOperationType();
@@ -159,7 +156,6 @@ public class MongoPersistence<I, T> implements Closeable {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException( e );
             }
-//            Threads.waitFor( watchExecutor );
         }
     }
 
@@ -216,12 +212,14 @@ public class MongoPersistence<I, T> implements Closeable {
     public void close() {
         log.debug( "closing {}...", this );
         synchronizedOn( lock, () -> {
+            scheduler.shutdown( 1, TimeUnit.MINUTES );
             Closeables.close( scheduler );
             if( storage != null ) {
                 fsync();
                 log.debug( "closed {}...", this );
             } else log.debug( "this {} wasn't started or already closed", this );
             Closeables.close( watchExecutor );
+            log.debug( "closed {}...", this );
         } );
     }
 

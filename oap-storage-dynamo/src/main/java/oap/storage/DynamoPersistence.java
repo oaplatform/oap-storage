@@ -27,7 +27,6 @@ package oap.storage;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.ServiceName;
-import oap.concurrent.Threads;
 import oap.concurrent.scheduler.ScheduledExecutorService;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.storage.dynamo.client.Key;
@@ -55,6 +54,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -88,8 +88,8 @@ public class DynamoPersistence<I, T> implements Closeable, AutoCloseable {
     public String serviceName;
     public boolean watch = false;
     protected int batchSize = 100;
-    private ExecutorService watchExecutor;
-    private ScheduledExecutorService scheduler;
+    private final ExecutorService watchExecutor = Executors.newSingleThreadExecutor();
+    private final ScheduledExecutorService scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, serviceName );
     private volatile long lastExecuted = -1;
     private final Function<Map<String, AttributeValue>, Metadata<T>> convertFromDynamoItem;
     private final Function<Metadata<T>, Map<String, Object>> convertToDynamoItem;
@@ -127,18 +127,16 @@ public class DynamoPersistence<I, T> implements Closeable, AutoCloseable {
 
         synchronizedOn( lock, () -> {
             this.load();
-            scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, serviceName );
             scheduler.scheduleWithFixedDelay( this::fsync, delay, delay, TimeUnit.MILLISECONDS );
         } );
 
         if( watch ) {
-            watchExecutor = Executors.newSingleThreadExecutor();
-
+            CountDownLatch cdl = new CountDownLatch( 1 );
             watchExecutor.execute( () -> {
                 if ( stopped ) return;
-                Threads.notifyAllFor( watchExecutor );
                 TableDescription table = dynamodbClient.describeTable( tableName, null );
                 String streamArn = table.latestStreamArn();
+                cdl.countDown();
                 streamProcessor.processRecords( streamArn, record -> {
                     log.trace( "dynamoDb notification: {} ", record );
                     var key = record.dynamodb().keys().get( "id" );
@@ -154,8 +152,12 @@ public class DynamoPersistence<I, T> implements Closeable, AutoCloseable {
                     }
                 } );
             } );
-
-            Threads.waitFor( watchExecutor );
+            try {
+                cdl.await( 1, TimeUnit.MINUTES );
+            } catch( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( e );
+            }
         }
     }
 
@@ -199,11 +201,14 @@ public class DynamoPersistence<I, T> implements Closeable, AutoCloseable {
     @Override
     public void close() {
         log.debug( "closing {}...", this );
-        if( watch ) Closeables.close( watchExecutor );
         synchronizedOn( lock, () -> {
             scheduler.shutdown( 1, TimeUnit.SECONDS );
             Closeables.close( scheduler ); // no more sync after that
-            fsync();
+            if( storage != null ) {
+                fsync();
+                log.debug( "closed {}...", this );
+            } else log.debug( "this {} wasn't started or already closed", this );
+            Closeables.close( watchExecutor );
             stopped = true;
             log.debug( "closed {}...", this );
         } );
