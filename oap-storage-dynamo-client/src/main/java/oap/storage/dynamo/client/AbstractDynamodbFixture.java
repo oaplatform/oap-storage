@@ -69,7 +69,14 @@ public abstract class AbstractDynamodbFixture extends AbstractEnvFixture<Abstrac
         this.maxConnsPerNode = maxConnsPerNode;
         this.connPoolsPerNode = connPoolsPerNode;
         this.skipBeforeAndAfter = skipBeforeAndAfter;
-
+        log.info( "Setting up environment variables: \n\t{} = {}\n\t{} = {}\n\t{} = {}\n\t{} = {}\n\t{} = {}\n\t{} = {}",
+            "DYNAMODB_PROTOCOL", DYNAMODB_PROTOCOL,
+            "DYNAMODB_HOSTS", DYNAMODB_HOSTS,
+            "DYNAMODB_PORT", DYNAMODB_PORT,
+            "AWS_ACCESS_KEY_ID", AWS_ACCESS_KEY_ID,
+            "AWS_SECRET_ACCESS_KEY", AWS_SECRET_ACCESS_KEY,
+            "AWS_REGION", AWS_REGION
+            );
         define( "DYNAMODB_PROTOCOL", DYNAMODB_PROTOCOL );
         define( "DYNAMODB_HOSTS", DYNAMODB_HOSTS );
         define( "DYNAMODB_PORT", DYNAMODB_PORT );

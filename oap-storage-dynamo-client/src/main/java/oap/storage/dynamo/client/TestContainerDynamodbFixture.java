@@ -51,10 +51,12 @@ public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
 
     @Override
     protected DynamodbClient createClient() {
+        log.info( "Starting a test container with endpoint URL: {}", "http://localhost:" + genericContainer.getFirstMappedPort() );
         uri = URI.create( "http://localhost:" + genericContainer.getFirstMappedPort() );
         provider = StaticCredentialsProvider.create(
             AwsBasicCredentials.create( AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY )
         );
+        log.info( "AWS region: {}", Region.US_EAST_1 );
         DynamoDbClient dynamoDbAsyncClient = DynamoDbClient.builder()
             .region( Region.US_EAST_1 )
             .endpointOverride( uri )
