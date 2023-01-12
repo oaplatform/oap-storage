@@ -45,7 +45,7 @@ import java.util.function.Consumer;
 
 @Slf4j
 public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
-    private GenericContainer genericContainer;
+    private volatile GenericContainer<?> genericContainer;
     protected URI uri;
     protected StaticCredentialsProvider provider;
 
@@ -56,9 +56,9 @@ public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
         provider = StaticCredentialsProvider.create(
             AwsBasicCredentials.create( AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY )
         );
-        log.info( "AWS region: {}", Region.US_EAST_1 );
+        log.info( "AWS region: {}", AWS_REGION );
         DynamoDbClient dynamoDbAsyncClient = DynamoDbClient.builder()
-            .region( Region.US_EAST_1 )
+            .region( Region.of( AWS_REGION ) )
             .endpointOverride( uri )
             .credentialsProvider( provider )
             .build();
@@ -72,12 +72,12 @@ public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
     public void beforeClass() {
         if( genericContainer == null ) {
             Consumer<CreateContainerCmd> cmd = e -> e.withHostConfig( new HostConfig().withPortBindings( new PortBinding( Ports.Binding.bindPort( 8000 ), new ExposedPort( 8000 ) ) ) );
-            genericContainer =
-                new GenericContainer( DockerImageName
-                    .parse( "amazon/dynamodb-local" ) )
+            GenericContainer<?> container = new GenericContainer<>( DockerImageName
+                .parse( "amazon/dynamodb-local" ) )
                     .withCommand( "-jar DynamoDBLocal.jar -inMemory -sharedDb" )
-                    .withExposedPorts( 8000 ).withCreateContainerCmdModifier( cmd );
-            genericContainer.start();
+                .withExposedPorts( 8000 ).withCreateContainerCmdModifier( cmd );
+            container.start();
+            genericContainer = container;
             log.info( "Container {} started, listening to {}", genericContainer.getContainerId(), genericContainer.getFirstMappedPort() );
         }
     }
