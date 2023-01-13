@@ -144,10 +144,15 @@ public class DynamodbClient implements AutoCloseable, Closeable {
             .builder()
             .dynamoDbClient( dynamoDbClient )
             .build();
+        log.info( "Creating reader..." );
         reader = new DynamoDbReader( dynamoDbClient, readLock );
+        log.info( "Creating writer..." );
         writer = new DynamoDbWriter( dynamoDbClient, enhancedClient, readLock );
+        log.info( "Creating helper..." );
         entityHelper = new DynamodbEntityHelper( reader, writer );
+        log.info( "Creating table modifier..." );
         tableModifier = new DynamoDbTableModifier( dynamoDbClient, enhancedClient, readLock, writeLock );
+        log.info( "Client is ready." );
         connectionIsReady.countDown();
     }
 
