@@ -38,6 +38,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.ListGlobalTablesResponse;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
@@ -51,18 +52,21 @@ public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
 
     @Override
     protected DynamodbClient createClient() {
-        log.info( "Starting a test container with endpoint URL: {}", "http://localhost:" + genericContainer.getFirstMappedPort() );
+        log.info( "Starting a test container's client with endpoint URL: {}",
+            "http://localhost:" + genericContainer.getFirstMappedPort() );
         uri = URI.create( "http://localhost:" + genericContainer.getFirstMappedPort() );
         provider = StaticCredentialsProvider.create(
             AwsBasicCredentials.create( AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY )
         );
         log.info( "AWS region: {}", AWS_REGION );
+        log.info( "Creating DynamoDB client..." );
         DynamoDbClient dynamoDbAsyncClient = DynamoDbClient.builder()
             .region( Region.of( AWS_REGION ) )
             .endpointOverride( uri )
             .credentialsProvider( provider )
             .build();
-
+        ListGlobalTablesResponse resp = dynamoDbAsyncClient.listGlobalTables();
+        log.info( "DynamoDbClient is ready, global tables: {}", resp.toString() );
         DynamodbClient dynamodbClient = new DynamodbClient( dynamoDbAsyncClient );
         dynamodbClient.setStreamClient( dynamodbClient.createStreamClient( uri, provider, Region.US_EAST_1 ) );
         return dynamodbClient;
@@ -71,11 +75,16 @@ public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
     @BeforeClass
     public void beforeClass() {
         if( genericContainer == null ) {
-            Consumer<CreateContainerCmd> cmd = e -> e.withHostConfig( new HostConfig().withPortBindings( new PortBinding( Ports.Binding.bindPort( 8000 ), new ExposedPort( 8000 ) ) ) );
+            int port = Integer.parseInt( DYNAMODB_PORT );
+            var portBinding = new PortBinding(
+                Ports.Binding.bindPort( 8000 ),
+                new ExposedPort( 8000 ) );
+            Consumer<CreateContainerCmd> cmd = e -> e.withHostConfig( new HostConfig().withPortBindings( portBinding ) );
             GenericContainer<?> container = new GenericContainer<>( DockerImageName
                 .parse( "amazon/dynamodb-local" ) )
-                    .withCommand( "-jar DynamoDBLocal.jar -inMemory -sharedDb" )
-                .withExposedPorts( 8000 ).withCreateContainerCmdModifier( cmd );
+                .withCommand( "-jar DynamoDBLocal.jar -inMemory -sharedDb" )
+                .withExposedPorts( 8000 )
+                .withCreateContainerCmdModifier( cmd );
             container.start();
             genericContainer = container;
             log.info( "Container {} started, listening to {}", genericContainer.getContainerId(), genericContainer.getFirstMappedPort() );
