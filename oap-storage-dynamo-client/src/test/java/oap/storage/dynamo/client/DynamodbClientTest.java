@@ -68,14 +68,14 @@ public class DynamodbClientTest extends Fixtures {
     }
 
     @BeforeClass
-    public static void setUp() {
+    public void setUp() {
         kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
         kernel.start( pathOfResource( DynamodbAtomicUpdateTest.class, "/oap/storage/dynamo/client/test-application.conf" ) );
         System.setProperty( "TMP_PATH", TestDirectoryFixture.testDirectory().toAbsolutePath().toString().replace( '\\', '/' ) );
     }
 
     @AfterClass
-    public static void tearDown() {
+    public void tearDown() {
         kernel.stop();
     }
 
