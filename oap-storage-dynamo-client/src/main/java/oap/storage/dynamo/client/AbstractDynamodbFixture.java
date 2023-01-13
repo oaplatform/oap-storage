@@ -32,6 +32,7 @@ import oap.testng.AbstractEnvFixture;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Env:*
@@ -44,8 +45,9 @@ import java.net.URISyntaxException;
  */
 @Slf4j
 public abstract class AbstractDynamodbFixture extends AbstractEnvFixture<AbstractDynamodbFixture> {
-    public static final String DYNAMODB_PROTOCOL = Env.get( "DYNAMODB_PROTOCOL", "http" );
 
+    private static ReentrantLock lock = new ReentrantLock();
+    public static final String DYNAMODB_PROTOCOL = Env.get( "DYNAMODB_PROTOCOL", "http" );
     public static final String DYNAMODB_HOSTS = Env.get( "DYNAMODB_HOSTS", "localhost" );
 
     public static final String DYNAMODB_PORT = "" + Integer.parseInt( Env.get( "DYNAMODB_PORT", "8000" ) );
@@ -87,6 +89,7 @@ public abstract class AbstractDynamodbFixture extends AbstractEnvFixture<Abstrac
 
     @Override
     protected void before() throws RuntimeException {
+        lock.lock();
         super.before();
         if ( skipBeforeAndAfter ) return;
         try {
@@ -109,6 +112,7 @@ public abstract class AbstractDynamodbFixture extends AbstractEnvFixture<Abstrac
             throw new RuntimeException( e );
         } finally {
             super.after();
+            lock.unlock();
         }
     }
 

@@ -65,8 +65,7 @@ public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
             .endpointOverride( uri )
             .credentialsProvider( provider )
             .build();
-        ListGlobalTablesResponse resp = dynamoDbAsyncClient.listGlobalTables();
-        log.info( "DynamoDbClient is ready, global tables: {}", resp.toString() );
+        log.info( "DynamoDbClient is ready" );
         DynamodbClient dynamodbClient = new DynamodbClient( dynamoDbAsyncClient );
         dynamodbClient.setStreamClient( dynamodbClient.createStreamClient( uri, provider, Region.US_EAST_1 ) );
         return dynamodbClient;
