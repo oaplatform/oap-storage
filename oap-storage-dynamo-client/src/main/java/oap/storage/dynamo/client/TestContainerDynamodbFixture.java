@@ -92,8 +92,7 @@ public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
     public void afterClass() {
         if( genericContainer != null ) {
             genericContainer.stop();
-            if ( uri == null ) uri = URI.create( "http://localhost:" + genericContainer.getFirstMappedPort() );
-            log.info( "Container {} stopped", uri );
+            log.info( "Container stopped" );
             try {
                 TimeUnit.SECONDS.sleep( 10 );
             } catch( InterruptedException e ) {
