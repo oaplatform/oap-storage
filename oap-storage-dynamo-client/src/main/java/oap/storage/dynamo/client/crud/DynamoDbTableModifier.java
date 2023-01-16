@@ -25,6 +25,7 @@
 package oap.storage.dynamo.client.crud;
 
 import lombok.extern.slf4j.Slf4j;
+import net.bytebuddy.dynamic.DynamicType;
 import oap.LogConsolidated;
 import oap.storage.dynamo.client.KeyForSchema;
 import oap.storage.dynamo.client.DynamodbClient;
@@ -98,6 +99,7 @@ public class DynamoDbTableModifier {
     private final ReentrantReadWriteLock.ReadLock readLock;
     private final ReentrantReadWriteLock.WriteLock writeLock;
 
+    @API
     public DynamoDbTableModifier( DynamoDbClient dynamoDbClient, DynamoDbEnhancedClient enhancedClient, ReentrantReadWriteLock.ReadLock readLock, ReentrantReadWriteLock.WriteLock writeLock ) {
         this.dynamoDbClient = dynamoDbClient;
         this.enhancedClient = enhancedClient;
@@ -130,6 +132,7 @@ public class DynamoDbTableModifier {
      * @param modifier
      * @return
      */
+    @API
     public DynamoDbTable<Record> createTableWithSchema( String tableName, long read, long write, String indexName, TableSchemaModifier<Record> modifier ) {
         Objects.requireNonNull( tableName );
         Objects.requireNonNull( indexName );
@@ -174,9 +177,9 @@ public class DynamoDbTableModifier {
                         description.provisionedThroughput().readCapacityUnits(), description.provisionedThroughput().writeCapacityUnits(),
                         keyName, "S", null, null,
                         x -> x.streamSpecification( StreamSpecification.builder()
-                                            .streamEnabled( true )
-                                            .streamViewType( StreamViewType.NEW_AND_OLD_IMAGES )
-                                            .build() )
+                                .streamEnabled( true )
+                                .streamViewType( StreamViewType.NEW_AND_OLD_IMAGES )
+                                .build() )
                             .attributeDefinitions( description.attributeDefinitions() )
                             .keySchema( description.keySchema() )
                 );

@@ -320,35 +320,45 @@ public class DynamodbClient implements AutoCloseable, Closeable {
 
     @API
     public void start() {
-
     }
-
 
     @API
     public enum State {
         SUCCESS, NOT_FOUND, ERROR, VERSION_CHECK_FAILED
     }
 
+    /**
+     * This method is slightly faster than delete/create due to single lock getting.
+     * @param tableName
+     * @param keyName
+     * @return
+     */
+    @API
     public Result<State, State> recreateTable( String tableName, String keyName ) {
         return tableModifier.recreateTable( tableName, keyName );
     }
 
+    @API
     public Result<State, State> deleteTable( String tableName ) {
         return tableModifier.deleteTable( tableName );
     }
 
+    @API
     public boolean deleteTableIfExists( String tableName ) {
         return tableModifier.deleteTableIfExists( tableName )._1();
     }
 
+    @API
     public boolean createTableIfNotExist( String tableName, String key ) {
         return tableModifier.createTableIfNotExist( tableName, key );
     }
 
+    @API
     public TableDescription describeTable( String tableName, DescribeTableResponseModifier modifier ) {
         return tableModifier.describeTable( tableName, modifier ).table();
     }
 
+    @API
     public boolean createTable( String tableName,
                                 long readCapacityUnits,
                                 long writeCapacityUnits,
@@ -362,6 +372,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
                 sortKeyName, sortKeyType, modifier );
     }
 
+    @API
     public boolean tableExists( String tableName ) {
         return tableModifier.tableExists( tableName );
     }
@@ -373,6 +384,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
      * @param modifier
      * @return
      */
+    @API
     public Result<Map<String, AttributeValue>, State> getRecord( Key key, GetItemRequestModifier modifier ) {
         return reader.getRecord( key, modifier );
     }
@@ -385,10 +397,12 @@ public class DynamodbClient implements AutoCloseable, Closeable {
      * @param attributesToGet
      * @return
      */
+    @API
     public Result<List<Map<String, AttributeValue>>, State> getRecord( String tableName, Set<Key> keys, Set<String> attributesToGet ) {
         return reader.getRecords( tableName, keys, attributesToGet );
     }
 
+    @API
     public ItemsPage getRecord( String tableName, int pageSize, String keyName, String exclusiveStartItemId ) {
         return reader.getRecords( tableName, pageSize, keyName, exclusiveStartItemId, null );
     }
@@ -403,6 +417,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
      * @param modifier
      * @return
      */
+    @API
     public ItemsPage getRecord( String tableName, int pageSize, String columnName, String exclusiveStartItemId, ScanRequestModifier modifier ) {
         return reader.getRecords( tableName, pageSize, columnName, exclusiveStartItemId, modifier );
     }
@@ -416,10 +431,12 @@ public class DynamodbClient implements AutoCloseable, Closeable {
      * @param <T>
      * @throws ReflectiveOperationException
      */
+    @API
     public <T> Result<T, DynamodbClient.State> getItem( Class<T> clazz, Key key, GetItemRequestModifier modifier ) throws ReflectiveOperationException {
         return entityHelper.getItem( clazz, key, modifier );
     }
 
+    @API
     public Stream<Map<String, AttributeValue>> getRecordsByScan( String tableName, ScanRequestModifier modifier ) {
         return reader.getRecordsByScan( tableName, modifier );
     }
@@ -432,6 +449,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
      * @param modifier
      * @return
      */
+    @API
     public Stream<Map<String, AttributeValue>> getRecordsByQuery( String tableName, Key key, QueryRequestModifier modifier ) {
         return reader.getRecordsByQuery( tableName, key, modifier );
     }
@@ -445,24 +463,29 @@ public class DynamodbClient implements AutoCloseable, Closeable {
      * @param modifier
      * @return
      */
+    @API
     public Stream<Map<String, AttributeValue>> getRecordsByQuery( String tableName, String indexName, String filterExpression, QueryRequestModifier modifier ) {
         return reader.getRecordsByQuery( tableName, indexName, filterExpression, modifier );
     }
 
+    @API
     public Result<UpdateItemResponse, State> update( Key key, Map<String, Object> binNamesAndValues, UpdateItemRequestModifier modifier ) {
         return writer.update( key, binNamesAndValues, modifier );
     }
 
+    @API
     public Result<UpdateItemResponse, State> update( Key key,
                                                      String binName,
                                                      Object binValue ) {
         return writer.update( key, Collections.singletonMap( binName, binValue ), null );
     }
 
+    @API
     public Result<UpdateItemResponse, DynamodbClient.State> updateRecord( Key key, Map<String, AttributeValue> binNamesAndValues, UpdateItemRequestModifier modifier ) {
         return writer.updateRecord( key, binNamesAndValues, modifier );
     }
 
+    @API
     public Result<UpdateItemResponse, DynamodbClient.State> updateRecordAtomic( Key key, Map<String, AttributeValue> binNamesAndValues, UpdateItemRequestModifier modifier, AtomicUpdateFieldAndValue generation ) {
         Objects.requireNonNull( key );
         Objects.requireNonNull( binNamesAndValues );
@@ -476,6 +499,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
         return writer.updateRecord( key, binNamesAndValues, supporter );
     }
 
+    @API
     public Result<UpdateItemResponse, DynamodbClient.State> updateRecordAtomicWithRetry( Key key, Set<String> binNames, AttributesModifier modifier, int retries, AtomicUpdateFieldAndValue generation ) {
         Objects.requireNonNull( key );
         Objects.requireNonNull( modifier );
@@ -498,7 +522,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
                     successValue = modifier.apply( new HashMap<>() );
                 }
             } catch ( UnsupportedOperationException ex ) {
-                throw new IllegalArgumentException( " Cannot process attributes", ex );
+                throw new IllegalArgumentException( "Cannot process attributes", ex );
             }
             //remove key from map - it's necessary
             successValue.remove( key.getColumnName() );
