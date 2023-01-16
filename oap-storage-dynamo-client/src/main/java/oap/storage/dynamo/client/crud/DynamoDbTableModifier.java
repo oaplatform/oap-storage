@@ -25,7 +25,6 @@
 package oap.storage.dynamo.client.crud;
 
 import lombok.extern.slf4j.Slf4j;
-import net.bytebuddy.dynamic.DynamicType;
 import oap.LogConsolidated;
 import oap.storage.dynamo.client.KeyForSchema;
 import oap.storage.dynamo.client.DynamodbClient;
