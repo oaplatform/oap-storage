@@ -65,12 +65,19 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
     final MongoCollection<Metadata<T>> collection;
     private final MongoClient mongoClient;
 
-    public MongoPersistence( MongoClient mongoClient, String tableName, long delay, MemoryStorage<I, T> storage ) {
-        this( mongoClient, tableName, delay, storage, DEFAULT_CRASH_DUMP_PATH );
+    /**
+     * Creates a persistence for Mongo DB
+     * @param mongoClient
+     * @param collectionName it's a name of 'table'
+     * @param delay in millis
+     * @param storage
+     */
+    public MongoPersistence( MongoClient mongoClient, String collectionName, long delay, MemoryStorage<I, T> storage ) {
+        this( mongoClient, collectionName, delay, storage, DEFAULT_CRASH_DUMP_PATH );
     }
 
-    public MongoPersistence( MongoClient mongoClient, String tableName, long delay, MemoryStorage<I, T> storage, Path crashDumpPath ) {
-        super( storage, tableName, delay, crashDumpPath );
+    public MongoPersistence( MongoClient mongoClient, String collectionName, long delay, MemoryStorage<I, T> storage, Path crashDumpPath ) {
+        super( storage, collectionName, delay, crashDumpPath );
         this.mongoClient = mongoClient;
         TypeRef<Metadata<T>> ref = new TypeRef<>() {};
         CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
@@ -80,7 +87,7 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
             mongoClient.getCodecRegistry()
         );
         this.collection = mongoClient
-            .getCollection( tableName, ref.clazz() )
+            .getCollection( collectionName, ref.clazz() )
             .withCodecRegistry( codecRegistry );
     }
 
