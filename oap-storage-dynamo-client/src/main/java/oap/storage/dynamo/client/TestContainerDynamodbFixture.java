@@ -73,7 +73,6 @@ public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
     @BeforeClass
     public void beforeClass() {
         if( genericContainer == null ) {
-            int port = Integer.parseInt( DYNAMODB_PORT );
             var portBinding = new PortBinding(
                 Ports.Binding.bindPort( 8000 ),
                 new ExposedPort( 8000 ) );
@@ -93,7 +92,8 @@ public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
     public void afterClass() {
         if( genericContainer != null ) {
             genericContainer.stop();
-            log.info( "Container {} stopped", uri.toString() );
+            if ( uri == null ) uri = URI.create( "http://localhost:" + genericContainer.getFirstMappedPort() );
+            log.info( "Container {} stopped", uri );
             try {
                 TimeUnit.SECONDS.sleep( 10 );
             } catch( InterruptedException e ) {
