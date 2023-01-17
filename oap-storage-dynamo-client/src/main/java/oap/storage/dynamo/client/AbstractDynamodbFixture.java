@@ -92,8 +92,8 @@ public abstract class AbstractDynamodbFixture extends AbstractEnvFixture<Abstrac
         try {
             dynamodbClient = createClient();
             asDeleteAll();
-        } catch( IOException | URISyntaxException ex ) {
-            Throwables.propagate( ex );
+        } catch( Exception ex ) {
+            throw new RuntimeException( ex );
         }
     }
 
