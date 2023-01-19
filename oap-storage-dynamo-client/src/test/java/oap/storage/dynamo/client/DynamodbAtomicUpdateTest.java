@@ -40,14 +40,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 
 public class DynamodbAtomicUpdateTest extends Fixtures {
-
     public static final String TABLE_NAME = "atomicUpdateTest";
     public static final String ID_COLUMN_NAME = "id";
+    private static final AtomicUpdateFieldAndValue parsingHelper = new AtomicUpdateFieldAndValue( "serializedRecordVersion", Integer.MAX_VALUE );
+
     private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
 
     public DynamodbAtomicUpdateTest() {
@@ -85,7 +88,7 @@ public class DynamodbAtomicUpdateTest extends Fixtures {
         client.createTableIfNotExist( TABLE_NAME, ID_COLUMN_NAME );
         Key key = new Key( TABLE_NAME, ID_COLUMN_NAME, "IFA" );
 
-        AtomicUpdateFieldAndValue serializedRecordVersion = new AtomicUpdateFieldAndValue( "serializedRecordVersion", 20 );
+        AtomicUpdateFieldAndValue serializedRecordVersion = new AtomicUpdateFieldAndValue( parsingHelper, 20 );
         client.updateRecordAtomic(
             key,
             Collections.singletonMap( "vvvv", AttributeValue.fromS( "vvv" ) ),
@@ -93,16 +96,16 @@ public class DynamodbAtomicUpdateTest extends Fixtures {
             serializedRecordVersion );
 
         Result<Map<String, AttributeValue>, DynamodbClient.State> result = client.getRecord( key, null );
-        assertThat( serializedRecordVersion.getValueFromRecord( result ) ).isEqualTo( "1" );
-
+        assertThat( parsingHelper.getValueFromRecord( result ) ).isEqualTo( "1" );
+        serializedRecordVersion = new AtomicUpdateFieldAndValue( parsingHelper, 1 );
         client.updateRecordAtomic(
             key,
             Collections.singletonMap( "vvvv", AttributeValue.fromS( "vvv" ) ),
             null,
-            new AtomicUpdateFieldAndValue( "serializedRecordVersion", 1 ) );
+            serializedRecordVersion );
 
         result = client.getRecord( key, null );
-        assertThat( serializedRecordVersion.getValueFromRecord( result ) ).isEqualTo( "2" );
+        assertThat( parsingHelper.getValueFromRecord( result ) ).isEqualTo( "2" );
     }
 
     @Test
@@ -152,10 +155,15 @@ public class DynamodbAtomicUpdateTest extends Fixtures {
         client.createTableIfNotExist( TABLE_NAME, ID_COLUMN_NAME );
         Key key = new Key( TABLE_NAME, ID_COLUMN_NAME, "IFA" );
         AtomicInteger counter = new AtomicInteger( 0 );
-
+        AtomicInteger innerRetryCounter = new AtomicInteger( 0 );
+        AtomicInteger exhaustedRetryCounter = new AtomicInteger( 0 );
+        Consumer<Exception> onRetry = ex -> innerRetryCounter.incrementAndGet();
+        Consumer<Exception> onExhaustedRetry = ex -> exhaustedRetryCounter.incrementAndGet();
         ExecutorService service = Executors.newFixedThreadPool( 20 );
         for( int i = 0; i < 1000; i++ ) {
             service.submit( () -> {
+                AtomicUpdateFieldAndValue genaVal = new AtomicUpdateFieldAndValue( "genaVal", counter.get(), onRetry );
+                genaVal.setOnExhaustedRetry( onExhaustedRetry );
                 Result<UpdateItemResponse, DynamodbClient.State> result = client.updateRecordAtomicWithRetry(
                     key,
                     Sets.of( "version", "id" ),
@@ -164,19 +172,24 @@ public class DynamodbAtomicUpdateTest extends Fixtures {
                         res.put( "version", AttributeValue.fromS( "v" + counter.get() ) );
                         return res;
                     },
-                    1000,
-                    new AtomicUpdateFieldAndValue( counter.get() ) );
+                    3,
+                    genaVal );
                 if( result.isSuccess() ) counter.incrementAndGet();
                 Result<Map<String, AttributeValue>, DynamodbClient.State> record = client.getRecord( key, null );
-                if( counter.get() % 5 == 0 || !result.isSuccess() )
-                    System.err.println( "#" + counter.get() + " -> " + result.isSuccess() + " (" + record.getSuccessValue().get( "version" ) + ")" );
+                if( !result.isSuccess() )
+                    System.err.println( "#" + counter.get() + "/" + innerRetryCounter.get()
+                        + " -> " + result.isSuccess()
+                        + " (" + record.getSuccessValue().get( "version" ) + "), gen: " + record.getSuccessValue().get( "genaVal" ) );
             } );
         }
         service.shutdown();
         assertThat( service.awaitTermination( 1, TimeUnit.MINUTES ) ).isTrue();
-
+        //2556(2), 4566(5), 7061(10), 10395(20), 18685(100), 28557(500), 38019(2000)
+        System.err.println( "Retries: " + innerRetryCounter.get() );
+        //859(2), 761(5), 641(10), 495(20), 185(100), 57(500), 19(2000)
+        System.err.println( "Exhausted attempts: " + exhaustedRetryCounter.get() );
         Result<Map<String, AttributeValue>, DynamodbClient.State> result = client.getRecord( key, null );
-        AtomicUpdateFieldAndValue generation = new AtomicUpdateFieldAndValue( 0 );
+        AtomicUpdateFieldAndValue generation = new AtomicUpdateFieldAndValue( "genaVal", 0 );
         assertThat( Long.parseLong( generation.getValueFromRecord( result ) ) ).isEqualTo( counter.get() );
 
         client.updateRecordAtomic(

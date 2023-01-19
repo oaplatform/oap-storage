@@ -496,13 +496,15 @@ public class DynamodbClient implements AutoCloseable, Closeable {
             supporter.andThen( modifier );
         }
         binNamesAndValues.forEach( supporter::addAtomicUpdateFor );
-        return writer.updateRecord( key, binNamesAndValues, supporter );
+        return writer.updateRecord( key, binNamesAndValues, supporter, generation::onRetry );
     }
 
     @API
     public Result<UpdateItemResponse, DynamodbClient.State> updateRecordAtomicWithRetry( Key key, Set<String> binNames, AttributesModifier modifier, int retries, AtomicUpdateFieldAndValue generation ) {
         Objects.requireNonNull( key );
         Objects.requireNonNull( modifier );
+        Objects.requireNonNull( generation );
+        if ( retries < 1 ) throw new IllegalArgumentException( "retries number should be a positive number, but was " + retries );
         int retryCount = retries;
         Result<UpdateItemResponse, DynamodbClient.State> ret = null;
         do {
@@ -527,8 +529,11 @@ public class DynamodbClient implements AutoCloseable, Closeable {
             //remove key from map - it's necessary
             successValue.remove( key.getColumnName() );
             long gen = genValue != null ? Long.parseLong( genValue.n() ) : generation.getValue();
-            ret = updateRecordAtomic( key, successValue, null, new AtomicUpdateFieldAndValue( gen ) );
-        } while( retryCount-- > 0 && ret != null && ret.failureValue == DynamodbClient.State.VERSION_CHECK_FAILED );
+            ret = updateRecordAtomic( key, successValue, null, new AtomicUpdateFieldAndValue( generation, gen ) );
+        } while( retryCount-- > 0 && ret.failureValue == DynamodbClient.State.VERSION_CHECK_FAILED );
+        if ( ret.failureValue == DynamodbClient.State.VERSION_CHECK_FAILED ) {
+            generation.onExhaustedRetryAttempts();
+        }
         return ret;
     }
 

@@ -26,6 +26,7 @@ package oap.storage.dynamo.client.atomic;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.storage.dynamo.client.annotations.API;
@@ -36,6 +37,8 @@ import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 @EqualsAndHashCode
 @ToString
@@ -47,18 +50,38 @@ public class AtomicUpdateFieldAndValue {
     private final String fieldName;
     @Getter
     private final long value;
+    /**
+     * This function is called when retry happens.
+     */
+    @Setter
+    private Consumer<Exception> onRetry = null;
+    /**
+     * This function is called when all retry attempts failed.
+     */
+    @Setter
+    private Consumer<Exception> onExhaustedRetry = null;
 
     public AtomicUpdateFieldAndValue( long value ) {
         this( DEFAULT_NAME, value );
     }
 
+    public AtomicUpdateFieldAndValue( AtomicUpdateFieldAndValue toCopy, long value ) {
+        this( Objects.requireNonNull( toCopy ).fieldName, value, toCopy.onRetry );
+        this.onExhaustedRetry = toCopy.onExhaustedRetry;
+    }
+
     public AtomicUpdateFieldAndValue( String fieldName, long value ) {
+        this( fieldName, value, null );
+    }
+
+    public AtomicUpdateFieldAndValue( String fieldName, long value, Consumer<Exception> onRetry ) {
         Objects.requireNonNull( fieldName );
         if( !ReservedWords.isAttributeNameAppropriate( fieldName ) ) {
           throw new IllegalArgumentException( "Column '" + fieldName + "' is prohibited in DynamoDB" );
         }
         this.fieldName = fieldName;
         this.value = Math.max( value, 0 );
+        this.onRetry = onRetry;
     }
 
     public String getValueFromAtomicUpdate( Result<UpdateItemResponse, DynamodbClient.State> result ) {
@@ -69,5 +92,17 @@ public class AtomicUpdateFieldAndValue {
     public String getValueFromRecord( Result<Map<String, AttributeValue>, DynamodbClient.State> result ) {
         if ( result == null || !result.isSuccess() ) throw new IllegalArgumentException();
         return result.getSuccessValue().get( fieldName ).n();
+    }
+
+    public Void onRetry( Exception ex ) {
+        if ( onRetry == null ) return null;
+        onRetry.accept( ex );
+        return null;
+    }
+
+    public Void onExhaustedRetryAttempts() {
+        if ( onExhaustedRetry == null ) return null;
+        onExhaustedRetry.accept( null );
+        return null;
     }
 }

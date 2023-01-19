@@ -57,6 +57,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static oap.util.Dates.s;
 
@@ -94,6 +96,11 @@ public class DynamoDbWriter extends DynamoDbHelper {
 
     @API
     public Result<UpdateItemResponse, DynamodbClient.State> updateRecord( Key key, Map<String, AttributeValue> binNamesAndValues, UpdateItemRequestModifier modifier ) {
+        return updateRecord( key, binNamesAndValues, modifier, null );
+    }
+
+    @API
+    public Result<UpdateItemResponse, DynamodbClient.State> updateRecord( Key key, Map<String, AttributeValue> binNamesAndValues, UpdateItemRequestModifier modifier, Consumer<Exception> onRetry ) {
         Map<String, AttributeValueUpdate> updatedValues = new HashMap<>();
 
         binNamesAndValues.forEach( ( binName, binValue ) -> {
@@ -124,6 +131,7 @@ public class DynamoDbWriter extends DynamoDbHelper {
             return Result.success( response );
         } catch ( ConditionalCheckFailedException ex ) {
             //in case of atomic update this could happen if record has a version which does not fit with a given version (a.k.a. generation)
+            if ( onRetry != null ) onRetry.accept( ex );
             return Result.failure( DynamodbClient.State.VERSION_CHECK_FAILED );
         } catch( Exception ex ) {
             log.error( "Error in update for key {}", key, ex );
