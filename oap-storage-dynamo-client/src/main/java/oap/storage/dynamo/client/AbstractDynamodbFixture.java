@@ -24,12 +24,10 @@
 
 package oap.storage.dynamo.client;
 
-import com.google.common.base.Throwables;
 import lombok.extern.slf4j.Slf4j;
 import oap.system.Env;
 import oap.testng.AbstractEnvFixture;
 
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 
