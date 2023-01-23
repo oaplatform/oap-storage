@@ -61,7 +61,7 @@
 
         <oap.deps.oap.version>17.10.37.18</oap.deps.oap.version>
 
-        <oap.deps.dynamodb.version>2.19.12</oap.deps.dynamodb.version>
+        <oap.deps.dynamodb.version>2.19.21</oap.deps.dynamodb.version>
         <oap.deps.assertj.version>3.23.1</oap.deps.assertj.version>
         <oap.deps.guava.version>31.1-jre</oap.deps.guava.version>
         <oap.deps.logback.version>1.4.5</oap.deps.logback.version>
