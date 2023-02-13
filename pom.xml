@@ -70,7 +70,7 @@
         <oap.deps.mongo-java-driver.version>3.12.11</oap.deps.mongo-java-driver.version>
         <oap.deps.mongo-java-server.version>1.43.0</oap.deps.mongo-java-server.version>
         <oap.deps.apache.exec.version>1.3</oap.deps.apache.exec.version>
-        <oap.deps.netty.version>4.1.86.Final</oap.deps.netty.version>
+        <oap.deps.netty.version>4.1.88.Final</oap.deps.netty.version>
         <oap.deps.testcontainers.version>1.17.6</oap.deps.testcontainers.version>
     </properties>
 </project>
