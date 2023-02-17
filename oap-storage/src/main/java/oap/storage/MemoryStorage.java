@@ -176,7 +176,7 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
                              List<DataListener.IdObject<I, T>> updated,
                              List<DataListener.IdObject<I, T>> deleted ) {
         for( DataListener<I, T> dataListener : this.dataListeners )
-            dataListener.fireChanged( added, updated, deleted );
+            dataListener.changed( added, updated, deleted );
     }
 
     @Override
