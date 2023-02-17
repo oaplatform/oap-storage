@@ -28,6 +28,7 @@ import oap.id.Identifier;
 import oap.storage.Storage.DataListener.IdObject;
 import oap.util.BiStream;
 import oap.util.Lists;
+import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
 
@@ -35,7 +36,9 @@ import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -47,6 +50,7 @@ import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 import static oap.storage.Storage.DataListener.IdObject.__io;
+import static oap.util.Pair.__;
 
 @Slf4j
 public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, T> {
@@ -98,6 +102,14 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
         }
         fireAdded( added );
         fireUpdated( updated );
+        fireChanged( Maps.of(
+            __( DataListener.Operation.ADD, added ),
+            __( DataListener.Operation.UPDATE, updated ) ) );
+    }
+
+    protected void fireChanged( Map<DataListener.Operation, List<IdObject<I, T>>> map ) {
+        if( !map.isEmpty() )
+            for( DataListener<I, T> dataListener : this.dataListeners ) dataListener.changed( map );
     }
 
     @Override
@@ -144,8 +156,10 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
     }
 
     protected void fireAdded( I id, T object ) {
-        for( DataListener<I, T> dataListener : this.dataListeners )
+        for( DataListener<I, T> dataListener : this.dataListeners ) {
             dataListener.added( List.of( __io( id, object ) ) );
+            dataListener.changed( Maps.of( __( DataListener.Operation.ADD, List.of( __io( id, object ) ) ) ) );
+        }
     }
 
     protected void fireAdded( List<IdObject<I, T>> objects ) {
@@ -154,23 +168,33 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
     }
 
     protected void fireUpdated( I id, T object ) {
-        for( DataListener<I, T> dataListener : this.dataListeners )
+        for( DataListener<I, T> dataListener : this.dataListeners ) {
             dataListener.updated( List.of( __io( id, object ) ) );
+            dataListener.changed( Maps.of( __( DataListener.Operation.UPDATE, List.of( __io( id, object ) ) ) ) );
+        }
     }
 
     protected void fireUpdated( List<IdObject<I, T>> objects ) {
         if( !objects.isEmpty() )
-            for( DataListener<I, T> dataListener : this.dataListeners ) dataListener.updated( objects );
+            for( DataListener<I, T> dataListener : this.dataListeners ) {
+                dataListener.updated( objects );
+            }
     }
 
     protected void fireDeleted( List<IdObject<I, T>> objects ) {
         if( !objects.isEmpty() )
-            for( DataListener<I, T> dataListener : this.dataListeners ) dataListener.deleted( objects );
+            for( DataListener<I, T> dataListener : this.dataListeners ) {
+                dataListener.deleted( objects );
+                dataListener.changed( Maps.of( __( DataListener.Operation.DELETE, objects ) ) );
+            }
     }
 
     protected void fireDeleted( I id, T object ) {
-        for( DataListener<I, T> dataListener : this.dataListeners )
-            dataListener.deleted( List.of( __io( id, object ) ) );
+        for( DataListener<I, T> dataListener : this.dataListeners ) {
+            List<IdObject<I, T>> objects = List.of( __io( id, object ) );
+            dataListener.deleted( objects );
+            dataListener.changed( Maps.of( __( DataListener.Operation.DELETE, objects ) ) );
+        }
     }
 
     @Override

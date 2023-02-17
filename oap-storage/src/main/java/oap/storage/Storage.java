@@ -34,6 +34,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -77,6 +78,12 @@ public interface Storage<I, T> extends Iterable<T> {
         default void updated( List<IdObject<DI, D>> objects ) {}
 
         default void deleted( List<IdObject<DI, D>> objects ) {}
+
+        default void changed( Map<Operation, List<IdObject<DI, D>>> objects ) {}
+
+        enum Operation {
+            ADD, UPDATE, DELETE
+        }
 
         @ToString
         @EqualsAndHashCode

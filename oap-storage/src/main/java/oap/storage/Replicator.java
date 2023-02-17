@@ -31,6 +31,7 @@ import oap.application.remote.RemoteInvocationException;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.storage.Storage.DataListener.IdObject;
+import oap.util.Maps;
 import oap.util.Pair;
 
 import java.io.Closeable;
@@ -144,7 +145,10 @@ public class Replicator<I, T> implements Closeable {
             }
             slave.fireAdded( added );
             slave.fireUpdated( updated );
-
+            slave.fireChanged( Maps.of(
+                __( Storage.DataListener.Operation.ADD, added),
+                __( Storage.DataListener.Operation.UPDATE, updated)
+                ) );
             stored.addAndGet( newUpdates.size() );
         }
 
