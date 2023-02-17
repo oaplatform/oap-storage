@@ -32,6 +32,7 @@ import oap.util.Stream;
 import javax.annotation.Nonnull;
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -70,6 +71,18 @@ public interface Storage<I, T> extends Iterable<T> {
     void removeDataListener( DataListener<I, T> dataListener );
 
     Identifier<I, T> identifier();
+
+    /**
+     * The method is called once per replication period, all changes there are gathered.
+     * @param added objects added to slave
+     * @param updated objects updated in slave
+     * @param deleted objects deleted from slave
+     * @param <I> key type
+     * @param <T> value type
+     */
+    <I, T> void fireChanged( List<DataListener.IdObject<I, T>> added,
+                             List<DataListener.IdObject<I, T>> updated,
+                             List<DataListener.IdObject<I, T>> deleted );
 
     interface DataListener<DI, D> {
         default void added( List<IdObject<DI, D>> objects ) {}
