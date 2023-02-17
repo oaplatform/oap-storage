@@ -72,24 +72,24 @@ public interface Storage<I, T> extends Iterable<T> {
 
     Identifier<I, T> identifier();
 
-    /**
-     * The method is called once per replication period, all changes there are gathered.
-     * @param added objects added to slave
-     * @param updated objects updated in slave
-     * @param deleted objects deleted from slave
-     * @param <I> key type
-     * @param <T> value type
-     */
-    <I, T> void fireChanged( List<DataListener.IdObject<I, T>> added,
-                             List<DataListener.IdObject<I, T>> updated,
-                             List<DataListener.IdObject<I, T>> deleted );
-
     interface DataListener<DI, D> {
         default void added( List<IdObject<DI, D>> objects ) {}
 
         default void updated( List<IdObject<DI, D>> objects ) {}
 
         default void deleted( List<IdObject<DI, D>> objects ) {}
+
+        /**
+         * The method is called once per replication period, all changes there are gathered.
+         * @param added objects added to slave
+         * @param updated objects updated in slave
+         * @param deleted objects deleted from slave
+         * @param <I> key type
+         * @param <T> value type
+         */
+        default <I, T> void fireChanged( List<DataListener.IdObject<I, T>> added,
+                                         List<DataListener.IdObject<I, T>> updated,
+                                         List<DataListener.IdObject<I, T>> deleted ) {}
 
         @ToString
         @EqualsAndHashCode
