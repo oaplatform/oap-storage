@@ -137,7 +137,6 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
         return old;
     }
 
-
     @Override
     public long size() {
         return memory.selectLiveIds().count();
@@ -171,6 +170,13 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
     protected void fireDeleted( I id, T object ) {
         for( DataListener<I, T> dataListener : this.dataListeners )
             dataListener.deleted( List.of( __io( id, object ) ) );
+    }
+
+    protected void fireChanged( List<DataListener.IdObject<I, T>> added,
+                             List<DataListener.IdObject<I, T>> updated,
+                             List<DataListener.IdObject<I, T>> deleted ) {
+        for( DataListener<I, T> dataListener : this.dataListeners )
+            dataListener.changed( added, updated, deleted );
     }
 
     @Override
