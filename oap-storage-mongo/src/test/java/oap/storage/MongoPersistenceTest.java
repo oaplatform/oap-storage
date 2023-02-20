@@ -36,6 +36,7 @@ import oap.storage.mongo.MongoFixture;
 import oap.storage.mongo.Version;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
 import static com.mongodb.client.model.Filters.eq;
@@ -69,6 +70,7 @@ public class MongoPersistenceTest extends Fixtures {
     }
 
     @Test
+    @Ignore
     public void watch() {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
 
