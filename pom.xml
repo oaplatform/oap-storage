@@ -57,7 +57,7 @@
     </repositories>
 
     <properties>
-        <oap-storage.project.version>18.10.2.6</oap-storage.project.version>
+        <oap-storage.project.version>18.10.2.7</oap-storage.project.version>
 
         <oap.deps.oap.version>18.11.4.2</oap.deps.oap.version>
 
