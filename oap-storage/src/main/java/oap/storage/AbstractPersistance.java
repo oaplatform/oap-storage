@@ -91,7 +91,9 @@ public abstract class AbstractPersistance<I, T> implements Closeable, AutoClosea
                 processRecords( cdl );
             } );
             try {
-                cdl.await( 1, TimeUnit.MINUTES );
+                if ( !cdl.await( 1, TimeUnit.MINUTES ) ) {
+                    log.error( "Could not process records within 1 min timeout" );
+                }
             } catch( InterruptedException e ) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException( e );
@@ -109,8 +111,10 @@ public abstract class AbstractPersistance<I, T> implements Closeable, AutoClosea
 
     @Override
     public void close() {
+        if ( stopped ) return;
         log.debug( "closing {}...", this );
         synchronizedOn( lock, () -> {
+            stopped = true;
             scheduler.shutdown( 5, TimeUnit.SECONDS );
             Closeables.close( scheduler ); // no more sync after that
             if( storage != null ) {
@@ -118,7 +122,6 @@ public abstract class AbstractPersistance<I, T> implements Closeable, AutoClosea
                 log.debug( "closed {}...", this );
             } else log.debug( "this {} wasn't started or already closed", this );
             Closeables.close( watchExecutor );
-            stopped = true;
             log.debug( "closed {}...", this );
         } );
     }
