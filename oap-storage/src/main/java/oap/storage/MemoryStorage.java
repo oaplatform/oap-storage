@@ -74,8 +74,8 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
 
     @Override
     public T store( @Nonnull T object ) {
-//        this is thread unsafe
-//        new acquired id is not getting into conflicts
+//        this is not thread-safe
+//        new acquired id does not lead to conflicts
         I id = identifier.getOrInit( object, conflict );
         lock.synchronizedOn( id, () -> {
             if( memory.put( id, object ) ) fireAdded( id, object );

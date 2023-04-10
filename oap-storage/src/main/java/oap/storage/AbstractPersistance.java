@@ -111,10 +111,8 @@ public abstract class AbstractPersistance<I, T> implements Closeable, AutoClosea
 
     @Override
     public void close() {
-        if ( stopped ) return;
         log.debug( "closing {}...", this );
         synchronizedOn( lock, () -> {
-            stopped = true;
             scheduler.shutdown( 5, TimeUnit.SECONDS );
             Closeables.close( scheduler ); // no more sync after that
             if( storage != null ) {
@@ -122,6 +120,7 @@ public abstract class AbstractPersistance<I, T> implements Closeable, AutoClosea
                 log.debug( "closed {}...", this );
             } else log.debug( "this {} wasn't started or already closed", this );
             Closeables.close( watchExecutor );
+            stopped = true;
             log.debug( "closed {}...", this );
         } );
     }
