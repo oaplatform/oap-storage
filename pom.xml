@@ -57,9 +57,9 @@
     </repositories>
 
     <properties>
-        <oap-storage.project.version>18.10.2.7</oap-storage.project.version>
+        <oap-storage.project.version>18.10.2.8</oap-storage.project.version>
 
-        <oap.deps.oap.version>18.11.4.2</oap.deps.oap.version>
+        <oap.deps.oap.version>18.11.4.3</oap.deps.oap.version>
 
         <oap.deps.dynamodb.version>2.19.12</oap.deps.dynamodb.version>
         <oap.deps.assertj.version>3.23.1</oap.deps.assertj.version>
