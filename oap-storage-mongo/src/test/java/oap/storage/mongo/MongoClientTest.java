@@ -62,7 +62,7 @@ public class MongoClientTest extends Fixtures {
         );
 
         try( MongoClient client = new MongoClient( mongoFixture.host, mongoFixture.port, "testdb", mongoFixture.database, configs ) ) {
-            assertThat( client.databaseVersion() ).isEqualTo( UNDEFINED );
+            assertThat( client.databaseVersion() ).isSameAs( UNDEFINED );
             client.preStart();
             assertThat( client.databaseVersion() ).isEqualTo( new Version( 10 ) );
 

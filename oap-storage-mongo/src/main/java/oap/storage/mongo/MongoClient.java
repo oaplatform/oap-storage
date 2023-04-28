@@ -210,13 +210,17 @@ public class MongoClient implements Closeable {
 
     public void preStart() {
         log.info( "starting mongo client {}, version {}, performing migration...", this, databaseVersion() );
-        for( var migration : Migration.of( databaseName, databaseVersion(), migrations ) ) {
-            log.info( "executing migration {}", migration );
-            migration.execute( shell, host, port, physicalDatabase, user, password );
-            updateVersion( migration.version );
-            log.info( "updating current version to {}", migration.version );
+        try {
+            for( var migration : Migration.of( databaseName, databaseVersion(), migrations ) ) {
+                log.info( "Executing migration '{}'...", migration );
+                migration.execute( shell, host, port, physicalDatabase, user, password );
+                updateVersion( migration.version );
+                log.info( "updating current version to '{}'...", migration.version );
+            }
+            log.info( "Migration completed, database is {}", databaseVersion() );
+        } catch( Exception ex ) {
+            log.error( "Cannot perform migration from '{}'", databaseVersion() );
         }
-        log.info( "migration completed, database is {}", databaseVersion() );
     }
 
     public CodecRegistry getCodecRegistry() {
