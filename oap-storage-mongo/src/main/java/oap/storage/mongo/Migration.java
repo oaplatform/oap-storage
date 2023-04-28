@@ -33,6 +33,7 @@ import oap.util.BiStream;
 import oap.util.Stream;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +61,7 @@ public class Migration {
     }
 
     public static List<Migration> of( String database, Version version, List<MigrationConfig> configs ) {
+        if ( version == Version.UNDEFINED ) return Collections.emptyList();
         ListMultimap<Version, MigrationConfig.Migration> migratons = Stream.of( configs )
             .flatMap( config -> Stream.of( config.migrations ) )
             .map( databases -> databases.getOrDefault( database, List.of() ) )

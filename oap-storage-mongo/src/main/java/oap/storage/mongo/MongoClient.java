@@ -209,14 +209,14 @@ public class MongoClient implements Closeable {
     }
 
     public void preStart() {
-        log.debug( "starting mongo client {}, version {}, performing migration...", this, databaseVersion() );
+        log.info( "starting mongo client {}, version {}, performing migration...", this, databaseVersion() );
         for( var migration : Migration.of( databaseName, databaseVersion(), migrations ) ) {
-            log.debug( "executing migration {}", migration );
+            log.info( "executing migration {}", migration );
             migration.execute( shell, host, port, physicalDatabase, user, password );
             updateVersion( migration.version );
-            log.debug( "updating current version to {}", migration.version );
+            log.info( "updating current version to {}", migration.version );
         }
-        log.debug( "migration completed, database is {}", databaseVersion() );
+        log.info( "migration completed, database is {}", databaseVersion() );
     }
 
     public CodecRegistry getCodecRegistry() {
