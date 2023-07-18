@@ -1,4 +1,4 @@
-<!--
+<?xml version="1.0" encoding="UTF-8"?><!--
   ~ The MIT License (MIT)
   ~
   ~ Copyright (c) Open Application Platform Authors
@@ -20,10 +20,7 @@
   ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   ~ SOFTWARE.
-  -->
-
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  --><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -57,9 +54,9 @@
     </repositories>
 
     <properties>
-        <oap-storage.project.version>18.10.2.13</oap-storage.project.version>
+        <oap-storage.project.version>18.10.2.17</oap-storage.project.version>
 
-        <oap.deps.oap.version>18.11.5.23</oap.deps.oap.version>
+        <oap.deps.oap.version>18.11.5.24</oap.deps.oap.version>
 
         <oap.deps.dynamodb.version>2.20.102</oap.deps.dynamodb.version>
         <oap.deps.assertj.version>3.23.1</oap.deps.assertj.version>
