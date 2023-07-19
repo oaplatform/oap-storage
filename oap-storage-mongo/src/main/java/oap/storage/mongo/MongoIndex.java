@@ -54,7 +54,6 @@ public class MongoIndex {
 
     public MongoIndex( MongoCollection<?> collection ) {
         this.collection = collection;
-
         refresh();
     }
 
@@ -62,7 +61,7 @@ public class MongoIndex {
         var indexes = new ArrayList<Document>();
         collection.listIndexes().into( indexes );
 
-        log.debug( "indexes doc = {}", indexes );
+        log.debug( "refreshing indexes: {} ...", indexes );
 
         this.indexes.clear();
 
@@ -71,7 +70,7 @@ public class MongoIndex {
             this.indexes.put( info.name, info );
         }
 
-        log.debug( "indexes = {}", this.indexes );
+        log.debug( "new indexes: {}", this.indexes );
     }
 
     public void update( IndexConfiguration... indexConfigurations ) {

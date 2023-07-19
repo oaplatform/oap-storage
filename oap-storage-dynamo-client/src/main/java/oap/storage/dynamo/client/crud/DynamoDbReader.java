@@ -37,7 +37,6 @@ import oap.storage.dynamo.client.modifiers.QueryRequestModifier;
 import oap.storage.dynamo.client.modifiers.ScanRequestModifier;
 import oap.util.Result;
 import org.slf4j.event.Level;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
@@ -73,12 +72,10 @@ import static oap.util.Dates.s;
 public class DynamoDbReader extends DynamoDbHelper {
 
     private final DynamoDbClient dynamoDbClient;
-    private final DynamoDbEnhancedClient enhancedClient;
     private final ReentrantReadWriteLock.ReadLock readLock;
 
-    public DynamoDbReader( DynamoDbClient dynamoDbClient, DynamoDbEnhancedClient enhancedClient, ReentrantReadWriteLock.ReadLock readLock ) {
+    public DynamoDbReader( DynamoDbClient dynamoDbClient, ReentrantReadWriteLock.ReadLock readLock ) {
         this.dynamoDbClient = dynamoDbClient;
-        this.enhancedClient = enhancedClient;
         this.readLock = readLock;
     }
 
@@ -97,7 +94,7 @@ public class DynamoDbReader extends DynamoDbHelper {
             if ( !response.hasItem() ) return Result.failure( DynamodbClient.State.NOT_FOUND );
             return Result.success( response.item() );
         } catch( Exception ex ) {
-            log.error( "Error in get", ex );
+            log.error( "Error in getRecord for key: {}", key, ex );
             LogConsolidated.log( log, Level.ERROR, s( 5 ), ex.getMessage(), ex );
             return Result.failure( DynamodbClient.State.ERROR );
         } finally {
@@ -110,7 +107,7 @@ public class DynamoDbReader extends DynamoDbHelper {
         Map<String, KeysAndAttributes> requestItems = new HashMap<>();
         List<Map<String, AttributeValue>> allKeys = keys
             .stream()
-            .map( key -> getKeyAttribute( key ) )
+            .map( this::getKeyAttribute )
             .collect( Collectors.toList() );
 
         KeysAndAttributes.Builder keysAndAttributes = KeysAndAttributes
@@ -173,7 +170,7 @@ public class DynamoDbReader extends DynamoDbHelper {
             }
             return builder.build();
         } catch ( ResourceNotFoundException e ) {
-            throw new RuntimeException( "Order table " + tableName + " does not exist" );
+            throw new RuntimeException( "Order table '" + tableName + "' does not exist" );
         } finally {
             readLock.unlock();
         }

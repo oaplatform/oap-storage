@@ -160,6 +160,9 @@ public class Replicator<I, T> implements Closeable {
             .toList();
         log.trace( "[{}] deleted {}", serviceName, deleted );
         slave.fireDeleted( deleted );
+        if( !added.isEmpty() || !updated.isEmpty() || !deleted.isEmpty() ) {
+            slave.fireChanged( added, updated, deleted );
+        }
 
         Replicator.deleted.addAndGet( deleted.size() );
 

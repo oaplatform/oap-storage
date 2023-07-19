@@ -38,19 +38,20 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import java.util.Collections;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertThrows;
 
 public class ReflectionTest extends Fixtures {
 
     @Test
-    public void missingPublicConstructor() throws Exception {
+    public void missingPublicConstructor() {
         PojoBeanFromDynamoCreator<NoPublicConstructor> creator = new PojoBeanFromDynamoCreator<>();
         assertThrows( ReflectiveOperationException.class,
                 () -> creator.createInstanceOfBeanClass( NoPublicConstructor.class, Collections.emptyMap() ) );
     }
 
     @Test
-    public void missingNoArgsConstructor() throws Exception {
+    public void missingNoArgsConstructor() {
         PojoBeanFromDynamoCreator<NoDefaultConstructor> creator = new PojoBeanFromDynamoCreator<>();
         assertThrows( ReflectiveOperationException.class,
                 () -> creator.createInstanceOfBeanClass( NoDefaultConstructor.class, Collections.emptyMap() ) );
@@ -62,6 +63,7 @@ public class ReflectionTest extends Fixtures {
         FinalFieldInArgsConstructor instance = creator.createInstanceOfBeanClass( FinalFieldInArgsConstructor.class,
                 Collections.singletonMap( "finalField", AttributeValue.fromS( "value" ) ) );
 
+        assertNotNull( instance );
         assertEquals( "value", instance.getFinalField() );
     }
 
@@ -76,6 +78,7 @@ public class ReflectionTest extends Fixtures {
                 )
         );
 
+        assertNotNull( instance );
         assertEquals( "value1", instance.getFinalField1() );
         assertEquals( "value2", instance.getFinalField2() );
         assertEquals( "value3", instance.getFinalField3() );
@@ -92,10 +95,9 @@ public class ReflectionTest extends Fixtures {
                 )
         );
 
+        assertNotNull( instance );
         assertEquals( "value1", instance.getFinalField1() );
         assertEquals( true, instance.isFinalField2() );
         assertEquals( 123456789, instance.getFinalField3().intValue() );
     }
-
-
 }

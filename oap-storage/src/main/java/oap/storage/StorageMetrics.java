@@ -99,12 +99,9 @@ public class StorageMetrics<I, T> implements Storage.DataListener<I, T> {
 
         @Override
         public void accept( Storage<I, T> storage ) {
-            //using JOL instead of JAMM
             if( storage instanceof MemoryStorage<?, ?> ) {
                 size.set( GraphLayout.parseInstance( ( ( MemoryStorage<I, T> ) storage ).memory.data ).totalSize() );
-            }
-            else
-                size.set( 0 );
+            } else size.set( 0 );
         }
 
         @Override

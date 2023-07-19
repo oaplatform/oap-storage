@@ -57,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 
 import static oap.util.Dates.s;
 
@@ -65,7 +66,7 @@ import static oap.util.Dates.s;
 public class DynamoDbWriter extends DynamoDbHelper {
     private final DynamoDbClient dynamoDbClient;
     private final DynamoDbEnhancedClient enhancedClient;
-    private final ReentrantReadWriteLock.ReadLock readLock;
+    private final ReentrantReadWriteLock.ReadLock readLock; // this lock means READ for all record in a table operations, and WRITE for alter table operations
 
     public DynamoDbWriter( DynamoDbClient dynamoDbClient, DynamoDbEnhancedClient enhancedClient, ReentrantReadWriteLock.ReadLock readLock ) {
         this.dynamoDbClient = dynamoDbClient;
@@ -94,6 +95,11 @@ public class DynamoDbWriter extends DynamoDbHelper {
 
     @API
     public Result<UpdateItemResponse, DynamodbClient.State> updateRecord( Key key, Map<String, AttributeValue> binNamesAndValues, UpdateItemRequestModifier modifier ) {
+        return updateRecord( key, binNamesAndValues, modifier, null );
+    }
+
+    @API
+    public Result<UpdateItemResponse, DynamodbClient.State> updateRecord( Key key, Map<String, AttributeValue> binNamesAndValues, UpdateItemRequestModifier modifier, Consumer<Exception> onRetry ) {
         Map<String, AttributeValueUpdate> updatedValues = new HashMap<>();
 
         binNamesAndValues.forEach( ( binName, binValue ) -> {
@@ -124,6 +130,7 @@ public class DynamoDbWriter extends DynamoDbHelper {
             return Result.success( response );
         } catch ( ConditionalCheckFailedException ex ) {
             //in case of atomic update this could happen if record has a version which does not fit with a given version (a.k.a. generation)
+            if ( onRetry != null ) onRetry.accept( ex );
             return Result.failure( DynamodbClient.State.VERSION_CHECK_FAILED );
         } catch( Exception ex ) {
             log.error( "Error in update for key {}", key, ex );

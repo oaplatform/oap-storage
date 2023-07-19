@@ -51,37 +51,31 @@ public class ReplicatorTest {
     public void masterSlave() {
         var slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         var master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        try( var ignored = new Replicator<>( slave, master, 50 ) ) {
+        try( var replicator = new Replicator<>( slave, master, 50 ) ) {
 
             var updates = new AtomicInteger();
             var addons = new AtomicInteger();
             var deletions = new AtomicInteger();
             slave.addDataListener( new Storage.DataListener<>() {
                 @Override
-                public void added( List<IdObject<String, Bean>> objects ) {
-                    addons.getAndAdd( objects.size() );
-                }
-
-                @Override
-                public void updated( List<IdObject<String, Bean>> objects ) {
-                    updates.getAndAdd( objects.size() );
-                }
-
-                @Override
-                public void deleted( List<IdObject<String, Bean>> objects ) {
-                    deletions.getAndAdd( objects.size() );
+                public void changed( List<Storage.DataListener.IdObject<String, Bean>> added,
+                                     List<Storage.DataListener.IdObject<String, Bean>> updated,
+                                     List<Storage.DataListener.IdObject<String, Bean>> deleted ) {
+                    addons.getAndAdd( added.size() );
+                    updates.getAndAdd( updated.size() );
+                    deletions.getAndAdd( deleted.size() );
                 }
             } );
 
             master.store( new Bean( "111" ) );
             master.store( new Bean( "222" ) );
             assertEventually( 120, 5, () -> {
-                assertThat( slave.select() ).containsExactly( new Bean( "111" ), new Bean( "222" ) );
+                assertThat( slave.select() ).containsExactly( new Bean( "111", "aaa" ), new Bean( "222" ) );
                 assertThat( addons.get() ).isEqualTo( 2 );
                 assertThat( updates.get() ).isEqualTo( 0 );
                 assertThat( deletions.get() ).isEqualTo( 0 );
             } );
-
+            deletions.set( 0 );
             updates.set( 0 );
             addons.set( 0 );
             master.store( new Bean( "111", "bbb" ) );
@@ -91,15 +85,18 @@ public class ReplicatorTest {
                 assertThat( updates.get() ).isEqualTo( 1 );
                 assertThat( deletions.get() ).isEqualTo( 0 );
             } );
-
+            deletions.set( 0 );
             updates.set( 0 );
             addons.set( 0 );
             master.delete( "111" );
+            master.store( new Bean( "222", "xyz" ) );
+            master.store( new Bean( "333", "ccc" ) );
             assertEventually( 120, 5, () -> {
-                assertThat( slave.select() ).containsExactly( new Bean( "222" ) );
-                assertThat( addons.get() ).isEqualTo( 0 );
-                assertThat( updates.get() ).isEqualTo( 0 );
+                assertThat( slave.select() ).containsExactly( new Bean( "222", "xyz" ), new Bean( "333", "ccc" ) );
+                assertThat( addons.get() ).isEqualTo( 1 );
+                assertThat( updates.get() ).isEqualTo( 1 );
                 assertThat( deletions.get() ).isEqualTo( 1 );
+                assertThat( slave.get( "111" ).isEmpty() ).isTrue();
             } );
         }
     }

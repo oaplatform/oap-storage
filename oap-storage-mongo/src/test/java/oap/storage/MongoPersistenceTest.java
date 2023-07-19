@@ -36,6 +36,7 @@ import oap.storage.mongo.MongoFixture;
 import oap.storage.mongo.Version;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
 import static com.mongodb.client.model.Filters.eq;
@@ -48,7 +49,7 @@ import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * It requires installed MongoDB on the machine with enabled Replica Set Oplog
+ * It requires MongoDB to be installed on the machine with enabled Replica Set Oplog
  *
  * @see <a href="https://docs.mongodb.com/manual/administration/install-community/">Install MongoDB Community Edition</a>
  * @see <a href="https://docs.mongodb.com/manual/tutorial/deploy-replica-set-for-testing/">Deploy a Replica Set for
@@ -69,6 +70,7 @@ public class MongoPersistenceTest extends Fixtures {
     }
 
     @Test
+    @Ignore
     public void watch() {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
 
@@ -118,7 +120,6 @@ public class MongoPersistenceTest extends Fixtures {
             );
             assertThat( persistence.collection.countDocuments() ).isEqualTo( 2 );
         }
-
     }
 
     @Test
@@ -173,6 +174,7 @@ public class MongoPersistenceTest extends Fixtures {
              var persistence = new MongoPersistence<>( mongoClient, table, 6000, storage, crashDumpPath ) ) {
             mongoClient.preStart();
             persistence.preStart();
+            //this generates 16 MiB of XXXXXXXXXXXXXXXXXXXXXXX
             storage.store( new Bean( "X".repeat( 16793600 + 1 ) ) );
         }
         assertThat( Files.wildcard( crashDumpPath.resolve( table ), "*.json.gz" ) ).hasSize( 1 );

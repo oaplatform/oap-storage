@@ -24,10 +24,12 @@
 
 package oap.storage.dynamo.client.crud;
 
+import lombok.ToString;
 import oap.storage.dynamo.client.Key;
 import oap.storage.dynamo.client.annotations.API;
 
 @API
+@ToString( callSuper = true )
 public class DeleteItemOperation extends AbstractOperation {
     public DeleteItemOperation( String name ) {
         super( OperationType.DELETE, name );

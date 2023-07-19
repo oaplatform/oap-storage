@@ -69,7 +69,7 @@ public class DirectoryPersistence<I, T> implements Closeable {
     @ServiceName
     public String serviceName;
     protected long fsync;
-    private ScheduledExecutorService scheduler;
+    private volatile ScheduledExecutorService scheduler;
     private volatile long lastExecuted = -1;
 
     public DirectoryPersistence( Path path, long fsync, int version, List<Migration> migrations, MemoryStorage<I, T> storage ) {
@@ -96,10 +96,9 @@ public class DirectoryPersistence<I, T> implements Closeable {
     }
 
     public void preStart() {
+        scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, serviceName );
         synchronizedOn( lock, () -> {
             this.load();
-
-            scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, serviceName );
             scheduler.scheduleWithFixedDelay( this::fsync, fsync, fsync, TimeUnit.MILLISECONDS );
         } );
     }
@@ -197,7 +196,7 @@ public class DirectoryPersistence<I, T> implements Closeable {
                 fsync();
             } );
         } else {
-            log.debug( "This {} was't started or already closed", this );
+            log.debug( "This {} wasn't started or already closed", this );
         }
 
         log.debug( "closing {}... Done.", this );

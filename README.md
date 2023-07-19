@@ -11,7 +11,7 @@ In doesn't support the latest mongo wire protocol. Therefor the only mongo shell
 Thin (simple) DynamoDB client. Used for sync/async operations in [DynamoDB].
 Two services are configured based on DynamoDB client: _dynamodb-client-reader_ and _dynamodb-client-writer_ in
 
-[oap-module.conf](oap-dynamo-db/oap-dynamodb/src/main/resources/META-INF/oap-module.conf)
+[oap-module.conf](oap-storage-dynamo-client/src/main/resources/META-INF/oap-module.conf)
 
 DynamoDB logging is created by [DynamodbLog](oap-dynamo-db/oap-dynamodb/src/main/java/oap/dynamodb/DynamodbLog.java)
 and configured by _dynamodb-log_ service in [oap-module.conf](oap-dynamo-db/oap-dynamodb/src/main/resources/META-INF/oap-module.conf).

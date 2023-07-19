@@ -27,6 +27,7 @@ package oap.storage.dynamo.client.crud;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
+import oap.storage.dynamo.client.annotations.API;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.List;
@@ -35,6 +36,7 @@ import java.util.Map;
 @Builder
 @Getter
 @ToString
+@API
 public class ItemsPage {
     private List<Map<String, AttributeValue>> records;
     private String lastEvaluatedKey;

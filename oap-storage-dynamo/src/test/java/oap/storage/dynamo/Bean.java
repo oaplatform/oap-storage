@@ -27,9 +27,15 @@ package oap.storage.dynamo;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.io.Serial;
+import java.io.Serializable;
+
 @ToString
 @EqualsAndHashCode
-public class Bean {
+public class Bean implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 4685190989978637185L;
+
     public String id;
     public String name;
     public int c;

@@ -60,13 +60,13 @@ public class Migration {
     }
 
     public static List<Migration> of( String database, Version version, List<MigrationConfig> configs ) {
-        ListMultimap<Version, MigrationConfig.Migration> migratons = Stream.of( configs )
+        ListMultimap<Version, MigrationConfig.Migration> migrations = Stream.of( configs )
             .flatMap( config -> Stream.of( config.migrations ) )
             .map( databases -> databases.getOrDefault( database, List.of() ) )
             .flatMap( Stream::of )
             .mapToPairs( m -> __( m.version, m ) )
             .collect( toListMultimap() );
-        return BiStream.of( migratons.asMap() )
+        List<Migration> migrationsToDo = BiStream.of( migrations.asMap() )
             .sorted( Comparator.comparing( p -> p._1 ) )
             .filter( p -> version.before( p._1 ) )
             .map( p -> new Migration( p._1,
@@ -75,6 +75,7 @@ public class Migration {
                 Stream.of( p._2 ).flatMap( m -> BiStream.of( m.parameters ) ).mapToPairs( Function.identity() ).toMap()
             ) )
             .toList();
+        return migrationsToDo;
     }
 
     public String toScript( String mongoHost, int mongoPort, String database, String user, String password ) {

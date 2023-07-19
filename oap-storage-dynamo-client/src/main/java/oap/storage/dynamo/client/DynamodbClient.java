@@ -28,6 +28,7 @@ package oap.storage.dynamo.client;
 import com.google.common.base.Joiner;
 import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
+import oap.storage.dynamo.client.atomic.AtomicUpdateFieldAndValue;
 import oap.storage.dynamo.client.crud.DynamoDbTableModifier;
 import oap.storage.dynamo.client.annotations.API;
 import oap.storage.dynamo.client.atomic.AtomicUpdateRecordSupporter;
@@ -134,18 +135,34 @@ public class DynamodbClient implements AutoCloseable, Closeable {
     private DynamoDbReader reader;
     private DynamoDbWriter writer;
     private DynamoDbTableModifier tableModifier;
-
     private DynamodbEntityHelper entityHelper;
 
     public DynamodbClient( DynamoDbClient dynamoDbClient ) {
         this.dynamoDbClient = dynamoDbClient;
         log.info( "Creating DynamoDB enhanced client..." );
-        enhancedClient = DynamoDbEnhancedClient.builder().dynamoDbClient( dynamoDbClient ).build();
-        reader = new DynamoDbReader( dynamoDbClient, enhancedClient, readLock );
+        enhancedClient = DynamoDbEnhancedClient
+            .builder()
+            .dynamoDbClient( dynamoDbClient )
+            .build();
+        log.info( "Creating reader..." );
+        reader = new DynamoDbReader( dynamoDbClient, readLock );
+        log.info( "Creating writer..." );
         writer = new DynamoDbWriter( dynamoDbClient, enhancedClient, readLock );
+        log.info( "Creating helper..." );
         entityHelper = new DynamodbEntityHelper( reader, writer );
+        log.info( "Creating table modifier..." );
         tableModifier = new DynamoDbTableModifier( dynamoDbClient, enhancedClient, readLock, writeLock );
+        log.info( "Client is ready." );
         connectionIsReady.countDown();
+    }
+
+    @Override
+    @API
+    public void close() throws IOException {
+        initService.shutdownNow();
+        synchronized( connectionIsReady ) {
+            if( dynamoDbClient != null ) dynamoDbClient.close();
+        }
     }
 
     enum ClientSelector {
@@ -153,7 +170,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
         DynamodbClientHttps( "https" ),
         DaxClient( "dax" );
 
-        private String protocol;
+        private final String protocol;
 
         ClientSelector( String protocol ) {
             this.protocol = protocol;
@@ -213,7 +230,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
             enhancedClient = DynamoDbEnhancedClient.builder().dynamoDbClient( dynamoDbClient ).build();
             log.debug( "Creating DynamoDB stream..." );
             streamClient = createStreamClient( uri, provider, region );
-            reader = new DynamoDbReader( dynamoDbClient, enhancedClient, readLock );
+            reader = new DynamoDbReader( dynamoDbClient, readLock );
             writer = new DynamoDbWriter( dynamoDbClient, enhancedClient, readLock );
             entityHelper = new DynamodbEntityHelper( reader, writer );
             tableModifier = new DynamoDbTableModifier( dynamoDbClient, enhancedClient, readLock, writeLock );
@@ -280,13 +297,6 @@ public class DynamodbClient implements AutoCloseable, Closeable {
             .build();
     }
 
-    @Override
-    @API
-    public void close() throws IOException {
-        initService.shutdownNow();
-        if ( dynamoDbClient != null ) dynamoDbClient.close();
-    }
-
     public Result<List<String>, State> getTables( ) {
         ListTablesResponse resp = dynamoDbClient.listTables();
         if ( !resp.hasTableNames() ) return Result.failure( State.NOT_FOUND );
@@ -297,7 +307,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
     public void waitConnectionEstablished() {
         try {
             if ( connectionIsReady.await( 1, TimeUnit.MINUTES ) ) {
-                log.info( "DynamoDB clients is ready" );
+                log.info( "DynamoDB clients are ready" );
                 return;
             }
         } catch( InterruptedException e ) {
@@ -310,44 +320,59 @@ public class DynamodbClient implements AutoCloseable, Closeable {
 
     @API
     public void start() {
-
     }
-
 
     @API
     public enum State {
         SUCCESS, NOT_FOUND, ERROR, VERSION_CHECK_FAILED
     }
 
+    /**
+     * This method is slightly faster than delete/create due to single lock getting.
+     * @param tableName
+     * @param keyName
+     * @return
+     */
+    @API
     public Result<State, State> recreateTable( String tableName, String keyName ) {
         return tableModifier.recreateTable( tableName, keyName );
     }
 
+    @API
     public Result<State, State> deleteTable( String tableName ) {
         return tableModifier.deleteTable( tableName );
     }
 
+    @API
     public boolean deleteTableIfExists( String tableName ) {
         return tableModifier.deleteTableIfExists( tableName )._1();
     }
 
+    @API
     public boolean createTableIfNotExist( String tableName, String key ) {
         return tableModifier.createTableIfNotExist( tableName, key );
     }
 
+    @API
     public TableDescription describeTable( String tableName, DescribeTableResponseModifier modifier ) {
         return tableModifier.describeTable( tableName, modifier ).table();
     }
 
-    public boolean createTable( String tableName, long readCapacityUnits, long writeCapacityUnits,
-                               String partitionKeyName, String partitionKeyType,
-                               String sortKeyName, String sortKeyType,
-                               CreateTableRequestModifier modifier ) {
+    @API
+    public boolean createTable( String tableName,
+                                long readCapacityUnits,
+                                long writeCapacityUnits,
+                                String partitionKeyName,
+                                String partitionKeyType,
+                                String sortKeyName,
+                                String sortKeyType,
+                                CreateTableRequestModifier modifier ) {
         return tableModifier.createTable( tableName, readCapacityUnits, writeCapacityUnits,
                 partitionKeyName, partitionKeyType,
                 sortKeyName, sortKeyType, modifier );
     }
 
+    @API
     public boolean tableExists( String tableName ) {
         return tableModifier.tableExists( tableName );
     }
@@ -359,6 +384,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
      * @param modifier
      * @return
      */
+    @API
     public Result<Map<String, AttributeValue>, State> getRecord( Key key, GetItemRequestModifier modifier ) {
         return reader.getRecord( key, modifier );
     }
@@ -371,10 +397,12 @@ public class DynamodbClient implements AutoCloseable, Closeable {
      * @param attributesToGet
      * @return
      */
+    @API
     public Result<List<Map<String, AttributeValue>>, State> getRecord( String tableName, Set<Key> keys, Set<String> attributesToGet ) {
         return reader.getRecords( tableName, keys, attributesToGet );
     }
 
+    @API
     public ItemsPage getRecord( String tableName, int pageSize, String keyName, String exclusiveStartItemId ) {
         return reader.getRecords( tableName, pageSize, keyName, exclusiveStartItemId, null );
     }
@@ -389,6 +417,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
      * @param modifier
      * @return
      */
+    @API
     public ItemsPage getRecord( String tableName, int pageSize, String columnName, String exclusiveStartItemId, ScanRequestModifier modifier ) {
         return reader.getRecords( tableName, pageSize, columnName, exclusiveStartItemId, modifier );
     }
@@ -402,10 +431,12 @@ public class DynamodbClient implements AutoCloseable, Closeable {
      * @param <T>
      * @throws ReflectiveOperationException
      */
+    @API
     public <T> Result<T, DynamodbClient.State> getItem( Class<T> clazz, Key key, GetItemRequestModifier modifier ) throws ReflectiveOperationException {
         return entityHelper.getItem( clazz, key, modifier );
     }
 
+    @API
     public Stream<Map<String, AttributeValue>> getRecordsByScan( String tableName, ScanRequestModifier modifier ) {
         return reader.getRecordsByScan( tableName, modifier );
     }
@@ -418,6 +449,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
      * @param modifier
      * @return
      */
+    @API
     public Stream<Map<String, AttributeValue>> getRecordsByQuery( String tableName, Key key, QueryRequestModifier modifier ) {
         return reader.getRecordsByQuery( tableName, key, modifier );
     }
@@ -431,41 +463,54 @@ public class DynamodbClient implements AutoCloseable, Closeable {
      * @param modifier
      * @return
      */
+    @API
     public Stream<Map<String, AttributeValue>> getRecordsByQuery( String tableName, String indexName, String filterExpression, QueryRequestModifier modifier ) {
         return reader.getRecordsByQuery( tableName, indexName, filterExpression, modifier );
     }
 
+    @API
     public Result<UpdateItemResponse, State> update( Key key, Map<String, Object> binNamesAndValues, UpdateItemRequestModifier modifier ) {
         return writer.update( key, binNamesAndValues, modifier );
     }
 
+    @API
     public Result<UpdateItemResponse, State> update( Key key,
                                                      String binName,
                                                      Object binValue ) {
         return writer.update( key, Collections.singletonMap( binName, binValue ), null );
     }
 
+    @API
     public Result<UpdateItemResponse, DynamodbClient.State> updateRecord( Key key, Map<String, AttributeValue> binNamesAndValues, UpdateItemRequestModifier modifier ) {
         return writer.updateRecord( key, binNamesAndValues, modifier );
     }
 
-    public Result<UpdateItemResponse, DynamodbClient.State> updateRecordAtomic( Key key, Map<String, AttributeValue> binNamesAndValues, UpdateItemRequestModifier modifier, int generation ) {
+    @API
+    public Result<UpdateItemResponse, DynamodbClient.State> updateRecordAtomic( Key key, Map<String, AttributeValue> binNamesAndValues, UpdateItemRequestModifier modifier, AtomicUpdateFieldAndValue generation ) {
+        Objects.requireNonNull( key );
+        Objects.requireNonNull( binNamesAndValues );
+        Objects.requireNonNull( generation );
         AtomicUpdateRecordSupporter supporter = new AtomicUpdateRecordSupporter();
-        supporter.setGeneration( generation );
-        if ( modifier != null ) supporter.andThen( modifier );
-        binNamesAndValues.forEach( ( k, v ) -> supporter.addAtomicUpdateFor( k, v ) );
-        return writer.updateRecord( key, binNamesAndValues, supporter );
+        supporter.setAtomicUpdateFieldAndValue( generation );
+        if ( modifier != null ) {
+            supporter.andThen( modifier );
+        }
+        binNamesAndValues.forEach( supporter::addAtomicUpdateFor );
+        return writer.updateRecord( key, binNamesAndValues, supporter, generation::onRetry );
     }
 
-    public Result<UpdateItemResponse, DynamodbClient.State> updateRecordAtomicWithRetry( Key key, Set<String> binNames, AttributesModifier modifier, int retries, int generation ) {
+    @API
+    public Result<UpdateItemResponse, DynamodbClient.State> updateRecordAtomicWithRetry( Key key, Set<String> binNames, AttributesModifier modifier, int retries, AtomicUpdateFieldAndValue generation ) {
         Objects.requireNonNull( key );
         Objects.requireNonNull( modifier );
+        Objects.requireNonNull( generation );
+        if ( retries < 1 ) throw new IllegalArgumentException( "retries number should be a positive number, but was " + retries );
         int retryCount = retries;
         Result<UpdateItemResponse, DynamodbClient.State> ret = null;
         do {
             Result<Map<String, AttributeValue>, DynamodbClient.State> foundResult = getRecord( key, m -> {
                 if ( binNames != null && !binNames.isEmpty() ) {
-                    binNames.remove( "generation" );
+                    binNames.remove( generation.getFieldName() );
                     m.projectionExpression( Joiner.on( "," ).skipNulls().join( binNames ) );
                 }
             } );
@@ -473,19 +518,22 @@ public class DynamodbClient implements AutoCloseable, Closeable {
             AttributeValue genValue = null;
             try {
                 if ( foundResult.isSuccess() ) {
-                    genValue = foundResult.getSuccessValue().get( "generation" );
+                    genValue = foundResult.getSuccessValue().get( generation.getFieldName() );
                     successValue = modifier.apply( foundResult.getSuccessValue() );
                 } else {
                     successValue = modifier.apply( new HashMap<>() );
                 }
             } catch ( UnsupportedOperationException ex ) {
-                throw new IllegalArgumentException( " Cannot process attributes", ex );
+                throw new IllegalArgumentException( "Cannot process attributes", ex );
             }
             //remove key from map - it's necessary
             successValue.remove( key.getColumnName() );
-            int gen = genValue != null ? Integer.parseInt( genValue.n() ) : generation;
-            ret = updateRecordAtomic( key, successValue, null, gen );
-        } while( retryCount-- > 0 && ret != null && ret.failureValue == DynamodbClient.State.VERSION_CHECK_FAILED );
+            long gen = genValue != null ? Long.parseLong( genValue.n() ) : generation.getValue();
+            ret = updateRecordAtomic( key, successValue, null, new AtomicUpdateFieldAndValue( generation, gen ) );
+        } while( retryCount-- > 0 && ret.failureValue == DynamodbClient.State.VERSION_CHECK_FAILED );
+        if ( ret.failureValue == DynamodbClient.State.VERSION_CHECK_FAILED ) {
+            generation.onExhaustedRetryAttempts();
+        }
         return ret;
     }
 

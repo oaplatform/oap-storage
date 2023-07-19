@@ -24,12 +24,10 @@
 
 package oap.storage.dynamo.client;
 
-import com.google.common.base.Throwables;
 import lombok.extern.slf4j.Slf4j;
 import oap.system.Env;
 import oap.testng.AbstractEnvFixture;
 
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 
@@ -44,8 +42,8 @@ import java.net.URISyntaxException;
  */
 @Slf4j
 public abstract class AbstractDynamodbFixture extends AbstractEnvFixture<AbstractDynamodbFixture> {
-    public static final String DYNAMODB_PROTOCOL = Env.get( "DYNAMODB_PROTOCOL", "http" );
 
+    public static final String DYNAMODB_PROTOCOL = Env.get( "DYNAMODB_PROTOCOL", "http" );
     public static final String DYNAMODB_HOSTS = Env.get( "DYNAMODB_HOSTS", "localhost" );
 
     public static final String DYNAMODB_PORT = "" + Integer.parseInt( Env.get( "DYNAMODB_PORT", "8000" ) );
@@ -69,7 +67,14 @@ public abstract class AbstractDynamodbFixture extends AbstractEnvFixture<Abstrac
         this.maxConnsPerNode = maxConnsPerNode;
         this.connPoolsPerNode = connPoolsPerNode;
         this.skipBeforeAndAfter = skipBeforeAndAfter;
-
+        log.info( "Setting up environment variables: \n\t{} = {}\n\t{} = {}\n\t{} = {}\n\t{} = {}\n\t{} = {}\n\t{} = {}",
+            "DYNAMODB_PROTOCOL", DYNAMODB_PROTOCOL,
+            "DYNAMODB_HOSTS", DYNAMODB_HOSTS,
+            "DYNAMODB_PORT", DYNAMODB_PORT,
+            "AWS_ACCESS_KEY_ID", AWS_ACCESS_KEY_ID,
+            "AWS_SECRET_ACCESS_KEY", AWS_SECRET_ACCESS_KEY,
+            "AWS_REGION", AWS_REGION
+            );
         define( "DYNAMODB_PROTOCOL", DYNAMODB_PROTOCOL );
         define( "DYNAMODB_HOSTS", DYNAMODB_HOSTS );
         define( "DYNAMODB_PORT", DYNAMODB_PORT );
@@ -85,8 +90,8 @@ public abstract class AbstractDynamodbFixture extends AbstractEnvFixture<Abstrac
         try {
             dynamodbClient = createClient();
             asDeleteAll();
-        } catch( IOException | URISyntaxException ex ) {
-            Throwables.propagate( ex );
+        } catch( Exception ex ) {
+            throw new RuntimeException( ex );
         }
     }
 

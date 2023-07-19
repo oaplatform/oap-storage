@@ -25,9 +25,6 @@
 package oap.storage.dynamo.client;
 
 import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import oap.application.Kernel;
-import oap.application.module.Module;
 import oap.storage.dynamo.client.convertors.DynamodbDatatype;
 import oap.storage.dynamo.client.modifiers.TableSchemaModifier;
 import oap.storage.dynamo.client.modifiers.UpdateTableRequestModifier;
@@ -37,7 +34,6 @@ import oap.util.Maps;
 import oap.util.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
@@ -58,23 +54,17 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTags.primaryPartitionKey;
 import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTags.secondaryPartitionKey;
 
-@Slf4j
-@Ignore
-public class IndexingTest extends Fixtures {
+public class DynamodbIndexingTest extends Fixtures {
 
     private final String keyName = "longId";
-
     private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
 
-    public IndexingTest() {
+    public DynamodbIndexingTest() {
         fixture( fixture );
-        var kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-        kernel.start( pathOfResource( getClass(), "/oap/storage/dynamo/client/test-application.conf" ) );
     }
 
     @BeforeMethod
@@ -186,7 +176,7 @@ public class IndexingTest extends Fixtures {
                 ) );
         insert100Rows( client, tableName, keyName );
 
-        DynamoDbTable table = client.getEnhancedClient().table( tableName,
+        DynamoDbTable<IndexedRecord> table = client.getEnhancedClient().table( tableName,
             createSchemaForRecord( m -> m //add index attribute
                 .addAttribute( Long.class, a -> a.name( indexColumnName )
                     .getter( IndexedRecord::getTestBin )
@@ -266,14 +256,14 @@ public class IndexingTest extends Fixtures {
                 index2ColumnName, DynamodbDatatype.NUMBER ) );
         insert100Rows( client, tableName, keyName );
 
-        DynamoDbTable table1 = client.getEnhancedClient().table( tableName,
+        DynamoDbTable<IndexedRecord> table1 = client.getEnhancedClient().table( tableName,
             createSchemaForRecord( m -> m //add index attribute along with key
                 .addAttribute( Long.class, a -> a.name( index1ColumnName )
                     .getter( IndexedRecord::getTestBin )
                     .setter( IndexedRecord::setTestBin )
                     .tags( secondaryPartitionKey( index1Name ) ) ) )
         );
-        DynamoDbTable table2 = client.getEnhancedClient().table( tableName,
+        DynamoDbTable<IndexedRecord> table2 = client.getEnhancedClient().table( tableName,
             createSchemaForRecord( m -> m //add index attribute along with key
                 .addAttribute( Long.class, a -> a.name( index2ColumnName )
                     .getter( IndexedRecord::getAaa )
@@ -309,7 +299,7 @@ public class IndexingTest extends Fixtures {
             );
     }
 
-    private List<IndexedRecord> scanTableUsingIndex( DynamoDbTable dynamoDbTable, String indexName, Long valueToSearch ) {
+    private List<IndexedRecord> scanTableUsingIndex( DynamoDbTable<IndexedRecord> dynamoDbTable, String indexName, Long valueToSearch ) {
         var resultFuture = ( Stream<Page<IndexedRecord>> ) dynamoDbTable
             .index( indexName )
             .query( QueryEnhancedRequest.builder()
@@ -327,7 +317,6 @@ public class IndexingTest extends Fixtures {
             client.update( key, "test_bin", i % 5 );
             client.update( key, "aaa", i );
         }
-        log.info( "All 100 rows are inserted" );
     }
 
     private Stream<Map<String, AttributeValue>> defineScanTableStream( DynamodbClient client, String tableName, String indexName, String valueToSelect ) {
