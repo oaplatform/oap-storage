@@ -18,6 +18,11 @@
             <artifactId>oap-stdlib</artifactId>
             <version>${oap.deps.oap.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.openjdk.jol</groupId>
+            <artifactId>jol-core</artifactId>
+            <version>${oap.deps.jol.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
