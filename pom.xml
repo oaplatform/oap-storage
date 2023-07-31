@@ -61,7 +61,9 @@
 
         <oap.deps.oap.version>18.11.5.23</oap.deps.oap.version>
 
-        <oap.deps.dynamodb.version>2.20.98</oap.deps.dynamodb.version>
+        <oap.deps.dynamodb.version>2.20.115</oap.deps.dynamodb.version>
+        <oap.deps.dynamodb.encryption.version>3.0.0</oap.deps.dynamodb.encryption.version>
+        <oap.deps.dynamodb.cryptographic-material-providers.version>1.0.1</oap.deps.dynamodb.cryptographic-material-providers.version>
         <oap.deps.assertj.version>3.23.1</oap.deps.assertj.version>
         <oap.deps.guava.version>31.1-jre</oap.deps.guava.version>
         <oap.deps.logback.version>1.4.8</oap.deps.logback.version>
