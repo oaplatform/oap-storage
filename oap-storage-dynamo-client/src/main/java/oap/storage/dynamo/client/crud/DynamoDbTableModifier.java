@@ -26,6 +26,7 @@ package oap.storage.dynamo.client.crud;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
+import oap.storage.dynamo.client.DefaultEncryptionInterceptor;
 import oap.storage.dynamo.client.KeyForSchema;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.storage.dynamo.client.Key;
@@ -37,6 +38,7 @@ import oap.storage.dynamo.client.modifiers.CreateTableRequestModifier;
 import oap.storage.dynamo.client.modifiers.DescribeTableResponseModifier;
 import oap.storage.dynamo.client.modifiers.TableSchemaModifier;
 import oap.storage.dynamo.client.modifiers.UpdateTableRequestModifier;
+import oap.storage.dynamo.client.modifiers.impl.CreateTableWithEncryptionRequestModifier;
 import oap.storage.dynamo.client.restrictions.ReservedNameException;
 import oap.storage.dynamo.client.restrictions.ReservedWords;
 import oap.util.Pair;
@@ -74,11 +76,15 @@ import software.amazon.awssdk.services.dynamodb.model.StreamViewType;
 import software.amazon.awssdk.services.dynamodb.model.TableDescription;
 import software.amazon.awssdk.services.dynamodb.model.UpdateTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.UpdateTableResponse;
+import software.amazon.cryptography.dbencryptionsdk.dynamodb.DynamoDbEncryptionInterceptor;
+import software.amazon.cryptography.dbencryptionsdk.dynamodb.model.DynamoDbTableEncryptionConfig;
+import software.amazon.cryptography.dbencryptionsdk.dynamodb.model.DynamoDbTablesEncryptionConfig;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -175,7 +181,7 @@ public class DynamoDbTableModifier {
                 createTable( tableName,
                         description.provisionedThroughput().readCapacityUnits(), description.provisionedThroughput().writeCapacityUnits(),
                         keyName, "S", null, null,
-                        x -> x.streamSpecification( StreamSpecification.builder()
+                        x -> x.getBuilder().streamSpecification( StreamSpecification.builder()
                                 .streamEnabled( true )
                                 .streamViewType( StreamViewType.NEW_AND_OLD_IMAGES )
                                 .build() )
@@ -457,6 +463,20 @@ public class DynamoDbTableModifier {
         } finally {
             writeLock.unlock();
         }
+    }
+
+    @API
+    public static void applyEncryptionForDefinedTables() {
+        Map<String, DynamoDbTableEncryptionConfig> tablesConfig = CreateTableWithEncryptionRequestModifier.getEncryptionTablesConfig();
+        if ( tablesConfig.isEmpty() ) {
+            throw new RuntimeException( "Please define encryption policy for ALL tables before calling this method" );
+        }
+        DynamoDbEncryptionInterceptor encryptionInterceptor = DynamoDbEncryptionInterceptor.builder()
+            .config( DynamoDbTablesEncryptionConfig.builder()
+                .tableEncryptionConfigs( tablesConfig )
+                .build() )
+            .build();
+        DefaultEncryptionInterceptor.getInstance().setEncryptionInterceptor( encryptionInterceptor );
     }
 
     private static DescribeTableRequest createDescribeTableRequest( String tableName, DescribeTableResponseModifier modifier ) {

@@ -52,12 +52,14 @@ import oap.storage.dynamo.client.modifiers.QueryRequestModifier;
 import oap.storage.dynamo.client.modifiers.ScanRequestModifier;
 import oap.storage.dynamo.client.modifiers.UpdateItemRequestModifier;
 import oap.storage.dynamo.client.modifiers.UpdateTableRequestModifier;
+import oap.storage.dynamo.client.modifiers.impl.CreateTableDescriber;
 import oap.util.Result;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.event.Level;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
 import software.amazon.awssdk.core.retry.RetryPolicy;
 import software.amazon.awssdk.core.retry.conditions.RetryCondition;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
@@ -75,6 +77,10 @@ import software.amazon.awssdk.services.dynamodb.model.UpdateItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.UpdateTableResponse;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 import software.amazon.awssdk.services.dynamodb.streams.DynamoDbStreamsClient;
+import software.amazon.cryptography.dbencryptionsdk.dynamodb.DynamoDbEncryptionInterceptor;
+import software.amazon.cryptography.dbencryptionsdk.dynamodb.model.DynamoDbTableEncryptionConfig;
+import software.amazon.cryptography.dbencryptionsdk.dynamodb.model.DynamoDbTablesEncryptionConfig;
+import software.amazon.cryptography.materialproviders.model.DBEAlgorithmSuiteId;
 
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
@@ -216,6 +222,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
             ClientOverrideConfiguration overrideConfig = ClientOverrideConfiguration
                 .builder()
                 .apiCallTimeout( Duration.ofMillis( apiCallTimeout ) )
+                .addExecutionInterceptor( DefaultEncryptionInterceptor.getInstance() )
                 .retryPolicy( RetryPolicy.builder()
                     .numRetries( maxErrorRetries )
 //                    .backoffStrategy( BackoffStrategy.defaultThrottlingStrategy() )
@@ -244,6 +251,9 @@ public class DynamodbClient implements AutoCloseable, Closeable {
         return DynamoDbStreamsClient.builder()
                 .endpointOverride( uri )
                 .credentialsProvider( provider )
+                .overrideConfiguration( ClientOverrideConfiguration.builder()
+                    .addExecutionInterceptor( DefaultEncryptionInterceptor.getInstance() )
+                    .build() )
                 .region( region )
                 .build();
     }

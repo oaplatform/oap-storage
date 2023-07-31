@@ -36,6 +36,8 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -63,6 +65,9 @@ public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
             .region( Region.of( AWS_REGION ) )
             .endpointOverride( uri )
             .credentialsProvider( provider )
+            .overrideConfiguration( ClientOverrideConfiguration.builder()
+                .addExecutionInterceptor( DefaultEncryptionInterceptor.getInstance() )
+                .build())
             .build();
         log.info( "DynamoDbClient is ready" );
         DynamodbClient dynamodbClient = new DynamodbClient( dynamoDbAsyncClient );

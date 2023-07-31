@@ -64,7 +64,7 @@ public class DynamodbStreamLowLevelTest extends Fixtures {
         client.deleteTable( tableName );
 
         client.createTable( tableName, 2, 1, keyName, "S", null, null,
-            z -> z.streamSpecification( StreamSpecification.builder()
+            z -> z.getBuilder().streamSpecification( StreamSpecification.builder()
                 .streamEnabled( true )
                 .streamViewType( StreamViewType.NEW_AND_OLD_IMAGES )
                 .build() ) );
@@ -119,7 +119,7 @@ public class DynamodbStreamLowLevelTest extends Fixtures {
         client.deleteTable( tableName );
 
         client.createTable( tableName, 2, 1, keyName, "S", null, null,
-            z -> z.streamSpecification( StreamSpecification.builder()
+            z -> z.getBuilder().streamSpecification( StreamSpecification.builder()
                 .streamEnabled( true )
                 .streamViewType( StreamViewType.NEW_AND_OLD_IMAGES )
                 .build() ) );

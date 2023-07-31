@@ -22,24 +22,39 @@
  * SOFTWARE.
  */
 
-package oap.storage.dynamo.client.modifiers;
+package oap.storage.dynamo.client.modifiers.impl;
 
-import oap.storage.dynamo.client.annotations.API;
-import oap.storage.dynamo.client.modifiers.impl.CreateTableDescriber;
 import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
+import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
 
-import java.util.function.Consumer;
+import java.util.List;
 
-/**
- * Allows to modify CreateTableRequest before applying.
- * For instance in order to add StreamAPI:
- *  builder.streamSpecification(StreamSpecification streamSpecification = new StreamSpecification()
- *             .withStreamEnabled(true)
- *             .withStreamViewType(StreamViewType.NEW_AND_OLD_IMAGES));
- */
-@FunctionalInterface
-@API
-public interface CreateTableRequestModifier extends Consumer<CreateTableDescriber> {
-    @Override
-    void accept( CreateTableDescriber describer );
+public class CreateTableDescriber {
+    private CreateTableRequest.Builder builder;
+    private String tableName = null;
+    private List<KeySchemaElement> keySchema = null;
+
+    public CreateTableDescriber( CreateTableRequest.Builder builder ) {
+        this.builder = builder;
+    }
+
+    public String getTableName() {
+        return tableName;
+    }
+
+    public void setTableName( String tableName ) {
+        this.tableName = tableName;
+    }
+
+    public List<KeySchemaElement> getKeySchema() {
+        return keySchema;
+    }
+
+    public void setKeySchema( List<KeySchemaElement> keySchema ) {
+        this.keySchema = keySchema;
+    }
+
+    public CreateTableRequest.Builder getBuilder() {
+        return builder;
+    }
 }
