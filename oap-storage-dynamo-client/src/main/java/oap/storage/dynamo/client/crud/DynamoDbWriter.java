@@ -24,7 +24,6 @@
 
 package oap.storage.dynamo.client.crud;
 
-import aQute.bnd.unmodifiable.Maps;
 import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
 import oap.storage.dynamo.client.DynamodbClient;
@@ -83,8 +82,8 @@ public class DynamoDbWriter extends DynamoDbHelper {
             modifier.accept( updateItemRequest );
         }
         UpdateItemRequest itemRequest = updateItemRequest.build();
+        readLock.lock();
         try {
-            readLock.lock();
             UpdateItemResponse response = dynamoDbClient.updateItem( itemRequest );
             return Result.success( response );
         } catch( Exception ex ) {
@@ -127,8 +126,8 @@ public class DynamoDbWriter extends DynamoDbHelper {
         if ( modifier != null ) {
             modifier.accept( updateItemRequest );
         }
+        readLock.lock();
         try {
-            readLock.lock();
             UpdateItemResponse response = dynamoDbClient.updateItem( updateItemRequest.build() );
             return Result.success( response );
         } catch ( ConditionalCheckFailedException ex ) {
@@ -171,13 +170,10 @@ public class DynamoDbWriter extends DynamoDbHelper {
             if ( nonEncryptedPrefixExists ) {
                 attributeNames.put( attrName, binName );
             }
-//            else {
-//                attributeNames.put( binName, binName );
-//            }
             setExpression.append( attrName + " = :var" + number + ", " );
         } );
         if( !setExpression.isEmpty() ) setExpression.setLength( setExpression.length() - ", ".length() );
-        String updateExpression = setExpression.isEmpty() ? "" : "SET " + setExpression.toString();
+        String updateExpression = setExpression.isEmpty() ? "" : "SET " + setExpression;
         UpdateItemRequest.Builder updateItemRequest = UpdateItemRequest.builder()
             .tableName( key.getTableName() )
             .key( getKeyAttribute( key ) )
@@ -187,8 +183,8 @@ public class DynamoDbWriter extends DynamoDbHelper {
         if ( modifier != null ) {
             modifier.accept( updateItemRequest );
         }
+        readLock.lock();
         try {
-            readLock.lock();
             UpdateItemResponse response = dynamoDbClient.updateItem( updateItemRequest.build() );
             return Result.success( response );
         } catch( Exception ex ) {
@@ -212,8 +208,8 @@ public class DynamoDbWriter extends DynamoDbHelper {
             .key( getKeyAttribute( key ) )
             .tableName( tableName )
             .build();
+        readLock.lock();
         try {
-            readLock.lock();
             try {
                 Map<String, AttributeValue> oldValues = dynamoDbClient.getItem( getItemRequest ).item();
                 Map<String, AttributeValue> newValues = generateBinNamesAndValues( key, binName, binValue, oldValues );
@@ -237,21 +233,19 @@ public class DynamoDbWriter extends DynamoDbHelper {
 
     @API
     public Result<Map<String, AttributeValue>, DynamodbClient.State> delete( Key key, DeleteItemRequestModifier modifier ) {
+        DeleteItemRequest.Builder deleteItemRequest = DeleteItemRequest.builder().tableName( key.getTableName() );
+        deleteItemRequest.key( getKeyAttribute( key ) );
+        if ( modifier != null ) {
+            modifier.accept( deleteItemRequest );
+        }
+        readLock.lock();
         try {
-            DeleteItemRequest.Builder deleteItemRequest = DeleteItemRequest.builder().tableName( key.getTableName() );
-            deleteItemRequest.key( getKeyAttribute( key ) );
-            if ( modifier != null ) {
-                modifier.accept( deleteItemRequest );
-            }
-            readLock.lock();
-            try {
-                DeleteItemResponse response = dynamoDbClient.deleteItem( deleteItemRequest.build() );
-                return Result.success( response.attributes() );
-            } catch( Exception ex ) {
-                log.error( "Error in put", ex );
-                LogConsolidated.log( log, Level.ERROR, s( 5 ), ex.getMessage(), ex );
-                return Result.failure( DynamodbClient.State.ERROR );
-            }
+            DeleteItemResponse response = dynamoDbClient.deleteItem( deleteItemRequest.build() );
+            return Result.success( response.attributes() );
+        } catch( Exception ex ) {
+            log.error( "Error in put", ex );
+            LogConsolidated.log( log, Level.ERROR, s( 5 ), ex.getMessage(), ex );
+            return Result.failure( DynamodbClient.State.ERROR );
         } finally {
             readLock.unlock();
         }
@@ -262,8 +256,8 @@ public class DynamoDbWriter extends DynamoDbHelper {
         if ( modifier != null ) {
             modifier.accept( builder );
         }
+        readLock.lock();
         try {
-            readLock.lock();
             return dynamoDbClient.batchWriteItem( builder.build() );
         } finally {
             readLock.unlock();
@@ -271,8 +265,8 @@ public class DynamoDbWriter extends DynamoDbHelper {
     }
 
     public BatchWriteItemResponse writeBatchUnprocessed( Map<String, List<WriteRequest>> unprocessed ) {
+        readLock.lock();
         try {
-            readLock.lock();
             return dynamoDbClient.batchWriteItem( BatchWriteItemRequest.builder().requestItems( unprocessed ).build() );
         } finally {
             readLock.unlock();

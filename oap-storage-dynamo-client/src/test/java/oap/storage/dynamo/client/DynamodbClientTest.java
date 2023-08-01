@@ -100,13 +100,14 @@ public class DynamodbClientTest extends Fixtures {
         client.deleteTableIfExists( tableName );
         client.createTable( tableName, 2, 1, keyName, "S", null, null, null );
 
-        client.update( new Key( tableName, keyName, longId ), "v1", false );
-        client.update( new Key( tableName, keyName, longId ), "v1", true );
-        client.update( new Key( tableName, keyName, longId ), "v2", 1 );
-        client.update( new Key( tableName, keyName, longId ), "v2", "str" );
+        assertThat( client.update( new Key( tableName, keyName, longId ), "v1", false ).isSuccess() ).isTrue();
+        assertThat( client.update( new Key( tableName, keyName, longId ), "v1", true ).isSuccess() ).isTrue();
+        assertThat( client.update( new Key( tableName, keyName, longId ), "v2", 1 ).isSuccess() ).isTrue();
+        assertThat( client.update( new Key( tableName, keyName, longId ), "v2", "str" ).isSuccess() ).isTrue();
 
         var ret = client.getRecord( new Key( tableName, keyName, longId ), r -> r.projectionExpression( "v1,v2" ) );
 
+        assertThat( ret.isSuccess() ).isTrue();
         assertThat( ret.successValue.get( "v1" ).bool() ).isTrue();
         assertThat( ret.successValue.get( "v2" ).s() ).isEqualTo( "str" );
 
@@ -114,7 +115,9 @@ public class DynamodbClientTest extends Fixtures {
         var records = client.getRecord( tableName, Sets.of(
             new Key( tableName, keyName, longId ),
             new Key( tableName, keyName, longId ) ), Sets.of( "v1" ) );
-        assertThat( records.successValue.size() ).isEqualTo( 1 );
+
+        assertThat( records.isSuccess() ).isTrue();
+        assertThat( records.successValue ).hasSize( 1 );
         assertThat( records.successValue.get( 0 ).get( "v1" ).bool() ).isTrue();
         assertThat( records.successValue.get( 0 ).get( "v1" ).bool() ).isTrue();
 
@@ -125,6 +128,7 @@ public class DynamodbClientTest extends Fixtures {
         client.recreateTable( tableName, keyName );
 
         ret = client.getRecord( new Key( tableName, keyName, longId ), null );
+        assertThat( ret.isSuccess() ).isFalse();
         assertThat( ret.failureValue ).isEqualTo( DynamodbClient.State.NOT_FOUND );
 
         client.deleteTableIfExists( tableName );
@@ -182,14 +186,15 @@ public class DynamodbClientTest extends Fixtures {
 
         CreateTableWithEncryptionRequestModifier.applyEncryptionForDefinedTables();
 //Update Expressions forbidden on signed attributes : v1
-//        assertThat( client.update( new Key( tableName, keyName, longId ), "v1", false ).isSuccess() ).isTrue();
+        assertThat( client.update( new Key( tableName, keyName, longId ), "v1", false ).isSuccess() ).isTrue();
 //        assertThat( client.update( new Key( tableName, keyName, longId ), "v1", true ).isSuccess() ).isTrue();
 //        assertThat( client.update( new Key( tableName, keyName, longId ), "v2", 10 ).isSuccess() ).isTrue();
 //        assertThat( client.update( new Key( tableName, keyName, longId ), "v2", "Encrypted text" ).isSuccess() ).isTrue();
-        assertThat( client.update( new Key( tableName, keyName, longId ), ":v3", "Odds N Evens" ).isSuccess() ).isTrue();
+//        assertThat( client.update( new Key( tableName, keyName, longId ), ":v3", "Odds N Evens" ).isSuccess() ).isTrue();
 
         var ret = client.getRecord( new Key( tableName, keyName, longId ), r -> r.projectionExpression( "v1,v2,:v3" ) );
 
+        assertThat( ret.isSuccess() ).isTrue();
         assertThat( ret.successValue.get( "v1" ).bool() ).isTrue();
         assertThat( ret.successValue.get( "v2" ).s() ).isEqualTo( "str" );
 
