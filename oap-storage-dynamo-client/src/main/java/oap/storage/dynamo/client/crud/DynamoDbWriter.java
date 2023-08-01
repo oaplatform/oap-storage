@@ -24,6 +24,7 @@
 
 package oap.storage.dynamo.client.crud;
 
+import aQute.bnd.unmodifiable.Maps;
 import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
 import oap.storage.dynamo.client.DynamodbClient;
@@ -33,6 +34,7 @@ import oap.storage.dynamo.client.convertors.DynamodbDatatype;
 import oap.storage.dynamo.client.modifiers.BatchWriteItemRequestModifier;
 import oap.storage.dynamo.client.modifiers.DeleteItemRequestModifier;
 import oap.storage.dynamo.client.modifiers.UpdateItemRequestModifier;
+import oap.storage.dynamo.client.modifiers.impl.CreateTableWithEncryptionRequestModifier;
 import oap.util.Result;
 import org.slf4j.event.Level;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
@@ -58,6 +60,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 import static oap.util.Dates.s;
 
@@ -153,19 +156,32 @@ public class DynamoDbWriter extends DynamoDbHelper {
         Map<String, AttributeValue> updatedValues = new HashMap<>();
         StringBuilder setExpression = new StringBuilder();
         AtomicInteger counter = new AtomicInteger();
+        Map<String, String> attributeNames = new HashMap<>();
         binNamesAndValues.forEach( ( binName, binValue ) -> {
             // Update the column specified by name with updatedVal
             int number = counter.incrementAndGet();
             updatedValues.put( ":var" + number, binValue != null
                     ? DynamodbDatatype.createAttributeValueFromObject( binValue )
                     : AttributeValue.fromNul( true ) );
-            setExpression.append( binName + " = :var" + number + ", " );
+            String prefix = CreateTableWithEncryptionRequestModifier.unsignedAttributePrefix;
+            boolean nonEncryptedPrefixExists = binName.startsWith( prefix );
+            String attrName = nonEncryptedPrefixExists
+                ? binName.replaceFirst( "^" + Pattern.quote( prefix ) + "(.*)", "#$1" )
+                : binName;
+            if ( nonEncryptedPrefixExists ) {
+                attributeNames.put( attrName, binName );
+            }
+//            else {
+//                attributeNames.put( binName, binName );
+//            }
+            setExpression.append( attrName + " = :var" + number + ", " );
         } );
         if( !setExpression.isEmpty() ) setExpression.setLength( setExpression.length() - ", ".length() );
         String updateExpression = setExpression.isEmpty() ? "" : "SET " + setExpression.toString();
         UpdateItemRequest.Builder updateItemRequest = UpdateItemRequest.builder()
             .tableName( key.getTableName() )
             .key( getKeyAttribute( key ) )
+            .expressionAttributeNames( attributeNames )
             .updateExpression( updateExpression )
             .expressionAttributeValues( updatedValues );
         if ( modifier != null ) {

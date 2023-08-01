@@ -26,7 +26,6 @@ package oap.storage.dynamo.client.crud;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
-import oap.storage.dynamo.client.DefaultEncryptionInterceptor;
 import oap.storage.dynamo.client.KeyForSchema;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.storage.dynamo.client.Key;
@@ -38,7 +37,7 @@ import oap.storage.dynamo.client.modifiers.CreateTableRequestModifier;
 import oap.storage.dynamo.client.modifiers.DescribeTableResponseModifier;
 import oap.storage.dynamo.client.modifiers.TableSchemaModifier;
 import oap.storage.dynamo.client.modifiers.UpdateTableRequestModifier;
-import oap.storage.dynamo.client.modifiers.impl.CreateTableWithEncryptionRequestModifier;
+import oap.storage.dynamo.client.modifiers.impl.CreateTableDescriber;
 import oap.storage.dynamo.client.restrictions.ReservedNameException;
 import oap.storage.dynamo.client.restrictions.ReservedWords;
 import oap.util.Pair;
@@ -76,15 +75,11 @@ import software.amazon.awssdk.services.dynamodb.model.StreamViewType;
 import software.amazon.awssdk.services.dynamodb.model.TableDescription;
 import software.amazon.awssdk.services.dynamodb.model.UpdateTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.UpdateTableResponse;
-import software.amazon.cryptography.dbencryptionsdk.dynamodb.DynamoDbEncryptionInterceptor;
-import software.amazon.cryptography.dbencryptionsdk.dynamodb.model.DynamoDbTableEncryptionConfig;
-import software.amazon.cryptography.dbencryptionsdk.dynamodb.model.DynamoDbTablesEncryptionConfig;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -172,10 +167,11 @@ public class DynamoDbTableModifier {
     }
 
     @API
+    //@ToDo implement encryption here
     public Result<DynamodbClient.State, DynamodbClient.State> recreateTable( String tableName, String keyName ) {
         Objects.requireNonNull( tableName );
+        writeLock.lock();
         try {
-            writeLock.lock();
             TableDescription description = deleteTableIfExists( tableName )._2();
             if ( description != null ) {
                 createTable( tableName,
@@ -206,8 +202,8 @@ public class DynamoDbTableModifier {
             return new Pair<>( true, null );
         }
         long time = System.currentTimeMillis();
+        writeLock.lock();
         try {
-            writeLock.lock();
             try {
                 DeleteTableResponse response = dynamoDbClient.deleteTable( createDeleteTableRequest( tableName ) );
                 // Call and wait until the Amazon DynamoDB table is deleted
@@ -239,8 +235,8 @@ public class DynamoDbTableModifier {
     @API
     public boolean tableExists( String tableName ) {
         Objects.requireNonNull( tableName );
+        readLock.lock();
         try {
-            readLock.lock();
             return dynamoDbClient.listTables().tableNames().stream().filter( name -> name.equals( tableName ) ).findAny().isPresent();
         } finally {
             readLock.unlock();
@@ -248,7 +244,8 @@ public class DynamoDbTableModifier {
     }
 
     @API
-    public boolean createTable( String tableName, long readCapacityUnits, long writeCapacityUnits,
+    public boolean createTable( String tableName,
+                                long readCapacityUnits, long writeCapacityUnits,
                                 String partitionKeyName, String partitionKeyType,
                                 String sortKeyName, String sortKeyType,
                                 CreateTableRequestModifier modifier ) {
@@ -274,14 +271,18 @@ public class DynamoDbTableModifier {
                     .billingMode( BillingMode.PROVISIONED )
                     .provisionedThroughput( createProvisionedThroughput( readCapacityUnits, writeCapacityUnits ) );
             if ( modifier != null ) {
-                modifier.accept( builder );
+                var describer = new CreateTableDescriber( builder );
+                describer.setTableName( tableName );
+                describer.setKeySchema( keySchema );
+                describer.setAttributeDefinitions( attributeDefinitions );
+                modifier.accept( describer );
             }
             CreateTableRequest request = builder.build();
             boolean tableCreated = false;
             boolean streamEnabled = false;
             StreamSpecification streamSpecification = null;
+            writeLock.lock();
             try {
-                writeLock.lock();
                 CreateTableResponse createTableResponse = dynamoDbClient.createTable( request );
                 WaiterResponse<DescribeTableResponse> response =
                         dynamoDbClient.waiter().waitUntilTableExists( createDescribeTableRequest( tableName, null ) );
@@ -295,8 +296,8 @@ public class DynamoDbTableModifier {
             time = System.currentTimeMillis();
             String fictiveRecordId = null;
             if ( modifier != null && streamEnabled ) {
+                readLock.lock();
                 try {
-                    readLock.lock();
                     // put/delete fictive item to table
                     DynamoDbWriter writer = new DynamoDbWriter( dynamoDbClient, enhancedClient, readLock );
                     fictiveRecordId = "fictiveRecordForTable:" + tableName + ":" + UUID.randomUUID().toString();
@@ -326,8 +327,8 @@ public class DynamoDbTableModifier {
     public DescribeTableResponse describeTable( String tableName, DescribeTableResponseModifier modifier ) {
         Objects.requireNonNull( tableName );
         DescribeTableRequest request = createDescribeTableRequest( tableName, modifier );
+        readLock.lock();
         try {
-            readLock.lock();
             return dynamoDbClient.describeTable( request );
         } finally {
             readLock.unlock();
@@ -387,8 +388,8 @@ public class DynamoDbTableModifier {
             tableUpdateModifier.accept( tableUpdateRequest );
         }
         long time = System.currentTimeMillis();
+        writeLock.lock();
         try {
-            writeLock.lock();
             UpdateTableResponse updateTableResponse = dynamoDbClient.updateTable( tableUpdateRequest.build() );
             do {
                 WaiterResponse<DescribeTableResponse> waiterResponse =
@@ -430,8 +431,8 @@ public class DynamoDbTableModifier {
                 .globalSecondaryIndexUpdates( Collections.singletonList( indexUpdateRequest.build() ) )
                 .build();
         long time = System.currentTimeMillis();
+        writeLock.lock();
         try {
-            writeLock.lock();
             UpdateTableResponse updateTableResponse = dynamoDbClient.updateTable( tableUpdateRequest );
             do {
                 WaiterResponse<DescribeTableResponse> waiterResponse =
@@ -463,20 +464,6 @@ public class DynamoDbTableModifier {
         } finally {
             writeLock.unlock();
         }
-    }
-
-    @API
-    public static void applyEncryptionForDefinedTables() {
-        Map<String, DynamoDbTableEncryptionConfig> tablesConfig = CreateTableWithEncryptionRequestModifier.getEncryptionTablesConfig();
-        if ( tablesConfig.isEmpty() ) {
-            throw new RuntimeException( "Please define encryption policy for ALL tables before calling this method" );
-        }
-        DynamoDbEncryptionInterceptor encryptionInterceptor = DynamoDbEncryptionInterceptor.builder()
-            .config( DynamoDbTablesEncryptionConfig.builder()
-                .tableEncryptionConfigs( tablesConfig )
-                .build() )
-            .build();
-        DefaultEncryptionInterceptor.getInstance().setEncryptionInterceptor( encryptionInterceptor );
     }
 
     private static DescribeTableRequest createDescribeTableRequest( String tableName, DescribeTableResponseModifier modifier ) {

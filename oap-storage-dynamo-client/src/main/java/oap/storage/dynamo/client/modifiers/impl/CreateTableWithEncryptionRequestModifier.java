@@ -24,15 +24,42 @@
 
 package oap.storage.dynamo.client.modifiers.impl;
 
+import oap.storage.dynamo.client.DefaultEncryptionInterceptor;
+import oap.storage.dynamo.client.annotations.API;
 import oap.storage.dynamo.client.modifiers.CreateTableRequestModifier;
+import software.amazon.awssdk.services.kms.KmsClient;
+import software.amazon.cryptography.dbencryptionsdk.dynamodb.DynamoDbEncryptionInterceptor;
 import software.amazon.cryptography.dbencryptionsdk.dynamodb.model.DynamoDbTableEncryptionConfig;
+import software.amazon.cryptography.dbencryptionsdk.dynamodb.model.DynamoDbTablesEncryptionConfig;
 import software.amazon.cryptography.dbencryptionsdk.structuredencryption.model.CryptoAction;
 import software.amazon.cryptography.materialproviders.IKeyring;
+import software.amazon.cryptography.materialproviders.MaterialProviders;
+import software.amazon.cryptography.materialproviders.model.CreateAwsKmsKeyringInput;
 import software.amazon.cryptography.materialproviders.model.DBEAlgorithmSuiteId;
+import software.amazon.cryptography.materialproviders.model.MaterialProvidersConfig;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+
+/**
+ * Performs work to set up encryption in tables.
+ * Note: tables should have been created BEFORE initializing encryption.
+ * Usage:
+ *
+ * IKeyring keyRing = CreateTableWithEncryptionRequestModifier.createKeyRing( "xxxxx" );
+ * var modifier1 = new CreateTableWithEncryptionRequestModifier( keyRing, "table1", "id", null );
+ * modifier1.addColumnAction( "email", CryptoAction.SIGN );
+ * modifier2.addColumnAction( "address", CryptoAction.ENCRYPT_AND_SIGN );
+ * modifier3.addColumnAction( "socialSecurityNumber", CryptoAction.SIGN );
+ * modifier3.addColumnAction( "gender", CryptoAction.DO_NOTHING );
+ * ...
+ * var modifier2 = new CreateTableWithEncryptionRequestModifier( keyRing, "table2", "id", "name" );
+ * ...
+ * var modifier3 = new CreateTableWithEncryptionRequestModifier( keyRing, "table3", "keyId", "sortId" );
+ * ...
+ * CreateTableWithEncryptionRequestModifier.applyEncryptionForDefinedTables();
+ */
 
 public class CreateTableWithEncryptionRequestModifier implements CreateTableRequestModifier {
     private static Map<String, DynamoDbTableEncryptionConfig> tablesConfig = new HashMap<>();
@@ -53,7 +80,7 @@ public class CreateTableWithEncryptionRequestModifier implements CreateTableRequ
     //        and immediately start writing to that new attribute, without
     //        any other configuration update needed.
     //      Once you configure this field, it is not safe to update it.
-    private String unsignedAttributePrefix = ":";
+    public static String unsignedAttributePrefix = ":";
 
     // Specifying an algorithm suite is not required,
     // but is done here to demonstrate how to do so.
@@ -66,6 +93,18 @@ public class CreateTableWithEncryptionRequestModifier implements CreateTableRequ
     private DBEAlgorithmSuiteId algorithmSuiteId = DBEAlgorithmSuiteId.ALG_AES_256_GCM_HKDF_SHA512_COMMIT_KEY_ECDSA_P384_SYMSIG_HMAC_SHA384;
 
     private Map<String, CryptoAction> attributeActionsOnEncrypt = new HashMap<>();
+    public static final String KMS_TEST_KEY_ID = "arn:aws:kms:us-west-2:658956600833:key/b3537ef1-d8dc-4780-9f5a-55776cbb2f7f";
+    public static IKeyring createKeyRing( String kmsKeyId ) {
+        System.setProperty( "aws.region", "us-west-2" );
+        MaterialProviders matProv = MaterialProviders.builder()
+            .MaterialProvidersConfig( MaterialProvidersConfig.builder().build() )
+            .build();
+        CreateAwsKmsKeyringInput keyringInput = CreateAwsKmsKeyringInput.builder()
+            .kmsKeyId( kmsKeyId )
+            .kmsClient( KmsClient.create() )
+            .build();
+        return matProv.CreateAwsKmsKeyring(keyringInput);
+    }
 
     public CreateTableWithEncryptionRequestModifier( IKeyring kmsKeyring, String tableName, String partitionKeyName, String sortKeyName ) {
         Objects.requireNonNull( kmsKeyring );
@@ -80,6 +119,19 @@ public class CreateTableWithEncryptionRequestModifier implements CreateTableRequ
         if ( sortKeyName != null ) {
             attributeActionsOnEncrypt.put( sortKeyName, CryptoAction.SIGN_ONLY ); // Our sort attribute must be SIGN_ONLY
         }
+    }
+
+    @API
+    public static void applyEncryptionForDefinedTables() {
+        if ( tablesConfig.isEmpty() ) {
+            throw new RuntimeException( "Please define encryption policy for ALL tables before calling this method" );
+        }
+        DynamoDbEncryptionInterceptor encryptionInterceptor = DynamoDbEncryptionInterceptor.builder()
+            .config( DynamoDbTablesEncryptionConfig.builder()
+                .tableEncryptionConfigs( tablesConfig )
+                .build() )
+            .build();
+        DefaultEncryptionInterceptor.getInstance().setEncryptionInterceptor( encryptionInterceptor );
     }
 
     @Override
@@ -106,7 +158,7 @@ public class CreateTableWithEncryptionRequestModifier implements CreateTableRequ
      * @param columnName is attribute name
      * @param action one of the action: ENCRYPT_AND_SIGN for encrypted, SIGN_ONLY for signed, and DO_NOTHING for the rest.
      */
-    public void addColumnAction( String columnName, CryptoAction action ) {
+    public void addCryptoAction( String columnName, CryptoAction action ) {
         if ( action == CryptoAction.DO_NOTHING && !columnName.startsWith( unsignedAttributePrefix ) ) {
             throw new IllegalArgumentException( "You specified column prefix '" + unsignedAttributePrefix + "' for non-encrypted attribute, but this prefix is missing for given attribute '" + columnName + "'" );
         }

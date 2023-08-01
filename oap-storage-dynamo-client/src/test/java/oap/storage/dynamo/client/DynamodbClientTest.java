@@ -35,6 +35,8 @@ import oap.storage.dynamo.client.creator.samples.AutonomiousDynamo;
 import oap.storage.dynamo.client.creator.samples.BeanWithRestrictedField;
 import oap.storage.dynamo.client.creator.samples.CompositeBean;
 import oap.storage.dynamo.client.creator.samples.EmbeddedBean;
+import oap.storage.dynamo.client.modifiers.impl.CreateTableDescriber;
+import oap.storage.dynamo.client.modifiers.impl.CreateTableWithEncryptionRequestModifier;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
@@ -44,13 +46,23 @@ import oap.util.Sets;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
+import software.amazon.cryptography.dbencryptionsdk.structuredencryption.model.CryptoAction;
 
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static oap.storage.dynamo.client.modifiers.impl.CreateTableWithEncryptionRequestModifier.KMS_TEST_KEY_ID;
 import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -94,6 +106,89 @@ public class DynamodbClientTest extends Fixtures {
         client.update( new Key( tableName, keyName, longId ), "v2", "str" );
 
         var ret = client.getRecord( new Key( tableName, keyName, longId ), r -> r.projectionExpression( "v1,v2" ) );
+
+        assertThat( ret.successValue.get( "v1" ).bool() ).isTrue();
+        assertThat( ret.successValue.get( "v2" ).s() ).isEqualTo( "str" );
+
+        assertThat( client.tableExists( tableName ) ).isTrue();
+        var records = client.getRecord( tableName, Sets.of(
+            new Key( tableName, keyName, longId ),
+            new Key( tableName, keyName, longId ) ), Sets.of( "v1" ) );
+        assertThat( records.successValue.size() ).isEqualTo( 1 );
+        assertThat( records.successValue.get( 0 ).get( "v1" ).bool() ).isTrue();
+        assertThat( records.successValue.get( 0 ).get( "v1" ).bool() ).isTrue();
+
+        var ret2 = client.getRecord( new Key( tableName, keyName, longId ), r -> r.projectionExpression( "v2,v3" ) );
+        assertThat( ret2.successValue.get( "v1" ) ).isNull();
+        assertThat( ret2.successValue.get( "v2" ).s() ).isEqualTo( "str" );
+        assertThat( ret2.successValue.get( "v3" ) ).isNull();
+        client.recreateTable( tableName, keyName );
+
+        ret = client.getRecord( new Key( tableName, keyName, longId ), null );
+        assertThat( ret.failureValue ).isEqualTo( DynamodbClient.State.NOT_FOUND );
+
+        client.deleteTableIfExists( tableName );
+    }
+
+    static ByteBuffer generateAesKeyBytes() {
+        // This example uses BouncyCastle's KeyGenerator to generate the key bytes.
+        // In practice, you should not generate this key in your code, and should instead
+        //     retrieve this key from a secure key management system (e.g. HSM).
+        // This key is created here for example purposes only and should not be used for any other purpose.
+        KeyGenerator aesGen;
+        try {
+            aesGen = KeyGenerator.getInstance("AES");
+        } catch ( NoSuchAlgorithmException e) {
+            throw new RuntimeException("No such algorithm", e);
+        }
+        aesGen.init(256, new SecureRandom());
+        SecretKey encryptionKey = aesGen.generateKey();
+        ByteBuffer encryptionKeyByteBuffer = ByteBuffer.wrap(encryptionKey.getEncoded());
+        return encryptionKeyByteBuffer;
+    }
+
+    @Test
+    public void testClientWithEncryption() throws Exception {
+        var client = fixture.getDynamodbClient();
+
+        client.start();
+        client.waitConnectionEstablished();
+        client.deleteTableIfExists( tableName );
+        var keyRing = CreateTableWithEncryptionRequestModifier.createKeyRing( KMS_TEST_KEY_ID );
+        var modifier = new CreateTableWithEncryptionRequestModifier( keyRing, tableName, keyName, null) {
+            @Override
+            public void accept( CreateTableDescriber describer ) {
+                List<AttributeDefinition> definitions = describer.getAttributeDefinitions();
+                definitions.add( AttributeDefinition.builder()
+                    .attributeName( "v1" )
+                    .attributeType( ScalarAttributeType.B )
+                    .build() );
+                definitions.add( AttributeDefinition.builder()
+                    .attributeName( "v2" )
+                    .attributeType( ScalarAttributeType.S )
+                    .build() );
+                definitions.add( AttributeDefinition.builder()
+                    .attributeName( ":v3" )
+                    .attributeType( ScalarAttributeType.S )
+                    .build() );
+                super.accept( describer );
+            }
+        };
+        modifier.addCryptoAction( "v1", CryptoAction.ENCRYPT_AND_SIGN );
+        modifier.addCryptoAction( "v2", CryptoAction.SIGN_ONLY );
+        modifier.addCryptoAction( ":v3", CryptoAction.DO_NOTHING );
+
+        client.createTable( tableName, 2, 1, keyName, "S", null, null, modifier );
+
+        CreateTableWithEncryptionRequestModifier.applyEncryptionForDefinedTables();
+//Update Expressions forbidden on signed attributes : v1
+//        assertThat( client.update( new Key( tableName, keyName, longId ), "v1", false ).isSuccess() ).isTrue();
+//        assertThat( client.update( new Key( tableName, keyName, longId ), "v1", true ).isSuccess() ).isTrue();
+//        assertThat( client.update( new Key( tableName, keyName, longId ), "v2", 10 ).isSuccess() ).isTrue();
+//        assertThat( client.update( new Key( tableName, keyName, longId ), "v2", "Encrypted text" ).isSuccess() ).isTrue();
+        assertThat( client.update( new Key( tableName, keyName, longId ), ":v3", "Odds N Evens" ).isSuccess() ).isTrue();
+
+        var ret = client.getRecord( new Key( tableName, keyName, longId ), r -> r.projectionExpression( "v1,v2,:v3" ) );
 
         assertThat( ret.successValue.get( "v1" ).bool() ).isTrue();
         assertThat( ret.successValue.get( "v2" ).s() ).isEqualTo( "str" );

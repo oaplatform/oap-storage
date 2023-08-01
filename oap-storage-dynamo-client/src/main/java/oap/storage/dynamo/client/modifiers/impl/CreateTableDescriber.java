@@ -24,6 +24,7 @@
 
 package oap.storage.dynamo.client.modifiers.impl;
 
+import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
 import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
 
@@ -33,6 +34,7 @@ public class CreateTableDescriber {
     private CreateTableRequest.Builder builder;
     private String tableName = null;
     private List<KeySchemaElement> keySchema = null;
+    private List<AttributeDefinition> attributeDefinitions;
 
     public CreateTableDescriber( CreateTableRequest.Builder builder ) {
         this.builder = builder;
@@ -56,5 +58,13 @@ public class CreateTableDescriber {
 
     public CreateTableRequest.Builder getBuilder() {
         return builder;
+    }
+
+    public void setAttributeDefinitions( List<AttributeDefinition> attributeDefinitions ) {
+        this.attributeDefinitions = attributeDefinitions;
+    }
+
+    public List<AttributeDefinition> getAttributeDefinitions() {
+        return attributeDefinitions;
     }
 }
