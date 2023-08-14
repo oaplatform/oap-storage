@@ -39,6 +39,7 @@ import java.util.function.Consumer;
 @FunctionalInterface
 @API
 public interface CreateTableRequestModifier extends Consumer<CreateTableRequest.Builder> {
+
     @Override
     void accept( CreateTableRequest.Builder builder );
 }

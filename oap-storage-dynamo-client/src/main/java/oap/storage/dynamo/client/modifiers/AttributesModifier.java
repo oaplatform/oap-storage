@@ -30,6 +30,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import java.util.Map;
 import java.util.function.Function;
 
+@FunctionalInterface
 @API
 public interface AttributesModifier extends Function<Map<String, AttributeValue>, Map<String, AttributeValue>> {
 

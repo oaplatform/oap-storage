@@ -75,17 +75,17 @@ public class DynamoDbWriter extends DynamoDbHelper {
     }
 
     @API
-    public <T> Result<UpdateItemResponse, DynamodbClient.State> updateOrCreateItem( UpdateItemRequest.Builder updateItemRequest, UpdateItemRequestModifier modifier ) {
+    public Result<UpdateItemResponse, DynamodbClient.State> updateOrCreateItem( UpdateItemRequest.Builder updateItemRequest, UpdateItemRequestModifier modifier ) {
         if ( modifier != null ) {
             modifier.accept( updateItemRequest );
         }
         UpdateItemRequest itemRequest = updateItemRequest.build();
+        readLock.lock();
         try {
-            readLock.lock();
             UpdateItemResponse response = dynamoDbClient.updateItem( itemRequest );
             return Result.success( response );
         } catch( Exception ex ) {
-            log.error( "Error in update for key {}", itemRequest.key(), ex );
+            log.error( "Error in create/update item for key {}", itemRequest.key(), ex );
             LogConsolidated.log( log, Level.ERROR, s( 5 ), ex.getMessage(), ex );
             return Result.failure( DynamodbClient.State.ERROR );
         } finally {
@@ -124,8 +124,8 @@ public class DynamoDbWriter extends DynamoDbHelper {
         if ( modifier != null ) {
             modifier.accept( updateItemRequest );
         }
+        readLock.lock();
         try {
-            readLock.lock();
             UpdateItemResponse response = dynamoDbClient.updateItem( updateItemRequest.build() );
             return Result.success( response );
         } catch ( ConditionalCheckFailedException ex ) {
@@ -171,8 +171,8 @@ public class DynamoDbWriter extends DynamoDbHelper {
         if ( modifier != null ) {
             modifier.accept( updateItemRequest );
         }
+        readLock.lock();
         try {
-            readLock.lock();
             UpdateItemResponse response = dynamoDbClient.updateItem( updateItemRequest.build() );
             return Result.success( response );
         } catch( Exception ex ) {
@@ -196,8 +196,8 @@ public class DynamoDbWriter extends DynamoDbHelper {
             .key( getKeyAttribute( key ) )
             .tableName( tableName )
             .build();
+        readLock.lock();
         try {
-            readLock.lock();
             try {
                 Map<String, AttributeValue> oldValues = dynamoDbClient.getItem( getItemRequest ).item();
                 Map<String, AttributeValue> newValues = generateBinNamesAndValues( key, binName, binValue, oldValues );
@@ -221,7 +221,6 @@ public class DynamoDbWriter extends DynamoDbHelper {
 
     @API
     public Result<Map<String, AttributeValue>, DynamodbClient.State> delete( Key key, DeleteItemRequestModifier modifier ) {
-        try {
             DeleteItemRequest.Builder deleteItemRequest = DeleteItemRequest.builder().tableName( key.getTableName() );
             deleteItemRequest.key( getKeyAttribute( key ) );
             if ( modifier != null ) {
@@ -235,10 +234,9 @@ public class DynamoDbWriter extends DynamoDbHelper {
                 log.error( "Error in put", ex );
                 LogConsolidated.log( log, Level.ERROR, s( 5 ), ex.getMessage(), ex );
                 return Result.failure( DynamodbClient.State.ERROR );
+            } finally {
+                readLock.unlock();
             }
-        } finally {
-            readLock.unlock();
-        }
     }
 
     @API
@@ -246,17 +244,17 @@ public class DynamoDbWriter extends DynamoDbHelper {
         if ( modifier != null ) {
             modifier.accept( builder );
         }
+        readLock.lock();
         try {
-            readLock.lock();
             return dynamoDbClient.batchWriteItem( builder.build() );
         } finally {
             readLock.unlock();
         }
     }
 
-    public BatchWriteItemResponse writeBatchUnprocessed( Map<String, List<WriteRequest>> unprocessed ) {
+    public BatchWriteItemResponse writeBatchUnprocessed( Map<String, ? extends List<WriteRequest>> unprocessed ) {
+        readLock.lock();
         try {
-            readLock.lock();
             return dynamoDbClient.batchWriteItem( BatchWriteItemRequest.builder().requestItems( unprocessed ).build() );
         } finally {
             readLock.unlock();

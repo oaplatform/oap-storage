@@ -29,6 +29,7 @@ import oap.storage.dynamo.client.crud.AbstractOperation;
 import java.util.List;
 
 public interface DynamodbReadBatch {
+
     void setBatchSize( int batchSize );
     void addOperations( List<AbstractOperation> operations );
     void addOperation( AbstractOperation operation );

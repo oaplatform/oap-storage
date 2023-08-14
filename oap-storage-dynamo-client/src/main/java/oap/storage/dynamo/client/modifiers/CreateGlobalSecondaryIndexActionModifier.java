@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 @FunctionalInterface
 @API
 public interface CreateGlobalSecondaryIndexActionModifier extends Consumer<CreateGlobalSecondaryIndexAction.Builder> {
+
     @Override
     void accept( CreateGlobalSecondaryIndexAction.Builder builder );
 }

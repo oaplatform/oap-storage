@@ -25,6 +25,8 @@
 package oap.storage.dynamo.client;
 
 import oap.storage.dynamo.client.atomic.AtomicUpdateFieldAndValue;
+import oap.storage.dynamo.client.fixtures.AbstractDynamodbFixture;
+import oap.storage.dynamo.client.fixtures.TestContainerDynamodbFixture;
 import oap.testng.Fixtures;
 import oap.util.HashMaps;
 import oap.util.Result;

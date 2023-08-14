@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 @FunctionalInterface
 @API
 public interface KeysAndAttributesModifier extends Consumer<KeysAndAttributes.Builder> {
+
     @Override
     void accept( KeysAndAttributes.Builder builder );
 }

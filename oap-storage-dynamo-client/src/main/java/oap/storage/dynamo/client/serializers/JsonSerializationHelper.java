@@ -35,12 +35,14 @@ import org.apache.commons.codec.binary.Base64;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class JsonSerializationHelper {
-    public static final String CHARACTER_ENCODING = "UTF-8";
+    public static final Charset CHARACTER_ENCODING = StandardCharsets.UTF_8;
 
     private JsonSerializationHelper() {
     }

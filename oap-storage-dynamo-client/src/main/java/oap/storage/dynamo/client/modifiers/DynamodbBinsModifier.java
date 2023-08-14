@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 @FunctionalInterface
 @API
 public interface DynamodbBinsModifier extends Consumer<Map<String, AttributeValue>> {
+
     @Override
     void accept( Map<String, AttributeValue> args );
 }

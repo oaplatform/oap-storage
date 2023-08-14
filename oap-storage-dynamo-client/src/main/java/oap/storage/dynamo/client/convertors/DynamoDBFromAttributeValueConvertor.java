@@ -28,5 +28,6 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 @FunctionalInterface
 public interface DynamoDBFromAttributeValueConvertor<T, V> {
+
     V convert( AttributeValue attributeValue, KeyConvertorForMap<T, V> convertor );
 }

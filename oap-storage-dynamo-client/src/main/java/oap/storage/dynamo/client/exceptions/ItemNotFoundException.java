@@ -22,17 +22,16 @@
  * SOFTWARE.
  */
 
-package oap.storage.dynamo.client.modifiers;
+package oap.storage.dynamo.client.exceptions;
 
-import oap.storage.dynamo.client.annotations.API;
-import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 
-import java.util.function.Consumer;
+public class ItemNotFoundException extends RuntimeException {
 
-@FunctionalInterface
-@API
-public interface DeleteItemRequestModifier extends Consumer<DeleteItemRequest.Builder> {
-
-    @Override
-    void accept( DeleteItemRequest.Builder builder );
+    public ItemNotFoundException( String message ) {
+        super( message );
+    }
+    public ItemNotFoundException( String message, DynamoDbException exception ) {
+        super( message, exception );
+    }
 }

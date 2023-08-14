@@ -31,7 +31,6 @@ import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
 
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -49,7 +48,8 @@ import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.Type
  * @link https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html
  */
 public enum DynamodbDatatype {
-        //scalars ScalarAttributeType
+
+    //scalars ScalarAttributeType
     BOOLEAN( "B",
         ( o, value, convertor ) -> o.bool( ( Boolean ) value ),
         ( o, convertor ) -> o == null || o.bool() == null ? null : o.bool(),
@@ -140,8 +140,8 @@ public enum DynamodbDatatype {
     private static int getLength( String o ) {
         try {
             return o.getBytes( CHARACTER_ENCODING ).length;
-        } catch ( UnsupportedEncodingException e ) {
-            throw new RuntimeException( e );
+        } catch ( Exception e ) {
+            throw new RuntimeException( "Cannot detect length of '" + o + "'", e );
         }
     }
 

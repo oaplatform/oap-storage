@@ -25,6 +25,7 @@
 package oap.storage;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.io.content.ContentWriter;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.storage.dynamo.client.Key;
 import oap.storage.dynamo.client.batch.WriteBatchOperationHelper;
@@ -153,7 +154,8 @@ public class DynamoPersistence<I, T> extends AbstractPersistance<I, T> implement
 
     private void persist( List<I> deletedIds, List<AbstractOperation> list ) {
         if ( stopped ) return;
-        if( !list.isEmpty() ) try {
+        if( list.isEmpty() ) return;
+        try {
             batchWriter.addOperations( list );
             batchWriter.write();
             deletedIds.forEach( storage.memory::removePermanently );
@@ -163,10 +165,10 @@ public class DynamoPersistence<I, T> extends AbstractPersistance<I, T> implement
             Path filename = crashDumpPath.resolve( CRASH_DUMP_PATH_FORMAT_MILLIS.print( DateTimeUtils.currentTimeMillis() ) + ".json.gz" );
             log.error( "cannot persist. Dumping to " + filename + "...", e );
             List<Pair<String, AbstractOperation>> dump = Stream.of( list )
-                .filter( model -> model.getType().equals( OperationType.UPDATE ) )
+                .filter( model -> model.getType() == OperationType.UPDATE )
                 .map( model -> __( "replace", model ) )
                 .toList();
-            Files.writeString( filename, GZIP, Binder.json.marshal( dump ) );
+            Files.write( filename, GZIP, Binder.json.marshal( dump ), ContentWriter.ofString() );
         }
     }
 

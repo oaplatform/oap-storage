@@ -76,9 +76,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @NotThreadSafe
 @Slf4j
 public class WriteBatchOperationHelper extends DynamoDbHelper implements DynamodbWriteBatch {
+    public static final int WRITE_MAX_BATCH_SIZE = 25;
     private final DynamodbClient client;
 
-    private int batchSize = 25;
+    private int batchSize = WRITE_MAX_BATCH_SIZE;
     protected List<OperationsHolder> operations = new ArrayList<>();
 
     public WriteBatchOperationHelper( DynamodbClient client ) {
@@ -87,7 +88,7 @@ public class WriteBatchOperationHelper extends DynamoDbHelper implements Dynamod
 
     @API
     public void setBatchSize( int batchSize ) {
-        if( batchSize <= 0 || batchSize > 25 ) {
+        if( batchSize <= 0 || batchSize > WRITE_MAX_BATCH_SIZE ) {
             return;
         }
         this.batchSize = batchSize;

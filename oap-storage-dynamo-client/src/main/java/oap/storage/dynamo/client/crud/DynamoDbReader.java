@@ -31,6 +31,7 @@ import oap.LogConsolidated;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.storage.dynamo.client.Key;
 import oap.storage.dynamo.client.annotations.API;
+import oap.storage.dynamo.client.exceptions.ItemNotFoundException;
 import oap.storage.dynamo.client.modifiers.BatchGetItemRequestModifier;
 import oap.storage.dynamo.client.modifiers.GetItemRequestModifier;
 import oap.storage.dynamo.client.modifiers.QueryRequestModifier;
@@ -85,11 +86,11 @@ public class DynamoDbReader extends DynamoDbHelper {
         GetItemRequest.Builder getItemRequest = GetItemRequest.builder()
             .key( getKeyAttribute( key ) )
             .tableName( key.getTableName() );
+        if ( modifier != null ) {
+            modifier.accept( getItemRequest );
+        }
+        readLock.lock();
         try {
-            if ( modifier != null ) {
-                modifier.accept( getItemRequest );
-            }
-            readLock.lock();
             GetItemResponse response = dynamoDbClient.getItem( getItemRequest.build() );
             if ( !response.hasItem() ) return Result.failure( DynamodbClient.State.NOT_FOUND );
             return Result.success( response.item() );
@@ -122,8 +123,8 @@ public class DynamoDbReader extends DynamoDbHelper {
             .builder()
             .requestItems( requestItems )
             .build();
+        readLock.lock();
         try {
-            readLock.lock();
             BatchGetItemResponse response = dynamoDbClient.batchGetItem( batchGetItemRequest );
             List<Map<String, AttributeValue>> result = new ArrayList<>();
             if( response.hasResponses() ) {
@@ -146,17 +147,17 @@ public class DynamoDbReader extends DynamoDbHelper {
                                 String columnName,
                                 String exclusiveStartItemId,
                                 ScanRequestModifier modifier ) {
+        ScanRequest.Builder scanRequest = ScanRequest.builder()
+                .tableName( tableName )
+                .limit( pageSize );
+        if( !isNullOrEmpty( exclusiveStartItemId ) ) {
+            scanRequest.exclusiveStartKey( Collections.singletonMap( columnName, AttributeValue.builder().s( exclusiveStartItemId ).build() ) );
+        }
+        if( modifier != null ) {
+            modifier.accept( scanRequest );
+        }
+        readLock.lock();
         try {
-            readLock.lock();
-            ScanRequest.Builder scanRequest = ScanRequest.builder()
-                    .tableName( tableName )
-                    .limit( pageSize );
-            if( !isNullOrEmpty( exclusiveStartItemId ) ) {
-                scanRequest.exclusiveStartKey( Collections.singletonMap( columnName, AttributeValue.builder().s( exclusiveStartItemId ).build() ) );
-            }
-            if( modifier != null ) {
-                modifier.accept( scanRequest );
-            }
             ScanResponse result = dynamoDbClient.scan( scanRequest.build() );
             List<Map<String, AttributeValue>> records = result.items();
 
@@ -170,7 +171,7 @@ public class DynamoDbReader extends DynamoDbHelper {
             }
             return builder.build();
         } catch ( ResourceNotFoundException e ) {
-            throw new RuntimeException( "Order table '" + tableName + "' does not exist" );
+            throw new ItemNotFoundException( "Order table '" + tableName + "' does not exist", e );
         } finally {
             readLock.unlock();
         }
@@ -181,8 +182,8 @@ public class DynamoDbReader extends DynamoDbHelper {
         if ( modifier != null ) {
             modifier.accept( batchGetItemRequest );
         }
+        readLock.lock();
         try {
-            readLock.lock();
             BatchGetItemResponse outcome = dynamoDbClient.batchGetItem( batchGetItemRequest.build() );
 
             Map<String, KeysAndAttributes> unprocessed = null;
@@ -219,8 +220,8 @@ public class DynamoDbReader extends DynamoDbHelper {
         if( modifier != null ) {
             modifier.accept( scanRequest );
         }
+        readLock.lock();
         try {
-            readLock.lock();
             ScanIterable result = dynamoDbClient.scanPaginator( scanRequest.build() );
             return result.items().stream();
         } finally {
@@ -234,9 +235,11 @@ public class DynamoDbReader extends DynamoDbHelper {
             .tableName( tableName )
             .keyConditionExpression( key.getColumnName() + " = :pkval" )
             .expressionAttributeValues( Map.of( ":pkval", attr( generateKeyValue( key ) ) ) );
-        if( modifier != null ) modifier.accept( queryRequest );
+        if( modifier != null ) {
+            modifier.accept( queryRequest );
+        }
+        readLock.lock();
         try {
-            readLock.lock();
             QueryIterable result = dynamoDbClient.queryPaginator( queryRequest.build() );
             return result.items().stream();
         } finally {
@@ -256,8 +259,8 @@ public class DynamoDbReader extends DynamoDbHelper {
         if( modifier != null ) {
             modifier.accept( queryRequest );
         }
+        readLock.lock();
         try {
-            readLock.lock();
             QueryIterable result = dynamoDbClient.queryPaginator( queryRequest.build() );
             return result.items().stream();
         } finally {
@@ -267,10 +270,10 @@ public class DynamoDbReader extends DynamoDbHelper {
 
     @API
     public Stream<Map<String, AttributeValue>> getRecordsByQuery( String tableName,
-                                                                 Key key,
-                                                                 String sortKeyName,
-                                                                 String sortKeyValue,
-                                                                 QueryRequestModifier modifier ) {
+                                                                  Key key,
+                                                                  String sortKeyName,
+                                                                  String sortKeyValue,
+                                                                  QueryRequestModifier modifier ) {
         QueryRequest.Builder queryRequest = QueryRequest.builder()
             .tableName( tableName )
             .keyConditionExpression( key.getColumnName() + " = :pkval and " + sortKeyName + " = :skVal" )

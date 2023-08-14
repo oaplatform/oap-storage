@@ -47,14 +47,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static oap.util.Dates.s;
 
 @Slf4j
 @ThreadSafe
 public class DynamodbEntityHelper {
-    private static final Pattern ATTRIBUTES_PATTERN = Pattern.compile( "(\\w+)(=:\\1(,\\s)?)" );
+    private static final Pattern ATTRIBUTES_PATTERN = Pattern.compile( "(\\w++)(=:\\1(,\\s)?)" );
 
     private final DynamoDbReader reader;
     private final DynamoDbWriter writer;
@@ -95,7 +94,7 @@ public class DynamodbEntityHelper {
         return Result.success( records
                 .stream()
                 .map( v -> creator.createBean( clazz, v ) )
-                .collect( Collectors.toList() ) );
+                .toList() );
     }
 
     /** Writes (or updates existing) a given POJO bean to database. It performs all transformation in order to write.

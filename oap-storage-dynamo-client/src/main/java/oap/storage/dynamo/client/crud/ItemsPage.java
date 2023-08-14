@@ -38,6 +38,8 @@ import java.util.Map;
 @ToString
 @API
 public class ItemsPage {
+
     private List<Map<String, AttributeValue>> records;
+
     private String lastEvaluatedKey;
 }

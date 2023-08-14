@@ -25,6 +25,8 @@
 package oap.storage.dynamo.client;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.storage.dynamo.client.fixtures.AbstractDynamodbFixture;
+import oap.storage.dynamo.client.fixtures.TestContainerDynamodbFixture;
 import oap.storage.dynamo.client.streams.DynamodbStreamsRecordProcessor;
 import oap.testng.Fixtures;
 import org.jetbrains.annotations.NotNull;

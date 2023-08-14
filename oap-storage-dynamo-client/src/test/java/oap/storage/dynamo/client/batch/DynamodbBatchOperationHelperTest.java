@@ -26,10 +26,10 @@ package oap.storage.dynamo.client.batch;
 
 import oap.application.Kernel;
 import oap.application.module.Module;
-import oap.storage.dynamo.client.AbstractDynamodbFixture;
+import oap.storage.dynamo.client.fixtures.AbstractDynamodbFixture;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.storage.dynamo.client.Key;
-import oap.storage.dynamo.client.TestContainerDynamodbFixture;
+import oap.storage.dynamo.client.fixtures.TestContainerDynamodbFixture;
 import oap.storage.dynamo.client.crud.AbstractOperation;
 import oap.storage.dynamo.client.crud.CreateItemOperation;
 import oap.storage.dynamo.client.crud.DeleteItemOperation;

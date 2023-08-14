@@ -54,6 +54,7 @@ import java.util.function.Consumer;
 @FunctionalInterface
 @API
 public interface TableSchemaModifier<T> extends Consumer<StaticTableSchema.Builder<T>> {
+
     @Override
     void accept( StaticTableSchema.Builder<T> builder );
 }

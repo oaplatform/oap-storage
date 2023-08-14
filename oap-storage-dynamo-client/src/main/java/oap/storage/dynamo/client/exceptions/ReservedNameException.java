@@ -22,17 +22,11 @@
  * SOFTWARE.
  */
 
-package oap.storage.dynamo.client.modifiers;
+package oap.storage.dynamo.client.exceptions;
 
-import oap.storage.dynamo.client.annotations.API;
-import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
+public class ReservedNameException extends IllegalArgumentException {
 
-import java.util.function.Consumer;
-
-@FunctionalInterface
-@API
-public interface DeleteItemRequestModifier extends Consumer<DeleteItemRequest.Builder> {
-
-    @Override
-    void accept( DeleteItemRequest.Builder builder );
+    public ReservedNameException( String message ) {
+        super( message );
+    }
 }

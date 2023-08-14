@@ -54,11 +54,11 @@
     </repositories>
 
     <properties>
-        <oap-storage.project.version>18.10.2.14</oap-storage.project.version>
+        <oap-storage.project.version>18.10.2.15</oap-storage.project.version>
 
-        <oap.deps.oap.version>18.11.5.25</oap.deps.oap.version>
+        <oap.deps.oap.version>18.11.5.26</oap.deps.oap.version>
 
-        <oap.deps.dynamodb.version>2.20.102</oap.deps.dynamodb.version>
+        <oap.deps.dynamodb.version>2.20.125</oap.deps.dynamodb.version>
         <oap.deps.assertj.version>3.23.1</oap.deps.assertj.version>
         <oap.deps.guava.version>31.1-jre</oap.deps.guava.version>
         <oap.deps.logback.version>1.4.8</oap.deps.logback.version>

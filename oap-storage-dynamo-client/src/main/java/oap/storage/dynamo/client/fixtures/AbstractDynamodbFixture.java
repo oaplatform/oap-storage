@@ -22,9 +22,10 @@
  * SOFTWARE.
  */
 
-package oap.storage.dynamo.client;
+package oap.storage.dynamo.client.fixtures;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.storage.dynamo.client.DynamodbClient;
 import oap.system.Env;
 import oap.testng.AbstractEnvFixture;
 

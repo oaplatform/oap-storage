@@ -26,6 +26,8 @@ package oap.storage.dynamo.client;
 
 import lombok.Data;
 import oap.storage.dynamo.client.convertors.DynamodbDatatype;
+import oap.storage.dynamo.client.fixtures.AbstractDynamodbFixture;
+import oap.storage.dynamo.client.fixtures.TestContainerDynamodbFixture;
 import oap.storage.dynamo.client.modifiers.TableSchemaModifier;
 import oap.storage.dynamo.client.modifiers.UpdateTableRequestModifier;
 import oap.testng.Fixtures;

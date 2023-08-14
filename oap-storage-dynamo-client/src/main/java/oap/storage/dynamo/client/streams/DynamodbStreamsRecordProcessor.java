@@ -130,7 +130,7 @@ public class DynamodbStreamsRecordProcessor {
             }
             records
                     .stream()
-                    .filter( record -> record.dynamodb().keys().entrySet()
+                    .filter( rec -> rec.dynamodb().keys().entrySet()
                     .stream()
                     .noneMatch( k -> k.getValue().s().startsWith( "fictiveRecordForTable:" ) ) )
                     .forEach( recordWorker );

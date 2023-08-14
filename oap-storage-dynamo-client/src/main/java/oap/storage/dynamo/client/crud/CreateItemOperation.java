@@ -35,6 +35,7 @@ import static oap.storage.dynamo.client.crud.OperationType.CREATE;
 @API
 @ToString( callSuper = true )
 public class CreateItemOperation extends AbstractOperation {
+
     public CreateItemOperation( String name ) {
         super( CREATE, name );
     }

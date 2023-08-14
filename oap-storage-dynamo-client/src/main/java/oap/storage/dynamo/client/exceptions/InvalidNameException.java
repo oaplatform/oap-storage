@@ -22,10 +22,10 @@
  * SOFTWARE.
  */
 
-package oap.storage.dynamo.client.restrictions;
+package oap.storage.dynamo.client.exceptions;
 
-public class ReservedNameException extends IllegalArgumentException {
-    public ReservedNameException( String message ) {
+public class InvalidNameException extends IllegalArgumentException {
+    public InvalidNameException( String message ) {
         super( message );
     }
 }

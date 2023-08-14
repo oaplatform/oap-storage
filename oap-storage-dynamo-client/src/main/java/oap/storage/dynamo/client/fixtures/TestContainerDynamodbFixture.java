@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.storage.dynamo.client;
+package oap.storage.dynamo.client.fixtures;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.ExposedPort;
@@ -30,6 +30,7 @@ import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
 import lombok.extern.slf4j.Slf4j;
+import oap.storage.dynamo.client.DynamodbClient;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 import org.testng.annotations.AfterClass;

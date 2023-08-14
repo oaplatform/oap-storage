@@ -31,6 +31,7 @@ import oap.storage.dynamo.client.annotations.API;
 @API
 @ToString( callSuper = true )
 public class DeleteItemOperation extends AbstractOperation {
+
     public DeleteItemOperation( String name ) {
         super( OperationType.DELETE, name );
     }

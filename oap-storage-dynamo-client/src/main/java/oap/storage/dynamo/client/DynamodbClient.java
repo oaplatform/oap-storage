@@ -240,7 +240,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
         initService.shutdown();
     }
 
-    DynamoDbStreamsClient createStreamClient( URI uri, AwsCredentialsProvider provider, Region region ) {
+    public DynamoDbStreamsClient createStreamClient( URI uri, AwsCredentialsProvider provider, Region region ) {
         return DynamoDbStreamsClient.builder()
                 .endpointOverride( uri )
                 .credentialsProvider( provider )
@@ -614,7 +614,7 @@ public class DynamodbClient implements AutoCloseable, Closeable {
         return dynamoDbClient;
     }
 
-    void setStreamClient( DynamoDbStreamsClient streamClient ) {
+    public void setStreamClient( DynamoDbStreamsClient streamClient ) {
         this.streamClient = streamClient;
     }
 }

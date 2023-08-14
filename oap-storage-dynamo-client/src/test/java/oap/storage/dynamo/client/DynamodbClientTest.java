@@ -35,6 +35,8 @@ import oap.storage.dynamo.client.creator.samples.AutonomiousDynamo;
 import oap.storage.dynamo.client.creator.samples.BeanWithRestrictedField;
 import oap.storage.dynamo.client.creator.samples.CompositeBean;
 import oap.storage.dynamo.client.creator.samples.EmbeddedBean;
+import oap.storage.dynamo.client.fixtures.AbstractDynamodbFixture;
+import oap.storage.dynamo.client.fixtures.TestContainerDynamodbFixture;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;

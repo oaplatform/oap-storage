@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 @FunctionalInterface
 @API
 public interface QueryRequestModifier extends Consumer<QueryRequest.Builder> {
+
     @Override
     void accept( QueryRequest.Builder builder );
 }

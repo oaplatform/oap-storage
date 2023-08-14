@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 @FunctionalInterface
 @API
 public interface UpdateItemRequestModifier extends Consumer<UpdateItemRequest.Builder> {
+
     @Override
     void accept( UpdateItemRequest.Builder builder );
 }

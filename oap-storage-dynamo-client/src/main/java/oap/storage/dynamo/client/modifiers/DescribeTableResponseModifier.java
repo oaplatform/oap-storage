@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 @FunctionalInterface
 @API
 public interface DescribeTableResponseModifier extends Consumer<DescribeTableRequest.Builder> {
+
     @Override
     void accept( DescribeTableRequest.Builder builder );
 }

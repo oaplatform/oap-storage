@@ -46,7 +46,7 @@ public class DynamodbLog {
 
     @NotNull
     private Level getLevel( String level ) {
-        Level logLevel = switch( level ) {
+        return switch( level ) {
             case "ALL" -> Level.ALL;
             case "DEBUG" -> Level.DEBUG;
             case "INFO" -> Level.INFO;
@@ -55,6 +55,5 @@ public class DynamodbLog {
             case "OFF" -> Level.OFF;
             default -> Level.TRACE;
         };
-        return logLevel;
     }
 }

@@ -33,6 +33,7 @@ import java.util.Map;
 @API
 @ToString( callSuper = true )
 public class ReadItemOperation extends AbstractOperation {
+
     public ReadItemOperation( String name ) {
         super( OperationType.READ, name );
     }

@@ -26,5 +26,6 @@ package oap.storage.dynamo.client.convertors;
 
 @FunctionalInterface
 public interface KeyConvertorForMap<T, R> {
+
     R convert( T obj );
 }

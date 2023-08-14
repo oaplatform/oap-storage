@@ -37,7 +37,7 @@ import oap.storage.dynamo.client.modifiers.CreateTableRequestModifier;
 import oap.storage.dynamo.client.modifiers.DescribeTableResponseModifier;
 import oap.storage.dynamo.client.modifiers.TableSchemaModifier;
 import oap.storage.dynamo.client.modifiers.UpdateTableRequestModifier;
-import oap.storage.dynamo.client.restrictions.ReservedNameException;
+import oap.storage.dynamo.client.exceptions.ReservedNameException;
 import oap.storage.dynamo.client.restrictions.ReservedWords;
 import oap.util.Pair;
 import oap.util.Result;

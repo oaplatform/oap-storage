@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 @FunctionalInterface
 @API
 public interface ScanRequestModifier extends Consumer<ScanRequest.Builder> {
+
     @Override
     void accept( ScanRequest.Builder builder );
 }

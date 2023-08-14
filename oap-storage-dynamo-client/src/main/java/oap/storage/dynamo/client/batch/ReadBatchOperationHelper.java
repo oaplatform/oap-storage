@@ -43,10 +43,11 @@ import java.util.List;
 import java.util.Map;
 
 public class ReadBatchOperationHelper extends DynamoDbHelper implements DynamodbReadBatch {
+    public static final int READ_MAX_BATCH_SIZE = 100;
     private final DynamodbClient client;
 
     @Setter
-    private int batchSize = 100;
+    private int batchSize = READ_MAX_BATCH_SIZE;
     protected List<OperationsHolder> operations = new ArrayList<>();
 
 

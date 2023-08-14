@@ -29,6 +29,7 @@ import lombok.Setter;
 import lombok.ToString;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.storage.dynamo.client.Key;
+import oap.storage.dynamo.client.exceptions.InvalidNameException;
 import oap.storage.dynamo.client.restrictions.ReservedWords;
 import software.amazon.awssdk.services.dynamodb.model.DeleteRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
@@ -68,7 +69,7 @@ public abstract class AbstractOperation {
             .filter( o -> !ReservedWords.isAttributeNameAppropriate( o ) )
             .toList();
         if ( !invalidBinNames.isEmpty() ) {
-            throw new IllegalArgumentException( "Bins '" + invalidBinNames + "' are prohibited in DynamoDB" );
+            throw new InvalidNameException( "Bins with names '" + invalidBinNames + "' are prohibited in DynamoDB" );
         }
     }
 }
