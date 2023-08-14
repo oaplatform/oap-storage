@@ -24,6 +24,9 @@
 
 package oap.storage.mongo;
 
+import com.zaxxer.nuprocess.NuAbstractProcessHandler;
+import com.zaxxer.nuprocess.NuProcess;
+import com.zaxxer.nuprocess.NuProcessBuilder;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
@@ -32,11 +35,17 @@ import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.LogOutputStream;
 import org.apache.commons.exec.PumpStreamHandler;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import static java.util.Arrays.asList;
+import static oap.io.content.ContentWriter.ofString;
 
 @Slf4j
 public class MongoShell {
@@ -48,6 +57,41 @@ public class MongoShell {
         "/usr/local/opt/mongodb-community/bin/mongo",
         "/usr/local/opt/mongodb-community/bin/mongosh"
     };
+
+    public static final class PsHandler extends NuAbstractProcessHandler {
+        private final ByteArrayOutputStream output = new ByteArrayOutputStream();
+        private int exitCode = 0;
+
+        @Override
+        public void onStdout( ByteBuffer buffer, boolean closed) {
+            synchronized (this) {
+                byte[] bytes = new byte[buffer.remaining()];
+                buffer.get(bytes);
+                if ( bytes.length == 0 ) return;
+                output.writeBytes( ">>".getBytes( StandardCharsets.UTF_8 ) );
+                output.writeBytes( bytes );
+                if ( closed ) output.writeBytes( new byte[] { 0x0A, 0x0D } );
+            }
+        }
+
+        @Override
+        public void onStderr( ByteBuffer buffer, boolean closed) {
+            synchronized (this) {
+                byte[] bytes = new byte[buffer.remaining()];
+                buffer.get(bytes);
+                if ( bytes.length == 0 ) return;
+                output.writeBytes( "[ERROR] >> ".getBytes( StandardCharsets.UTF_8 ) );
+                output.writeBytes( bytes );
+                if ( closed ) output.writeBytes( new byte[] { 0x0A, 0x0D } );
+            }
+        }
+
+        @Override
+        public void onExit(int exitCode) {
+            this.exitCode = exitCode;
+        }
+
+    }
     private final String path;
 
     public MongoShell() {
@@ -68,13 +112,37 @@ public class MongoShell {
     public void execute( String host, int port, String database, String script ) {
         var file = File.createTempFile( "migration_" + database + "_", ".js" );
         file.deleteOnExit();
-        Files.writeString( file.toPath(), script );
+        Files.write( file.toPath(), script, ofString() );
         log.debug( "script file {}", file );
         execute( host, port, database, file.toPath() );
     }
 
+    public static void main( String[] args ) {
+        new MongoShell().execute( "localhost", 8003, "dbname", ( Path ) null );
+    }
+
     @SneakyThrows
     public void execute( String host, int port, String database, Path scriptFile ) {
+        String[] commands = {
+            path, "--verbose", host + ":" + port + "/" + database, scriptFile.toString()
+        };
+        NuProcessBuilder processBuilder = new NuProcessBuilder( commands );
+        log.debug( "executing {}", Arrays.stream( commands ).toList() );
+        PsHandler psHandler = new PsHandler();
+        processBuilder.setProcessListener( psHandler );
+        NuProcess process = processBuilder.start();
+        process.wantWrite();
+        try {
+            process.waitFor(0, TimeUnit.SECONDS); // when 0 is used for waitFor() the wait is infinite
+        } catch (InterruptedException e) {
+            throw new IllegalStateException("ps was interrupted");
+        }
+        log.info( psHandler.output.toString() );
+        if( psHandler.exitCode != 0 ) throw new IOException( Arrays.stream( commands ).toList() + " exited with code " + psHandler.exitCode );
+    }
+
+    @SneakyThrows
+    public void executeOld( String host, int port, String database, Path scriptFile ) {
         var cmd = new CommandLine( path );
         cmd.addArgument( "--verbose" );
         cmd.addArgument( host + ":" + port + "/" + database );
