@@ -63,10 +63,10 @@ public class MongoShell {
         private int exitCode = 0;
 
         @Override
-        public void onStdout( ByteBuffer buffer, boolean closed) {
-            synchronized (this) {
-                byte[] bytes = new byte[buffer.remaining()];
-                buffer.get(bytes);
+        public void onStdout( ByteBuffer buffer, boolean closed ) {
+            synchronized ( this ) {
+                byte[] bytes = new byte[ buffer.remaining() ];
+                buffer.get( bytes );
                 if ( bytes.length == 0 ) return;
                 output.writeBytes( ">>".getBytes( StandardCharsets.UTF_8 ) );
                 output.writeBytes( bytes );
@@ -75,10 +75,10 @@ public class MongoShell {
         }
 
         @Override
-        public void onStderr( ByteBuffer buffer, boolean closed) {
-            synchronized (this) {
-                byte[] bytes = new byte[buffer.remaining()];
-                buffer.get(bytes);
+        public void onStderr( ByteBuffer buffer, boolean closed ) {
+            synchronized ( this ) {
+                byte[] bytes = new byte[ buffer.remaining() ];
+                buffer.get( bytes );
                 if ( bytes.length == 0 ) return;
                 output.writeBytes( "[ERROR] >> ".getBytes( StandardCharsets.UTF_8 ) );
                 output.writeBytes( bytes );
@@ -87,7 +87,7 @@ public class MongoShell {
         }
 
         @Override
-        public void onExit(int exitCode) {
+        public void onExit( int exitCode ) {
             this.exitCode = exitCode;
         }
 
@@ -117,10 +117,6 @@ public class MongoShell {
         execute( host, port, database, file.toPath() );
     }
 
-    public static void main( String[] args ) {
-        new MongoShell().execute( "localhost", 8003, "dbname", ( Path ) null );
-    }
-
     @SneakyThrows
     public void execute( String host, int port, String database, Path scriptFile ) {
         String[] commands = {
@@ -133,9 +129,10 @@ public class MongoShell {
         NuProcess process = processBuilder.start();
         process.wantWrite();
         try {
-            process.waitFor(0, TimeUnit.SECONDS); // when 0 is used for waitFor() the wait is infinite
-        } catch (InterruptedException e) {
-            throw new IllegalStateException("ps was interrupted");
+            process.waitFor( 0, TimeUnit.SECONDS ); // when 0 is used for waitFor() the wait is infinite
+        } catch ( InterruptedException e ) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException( "ps was interrupted" );
         }
         log.info( psHandler.output.toString() );
         if( psHandler.exitCode != 0 ) throw new IOException( Arrays.stream( commands ).toList() + " exited with code " + psHandler.exitCode );

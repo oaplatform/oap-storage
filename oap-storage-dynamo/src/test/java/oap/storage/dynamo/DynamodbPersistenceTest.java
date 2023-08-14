@@ -26,15 +26,15 @@ package oap.storage.dynamo;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
-import oap.storage.dynamo.client.AbstractDynamodbFixture;
 import oap.storage.dynamo.client.Key;
-import oap.storage.dynamo.client.TestContainerDynamodbFixture;
 import oap.storage.dynamo.client.batch.WriteBatchOperationHelper;
 import oap.storage.dynamo.client.crud.CreateItemOperation;
 import oap.id.Identifier;
 import oap.storage.DynamoPersistence;
 import oap.storage.MemoryStorage;
 import oap.storage.Metadata;
+import oap.storage.dynamo.client.fixtures.AbstractDynamodbFixture;
+import oap.storage.dynamo.client.fixtures.TestContainerDynamodbFixture;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
