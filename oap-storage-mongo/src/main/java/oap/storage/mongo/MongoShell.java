@@ -55,7 +55,8 @@ public class MongoShell {
         "/usr/local/bin/mongo",
         "/usr/local/bin/mongosh",
         "/usr/local/opt/mongodb-community/bin/mongo",
-        "/usr/local/opt/mongodb-community/bin/mongosh"
+        "/usr/local/opt/mongodb-community/bin/mongosh",
+        "mongo.exe" // windows
     };
 
     public static final class PsHandler extends NuAbstractProcessHandler {
