@@ -30,7 +30,6 @@ import com.zaxxer.nuprocess.NuProcessBuilder;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
-import oap.util.Throwables;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.LogOutputStream;
@@ -65,26 +64,32 @@ public class MongoShell {
         private int exitCode = 0;
 
         @Override
+        public void onStart( NuProcess nuProcess ) {
+            // https://github.com/brettwooldridge/NuProcess/issues/28
+            nuProcess.wantWrite();
+        }
+
+        @Override
         public void onStdout( ByteBuffer buffer, boolean closed ) {
-            synchronized ( this ) {
-                byte[] bytes = new byte[ buffer.remaining() ];
+            synchronized( this ) {
+                byte[] bytes = new byte[buffer.remaining()];
                 buffer.get( bytes );
-                if ( bytes.length == 0 ) return;
+                if( bytes.length == 0 ) return;
                 output.writeBytes( ">>".getBytes( StandardCharsets.UTF_8 ) );
                 output.writeBytes( bytes );
-                if ( closed ) output.writeBytes( new byte[] { 0x0A, 0x0D } );
+                if( closed ) output.writeBytes( new byte[] { 0x0A, 0x0D } );
             }
         }
 
         @Override
         public void onStderr( ByteBuffer buffer, boolean closed ) {
-            synchronized ( this ) {
-                byte[] bytes = new byte[ buffer.remaining() ];
+            synchronized( this ) {
+                byte[] bytes = new byte[buffer.remaining()];
                 buffer.get( bytes );
-                if ( bytes.length == 0 ) return;
+                if( bytes.length == 0 ) return;
                 output.writeBytes( "[ERROR] >> ".getBytes( StandardCharsets.UTF_8 ) );
                 output.writeBytes( bytes );
-                if ( closed ) output.writeBytes( new byte[] { 0x0A, 0x0D } );
+                if( closed ) output.writeBytes( new byte[] { 0x0A, 0x0D } );
             }
         }
 
@@ -94,6 +99,7 @@ public class MongoShell {
         }
 
     }
+
     private final String path;
 
     public MongoShell() {
@@ -130,18 +136,14 @@ public class MongoShell {
         processBuilder.setProcessListener( psHandler );
         NuProcess process = processBuilder.start();
         try {
-            process.wantWrite();
             process.waitFor( 0, TimeUnit.SECONDS ); // when 0 is used for waitFor() the wait is infinite
-        } catch ( InterruptedException e ) {
+        } catch( InterruptedException e ) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException( "ps was interrupted" );
-        } catch ( Exception e ) {
-            log.error( e.getMessage(), e );
-            log.error( psHandler.output.toString() );
-            throw Throwables.propagate( e );
         }
         log.info( psHandler.output.toString() );
-        if( psHandler.exitCode != 0 ) throw new IOException( Arrays.stream( commands ).toList() + " exited with code " + psHandler.exitCode );
+        if( psHandler.exitCode != 0 )
+            throw new IOException( Arrays.stream( commands ).toList() + " exited with code " + psHandler.exitCode );
     }
 
     @SneakyThrows
