@@ -30,6 +30,7 @@ import com.zaxxer.nuprocess.NuProcessBuilder;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
+import oap.util.Throwables;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.LogOutputStream;
@@ -128,12 +129,16 @@ public class MongoShell {
         PsHandler psHandler = new PsHandler();
         processBuilder.setProcessListener( psHandler );
         NuProcess process = processBuilder.start();
-        process.wantWrite();
         try {
+            process.wantWrite();
             process.waitFor( 0, TimeUnit.SECONDS ); // when 0 is used for waitFor() the wait is infinite
         } catch ( InterruptedException e ) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException( "ps was interrupted" );
+        } catch ( Exception e ) {
+            log.error( e.getMessage(), e );
+            log.error( psHandler.output.toString() );
+            throw Throwables.propagate( e );
         }
         log.info( psHandler.output.toString() );
         if( psHandler.exitCode != 0 ) throw new IOException( Arrays.stream( commands ).toList() + " exited with code " + psHandler.exitCode );
