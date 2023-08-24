@@ -220,6 +220,7 @@ public class MongoClient implements Closeable {
             log.info( "Migration completed, database is {}", databaseVersion() );
         } catch( Exception ex ) {
             log.error( "Cannot perform migration from '{}'", databaseVersion() );
+            log.error( ex.getMessage(), ex );
         }
     }
 

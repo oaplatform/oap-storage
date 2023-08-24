@@ -31,8 +31,6 @@ import lombok.extern.slf4j.Slf4j;
 import oap.storage.mongo.MongoClient;
 import oap.storage.mongo.Version;
 import oap.testng.AbstractEnvFixture;
-import oap.testng.Suite;
-import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.jetbrains.annotations.NotNull;
 
@@ -50,13 +48,15 @@ public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
     private MongoServer server;
 
     public MongoFixture() {
-        this( "" );
+        this( "test" );
     }
 
-    public MongoFixture( String databaseSuffix ) {
+    public MongoFixture( String database ) {
+        this.database = database;
+
         define( "MONGO_PORT", port = portFor( "MONGO_PORT" ) );
         define( "MONGO_HOST", host = "localhost" );
-        define( "MONGO_DATABASE", database = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" ) + databaseSuffix );
+        define( "MONGO_DATABASE", database );
     }
 
     @Override
