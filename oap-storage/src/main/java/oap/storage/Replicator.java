@@ -91,6 +91,8 @@ public class Replicator<I, T> implements Closeable {
     }
 
     public synchronized Pair<Long, String> replicate( Pair<Long, String> last ) {
+        log.trace( "replicate service {} last {}", serviceName, last );
+
         List<Metadata<T>> newUpdates;
 
         try( var updates = master.updatedSince( last._1 ) ) {
