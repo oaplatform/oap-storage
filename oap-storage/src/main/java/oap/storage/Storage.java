@@ -63,6 +63,8 @@ public interface Storage<I, T> extends Iterable<T> {
 
     Optional<T> delete( @Nonnull I id );
 
+    Optional<T> permanentlyDelete( @Nonnull I id );
+
     void deleteAll();
 
     void addDataListener( DataListener<I, T> dataListener );
@@ -74,28 +76,34 @@ public interface Storage<I, T> extends Iterable<T> {
     interface DataListener<DI, D> {
         /**
          * The method is called once per replication period, all inserts there are gathered.
+         *
          * @param objects objects added into slave
-         * Note: changed method collects all changes at once (add/update/delete)
+         *                Note: changed method collects all changes at once (add/update/delete)
          */
         default void added( List<IdObject<DI, D>> objects ) {}
 
         /**
          * The method is called once per replication period, all updates there are gathered.
+         *
          * @param objects objects updated on slave
-         * Note: changed method collects all changes at once (add/update/delete)
+         *                Note: changed method collects all changes at once (add/update/delete)
          */
         default void updated( List<IdObject<DI, D>> objects ) {}
 
         /**
          * The method is called once per replication period, all deletes there are gathered.
          * Note: changed method collects all changes at once (add/update/delete)
+         *
          * @param objects objects deleted from slave
          */
         default void deleted( List<IdObject<DI, D>> objects ) {}
 
+        default void permanentlyDeleted( IdObject<DI, D> object ) {}
+
         /**
          * The method is called once per replication period, all changes there are gathered.
-         * @param added objects added to slave
+         *
+         * @param added   objects added to slave
          * @param updated objects updated in slave
          * @param deleted objects deleted from slave
          */

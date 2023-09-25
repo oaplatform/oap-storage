@@ -25,7 +25,9 @@
 package oap.storage;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.io.Files;
 import oap.io.content.ContentWriter;
+import oap.json.Binder;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.storage.dynamo.client.Key;
 import oap.storage.dynamo.client.batch.WriteBatchOperationHelper;
@@ -34,8 +36,6 @@ import oap.storage.dynamo.client.crud.DeleteItemOperation;
 import oap.storage.dynamo.client.crud.OperationType;
 import oap.storage.dynamo.client.crud.UpdateItemOperation;
 import oap.storage.dynamo.client.streams.DynamodbStreamsRecordProcessor;
-import oap.io.Files;
-import oap.json.Binder;
 import oap.util.Pair;
 import oap.util.Stream;
 import org.joda.time.DateTimeUtils;
@@ -93,6 +93,13 @@ public class DynamoPersistence<I, T> extends AbstractPersistance<I, T> implement
         this.streamProcessor = DynamodbStreamsRecordProcessor.builder( dynamodbClient ).build();
         batchWriter = new WriteBatchOperationHelper( dynamodbClient );
         this.dynamodbClient = dynamodbClient;
+
+        storage.addDataListener( new Storage.DataListener<I, T>() {
+            @Override
+            public void permanentlyDeleted( IdObject<I, T> object ) {
+                dynamodbClient.delete( new Key( tableName, "id", object.id.toString() ), null );
+            }
+        } );
     }
 
     @Override
@@ -126,10 +133,10 @@ public class DynamoPersistence<I, T> extends AbstractPersistance<I, T> implement
     }
 
     @Override
-    protected void fsync() {
+    public void fsync() {
         var time = DateTimeUtils.currentTimeMillis();
         synchronizedOn( lock, () -> {
-            if ( stopped ) return;
+            if( stopped ) return;
             log.trace( "fsyncing, last: {}, objects in storage: {}", lastExecuted, storage.size() );
             var list = new ArrayList<AbstractOperation>( batchSize );
             var deletedIds = new ArrayList<I>( batchSize );
@@ -153,7 +160,7 @@ public class DynamoPersistence<I, T> extends AbstractPersistance<I, T> implement
     }
 
     private void persist( List<I> deletedIds, List<AbstractOperation> list ) {
-        if ( stopped ) return;
+        if( stopped ) return;
         if( list.isEmpty() ) return;
         try {
             batchWriter.addOperations( list );

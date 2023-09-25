@@ -125,5 +125,5 @@ public abstract class AbstractPersistance<I, T> implements Closeable, AutoClosea
         } );
     }
 
-    protected abstract void fsync();
+    public abstract void fsync();
 }
