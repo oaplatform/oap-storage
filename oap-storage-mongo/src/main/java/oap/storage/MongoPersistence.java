@@ -67,9 +67,10 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
 
     /**
      * Creates a persistence for Mongo DB
+     *
      * @param mongoClient
      * @param collectionName it's a name of 'table'
-     * @param delay in millis
+     * @param delay          in millis
      * @param storage
      */
     public MongoPersistence( MongoClient mongoClient, String collectionName, long delay, MemoryStorage<I, T> storage ) {
@@ -89,6 +90,14 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
         this.collection = mongoClient
             .getCollection( collectionName, ref.clazz() )
             .withCodecRegistry( codecRegistry );
+
+        storage.addDataListener( new Storage.DataListener<I, T>() {
+            @Override
+            public void permanentlyDeleted( IdObject<I, T> object ) {
+                log.debug( "permanentlyDeleted collection {} id {}", tableName, object.id );
+                collection.deleteOne( eq( "_id", object.id ) );
+            }
+        } );
     }
 
     @Override
@@ -122,10 +131,10 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
     }
 
     @Override
-    protected void fsync() {
+    public void fsync() {
         var time = DateTimeUtils.currentTimeMillis();
         synchronizedOn( lock, () -> {
-            if ( stopped ) return;
+            if( stopped ) return;
             log.trace( "fsyncing, last: {}, objects in storage: {}", lastExecuted, storage.size() );
             var list = new ArrayList<WriteModel<Metadata<T>>>( batchSize );
             var deletedIds = new ArrayList<I>( batchSize );

@@ -130,10 +130,19 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
         fireDeleted( Lists.map( memory.markDeletedAll(), p -> __io( p._1, p._2.object ) ) );
     }
 
+    @Override
     public Optional<T> delete( @Nonnull I id ) {
         requireNonNull( id );
         Optional<T> old = memory.markDeleted( id ).map( m -> m.object );
         old.ifPresent( o -> fireDeleted( id, o ) );
+        return old;
+    }
+
+    @Override
+    public Optional<T> permanentlyDelete( @Nonnull I id ) {
+        requireNonNull( id );
+        Optional<T> old = memory.removePermanently( id ).map( m -> m.object );
+        old.ifPresent( o -> firePermanentlyDeleted( id, o ) );
         return old;
     }
 
@@ -170,6 +179,11 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
     protected void fireDeleted( I id, T object ) {
         for( DataListener<I, T> dataListener : this.dataListeners )
             dataListener.deleted( List.of( __io( id, object ) ) );
+    }
+
+    protected void firePermanentlyDeleted( I id, T object ) {
+        for( DataListener<I, T> dataListener : this.dataListeners )
+            dataListener.permanentlyDeleted( __io( id, object ) );
     }
 
     protected void fireChanged( List<DataListener.IdObject<I, T>> added,
