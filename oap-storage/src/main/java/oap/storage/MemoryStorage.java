@@ -67,6 +67,10 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
         return memory.selectLive().map( p -> p._2.object );
     }
 
+    Stream<T> selectAll() {
+        return memory.selectAll().map( p -> p._2.object );
+    }
+
     @Override
     public List<T> list() {
         return select().toList();
@@ -242,6 +246,10 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
 
         public BiStream<I, Metadata<T>> selectLive() {
             return BiStream.of( data ).filter( ( id, m ) -> !m.isDeleted() );
+        }
+
+        public BiStream<I, Metadata<T>> selectAll() {
+            return BiStream.of( data );
         }
 
         public BiStream<I, Metadata<T>> selectUpdatedSince( long since ) {
