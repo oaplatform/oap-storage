@@ -62,9 +62,12 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
         this.memory = new Memory<>( lock );
     }
 
-    @Override
+    public Stream<T> select( boolean liveOnly ) {
+        return ( liveOnly ? memory.selectLive() : memory.selectAll() ).map( p -> p._2.object );
+    }
+
     public Stream<T> select() {
-        return memory.selectLive().map( p -> p._2.object );
+        return select( true );
     }
 
     Stream<T> selectAll() {
