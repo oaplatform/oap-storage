@@ -54,7 +54,7 @@ public class MongoFixtureTest extends Fixtures {
         mongoFixture.insertDocument( MongoPersistenceTest.class, collection, "migration/2.json" );
         mongoFixture.initializeVersion( new Version( 1 ) );
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-        try( var mongoClient = mongoFixture.createMongoClient();
+        try( var mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
              var persistence = new MongoPersistence<>( mongoClient, collection, 6000, storage ) ) {
             mongoClient.preStart();
             persistence.preStart();

@@ -48,7 +48,7 @@ public class MongoIndexTest extends Fixtures {
 
     @Test
     public void testUpdateCreateNewIndex() {
-        try( var client = mongoFixture.createMongoClient( "oap.storage.mongo.mongopersistencetest" ) ) {
+        try( var client = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" ) ) {
             var collection = client.getCollection( "test" );
             var mongoIndex = new MongoIndex( collection );
 
@@ -74,7 +74,7 @@ public class MongoIndexTest extends Fixtures {
 
     @Test
     public void testSync() {
-        try( var client = mongoFixture.createMongoClient( "oap.storage.mongo.mongopersistencetest" ) ) {
+        try( var client = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" ) ) {
             var collection = client.getCollection( "test" );
             var mongoIndex = new MongoIndex( collection );
 

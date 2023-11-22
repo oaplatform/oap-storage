@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.storage.mongo.mongopersistencetest;
+package oap.storage.mongo.mongomigrationtest;
 
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Updates;
