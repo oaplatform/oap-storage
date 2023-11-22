@@ -178,6 +178,10 @@ public class Replicator<I, T> implements Closeable {
 
     @Override
     public void close() {
-        Scheduled.cancel( scheduled );
+        try {
+            Scheduled.cancel( scheduled );
+        } catch( Exception e ) {
+            log.error( e.getMessage(), e );
+        }
     }
 }
