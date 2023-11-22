@@ -1,5 +1,0 @@
-migrations:
-  testdb:
-    - version:
-        main: 9
-      script: /oap/storage/mongo/MongoClientTest/9/9.migration.js
