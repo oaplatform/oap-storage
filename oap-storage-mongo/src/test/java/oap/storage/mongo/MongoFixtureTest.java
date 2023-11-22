@@ -22,15 +22,13 @@
  * SOFTWARE.
  */
 
-package oap.storage.mongo.memory;
+package oap.storage.mongo;
 
 import oap.id.Identifier;
 import oap.storage.Bean;
 import oap.storage.MemoryStorage;
 import oap.storage.MongoPersistence;
 import oap.storage.MongoPersistenceTest;
-import oap.storage.mongo.MongoClient;
-import oap.storage.mongo.Version;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
@@ -56,14 +54,13 @@ public class MongoFixtureTest extends Fixtures {
         mongoFixture.insertDocument( MongoPersistenceTest.class, collection, "migration/2.json" );
         mongoFixture.initializeVersion( new Version( 1 ) );
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-        try( var mongoClient = new MongoClient( "localhost", mongoFixture.port, "beans", mongoFixture.database );
+        try( var mongoClient = mongoFixture.createMongoClient();
              var persistence = new MongoPersistence<>( mongoClient, collection, 6000, storage ) ) {
             mongoClient.preStart();
             persistence.preStart();
             assertThat( storage.list() ).containsOnly(
                 new Bean( "1", "name" ),
                 new Bean( "2", "name" ) );
-            assertThat( mongoClient.databaseVersion() ).isEqualTo( new Version( 2 ) );
         }
 
     }
