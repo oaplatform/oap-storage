@@ -33,7 +33,6 @@ import org.bson.Document;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
-import java.util.Optional;
 
 import static oap.testng.Asserts.contentOfTestResource;
 
@@ -69,12 +68,12 @@ public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
 
     @NotNull
     public MongoClient createMongoClient() {
-        return new MongoClient( getConnectionString(), Optional.empty() );
+        return new MongoClient( getConnectionString() );
     }
 
     @NotNull
     public MongoClient createMongoClient( String migrationPackage ) {
-        return new MongoClient( getConnectionString(), Optional.of( migrationPackage ) );
+        return new MongoClient( getConnectionString(), migrationPackage );
     }
 
     @NotNull
