@@ -29,7 +29,6 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.Objects;
-import java.util.Optional;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,7 +43,7 @@ public class MongoClientTest extends Fixtures {
     @Test
     public void instantiationWithoutCredentialsInConnectionString() {
         try {
-            new MongoClient( String.format( "mongodb://%s:%s/%s", mongoFixture.host, mongoFixture.port, mongoFixture.database ), Optional.empty() );
+            new MongoClient( String.format( "mongodb://%s:%s/%s", mongoFixture.host, mongoFixture.port, mongoFixture.database ) );
         } catch( Exception e ) {
             Assert.fail( e.getMessage() );
         }

@@ -39,6 +39,7 @@ import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 
+import javax.annotation.Nonnull;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Map;
@@ -52,9 +53,13 @@ public class MongoClient implements Closeable {
     final com.mongodb.client.MongoClient mongoClient;
     private final MongoDatabase database;
     private ConnectionString connectionString;
-    private final Optional<String> migrationPackage;
+    private final String migrationPackage;
 
-    public MongoClient( String connectionString, Optional<String> migrationPackage ) {
+    public MongoClient( String connectionString ) {
+        this( connectionString, null );
+    }
+
+    public MongoClient( String connectionString, @Nonnull String migrationPackage ) {
         this.connectionString = new ConnectionString( connectionString );
         this.migrationPackage = migrationPackage;
 
@@ -105,15 +110,15 @@ public class MongoClient implements Closeable {
             MongoSync4Driver driver = MongoSync4Driver.withDefaultLock( mongoClient, database.getName() );
             driver.disableTransaction();
 
-            migrationPackage.ifPresent( mp -> {
+            if( migrationPackage != null ) {
                 MongockStandalone
                     .builder()
-                    .addMigrationScanPackage( mp )
+                    .addMigrationScanPackage( migrationPackage )
                     .setDriver( driver )
                     .buildRunner()
                     .execute();
 
-            } );
+            }
         } catch( Exception ex ) {
             log.error( "Cannot perform migration" );
             log.error( ex.getMessage(), ex );

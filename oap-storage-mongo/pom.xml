@@ -94,6 +94,11 @@
             <version>${oap.deps.mongodb-sync-v4-driver.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.javassist</groupId>
+            <artifactId>javassist</artifactId>
+            <version>${oap.deps.javassist.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${oap.deps.lombok.version}</version>
