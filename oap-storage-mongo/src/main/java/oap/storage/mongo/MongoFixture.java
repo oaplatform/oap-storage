@@ -78,6 +78,11 @@ public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
 
     @NotNull
     public String getConnectionString() {
+        return getConnectionString( database );
+    }
+
+    @NotNull
+    public String getConnectionString( String database ) {
         return "mongodb://" + host + ":" + port + "/" + database;
     }
 
@@ -104,5 +109,11 @@ public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
 
     public MongoClient client() {
         return mongoClient;
+    }
+
+    public void dropDatabase( String database ) {
+        try( MongoClient mongoClient = new MongoClient( getConnectionString( database ) ) ) {
+            mongoClient.dropDatabase();
+        }
     }
 }
