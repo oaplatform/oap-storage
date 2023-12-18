@@ -24,110 +24,96 @@
 
 package oap.storage.mongo;
 
+import de.bwaldvogel.mongo.MongoServer;
+import de.bwaldvogel.mongo.ServerVersion;
+import de.bwaldvogel.mongo.backend.memory.MemoryBackend;
 import lombok.extern.slf4j.Slf4j;
-import oap.system.Env;
 import oap.testng.AbstractEnvFixture;
-import oap.testng.Suite;
-import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Date;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static oap.testng.Asserts.contentOfTestResource;
-import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-
 
 @Slf4j
 public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
-    public static final int mongoPort = 27017;
-    public static final String mongoHost = Env.get( "MONGO_HOST", "localhost" );
-    public static final String mongoUser = Env.get( "MONGO_USER", null );
-    public static final String mongoPassword = Env.get( "MONGO_PASSWORD", null );
-    public static final String mongoDatabase = "db_" + StringUtils.replaceChars( Suite.uniqueExecutionId(), ".-", "_" );
-    private Consumer<MongoFixture> databaseInitializer = mf -> {};
+    public final int port;
+    public final String database;
+    public final String host;
     private MongoClient mongoClient;
+    private MongoServer server;
 
     public MongoFixture() {
-        this( "" );
+        this( "test" );
     }
 
-    public MongoFixture( String databaseSuffix ) {
-        define( "MONGO_HOST", mongoHost );
-        define( "MONGO_PORT", String.valueOf( mongoPort ) );
-        define( "MONGO_DATABASE", mongoDatabase );
-        if( isNotEmpty( mongoUser ) && isNotEmpty( mongoPassword ) ) {
-            define( "MONGO_USER", mongoUser );
-            define( "MONGO_PASSWORD", mongoPassword );
-        }
-        log.debug( "binding MONGO_DATABASE to {}", mongoDatabase + databaseSuffix );
-    }
+    public MongoFixture( String database ) {
+        this.database = database;
 
-    public static MongoShell createMongoShell() {
-        var mongoClientPath = Env
-            .get( "MONGO_CLIENT_PATH" )
-            .or( () -> Env.get( "CONFIG.services.oap-storage-mongo.oap-storage-mongo-shell.parameters.path" ) )
-            .or( () -> Optional.ofNullable( System.getProperty( "MONGO_CLIENT_PATH" ) ) )
-            .or( () -> Optional.ofNullable( System.getProperty( "CONFIG.services.oap-storage-mongo.oap-storage-mongo-shell.parameters.path" ) ) )
-            .orElse( null );
-
-        return mongoClientPath != null ? new MongoShell( mongoClientPath ) : new MongoShell();
-    }
-
-    public void dropTestDatabases() {
-        final Pattern pattern = Pattern.compile( ".+_(\\d+)" );
-        try( com.mongodb.MongoClient mongoClient = new com.mongodb.MongoClient( mongoHost, mongoPort ) ) {
-            Consumer<String> drop = database -> {
-                Matcher matcher = pattern.matcher( database );
-                if( matcher.find() )
-                    if( new Date().getTime() - Long.parseLong( matcher.group( 1 ) ) > 1000 * 60 * 60 * 12 )
-                        mongoClient.dropDatabase( database );
-            };
-            mongoClient.listDatabaseNames().forEach( drop );
-        }
-    }
-
-    public MongoClient getMongoClient() {
-        return mongoClient;
-    }
-
-    public void insertDocument( Class<?> contextClass, String collection, String resourceName ) {
-        mongoClient.getCollection( collection ).insertOne( Document.parse( contentOfTestResource( contextClass, resourceName, Map.of() ) ) );
+        define( "MONGO_PORT", port = portFor( "MONGO_PORT" ) );
+        define( "MONGO_HOST", host = "localhost" );
+        define( "MONGO_DATABASE", database );
     }
 
     @Override
     protected void before() {
         super.before();
 
-        mongoClient = createMongoClient();
-        databaseInitializer.accept( this );
+        this.server = createMongoServer();
+        log.info( "mongo port = {}", port );
+        this.server.bind( host, port );
+        this.mongoClient = createMongoClient();
     }
 
     @NotNull
-    private MongoClient createMongoClient() {
-        return new MongoClient( mongoHost, mongoPort, mongoDatabase, mongoDatabase, List.of(), createMongoShell() );
+    public MongoClient createMongoClient() {
+        return new MongoClient( getConnectionString() );
+    }
+
+    @NotNull
+    public MongoClient createMongoClient( String migrationPackage ) {
+        return new MongoClient( getConnectionString(), migrationPackage );
+    }
+
+    @NotNull
+    public String getConnectionString() {
+        return getConnectionString( database );
+    }
+
+    @NotNull
+    public String getConnectionString( String database ) {
+        return "mongodb://" + host + ":" + port + "/" + database;
+    }
+
+    @NotNull
+    protected MongoServer createMongoServer() {
+        return new MongoServer( new MemoryBackend().version( ServerVersion.MONGO_3_6 ) );
     }
 
     @Override
-    public void after() {
-        mongoClient.dropDatabase();
-        mongoClient.close();
+    protected void after() {
+        this.mongoClient.close();
+        this.server.shutdownNow();
 
         super.after();
     }
 
-    public void initializeVersion( Version version ) {
-        mongoClient.updateVersion( version );
+    public void insertDocument( Class<?> contextClass, String collection, String resourceName ) {
+        this.mongoClient.getCollection( collection ).insertOne( Document.parse( contentOfTestResource( contextClass, resourceName, Map.of() ) ) );
     }
 
-    public MongoFixture withDatabaseInitializer( Consumer<MongoFixture> initializer ) {
-        this.databaseInitializer = initializer;
-        return this;
+    public void initializeVersion( Version version ) {
+        this.mongoClient.updateVersion( version );
+    }
+
+    public MongoClient client() {
+        return mongoClient;
+    }
+
+    public void dropDatabase( String database ) {
+        try( MongoClient mongoClient = new MongoClient( getConnectionString( database ) ) ) {
+            mongoClient.dropDatabase();
+        }
     }
 }

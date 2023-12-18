@@ -28,26 +28,22 @@ import oap.testng.Fixtures;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.util.List;
 import java.util.Objects;
 
 import static com.mongodb.client.model.Filters.eq;
-import static oap.storage.mongo.MigrationConfig.CONFIGURATION;
-import static oap.storage.mongo.Version.UNDEFINED;
-import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MongoClientTest extends Fixtures {
-    private final oap.storage.mongo.memory.MongoFixture mongoFixture;
+    private final MongoFixture mongoFixture;
 
     public MongoClientTest() {
-        fixture( mongoFixture = new oap.storage.mongo.memory.MongoFixture() );
+        fixture( mongoFixture = new MongoFixture() );
     }
 
     @Test
     public void instantiationWithoutCredentialsInConnectionString() {
         try {
-            new MongoClient( String.format( "mongodb://%s:%s/%s", mongoFixture.host, mongoFixture.port, mongoFixture.database ), mongoFixture.database );
+            new MongoClient( String.format( "mongodb://%s:%s/%s", mongoFixture.host, mongoFixture.port, mongoFixture.database ) );
         } catch( Exception e ) {
             Assert.fail( e.getMessage() );
         }
@@ -55,16 +51,8 @@ public class MongoClientTest extends Fixtures {
 
     @Test
     public void migration() {
-        List<MigrationConfig> configs = List.of(
-            CONFIGURATION.fromUrl( urlOfTestResource( getClass(), "2/config2.yaml" ) ),
-            CONFIGURATION.fromUrl( urlOfTestResource( getClass(), "9/config9.yaml" ) ),
-            CONFIGURATION.fromUrl( urlOfTestResource( getClass(), "10/config10.yaml" ) )
-        );
-
-        try( MongoClient client = new MongoClient( mongoFixture.host, mongoFixture.port, "testdb", mongoFixture.database, configs ) ) {
-            assertThat( client.databaseVersion() ).isSameAs( UNDEFINED );
+        try( MongoClient client = mongoFixture.createMongoClient( "oap.storage.mongo.mongoclienttest" ) ) {
             client.preStart();
-            assertThat( client.databaseVersion() ).isEqualTo( new Version( 10 ) );
 
             assertThat( getDocumentField( client, "test", "c" ) ).isEqualTo( 17 );
             assertThat( getDocumentField( client, "test3", "v" ) ).isEqualTo( 1 );
