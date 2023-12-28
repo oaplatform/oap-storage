@@ -54,15 +54,15 @@
     </repositories>
 
     <properties>
-        <oap-storage.project.version>21.0.6</oap-storage.project.version>
+        <oap-storage.project.version>21.0.7</oap-storage.project.version>
 
-        <oap.deps.oap.version>21.1.2</oap.deps.oap.version>
+        <oap.deps.oap.version>21.1.5</oap.deps.oap.version>
 
         <oap.deps.dynamodb.version>2.20.125</oap.deps.dynamodb.version>
         <oap.deps.assertj.version>3.23.1</oap.deps.assertj.version>
         <oap.deps.guava.version>31.1-jre</oap.deps.guava.version>
-        <oap.deps.logback.version>1.4.8</oap.deps.logback.version>
-        <oap.deps.slf4j.version>2.0.7</oap.deps.slf4j.version>
+        <oap.deps.logback.version>1.4.14</oap.deps.logback.version>
+        <oap.deps.slf4j.version>2.0.9</oap.deps.slf4j.version>
         <oap.deps.lombok.version>1.18.30</oap.deps.lombok.version>
         <oap.deps.mongo-java-driver.version>3.12.14</oap.deps.mongo-java-driver.version>
         <oap.deps.mongo-java-server.version>1.44.0</oap.deps.mongo-java-server.version>
@@ -71,7 +71,7 @@
         <oap.deps.javassist.version>3.29.2-GA</oap.deps.javassist.version>
         <oap.deps.apache.exec.version>1.3</oap.deps.apache.exec.version>
         <oap.deps.netty.version>4.1.94.Final</oap.deps.netty.version>
-        <oap.deps.testcontainers.version>1.18.3</oap.deps.testcontainers.version>
+        <oap.deps.testcontainers.version>1.19.3</oap.deps.testcontainers.version>
         <oap.deps.jol.version>0.17</oap.deps.jol.version>
     </properties>
 </project>
