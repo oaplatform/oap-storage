@@ -27,7 +27,7 @@ package oap.storage.dynamo.client.streams;
 import lombok.Builder;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.storage.dynamo.client.annotations.API;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import software.amazon.awssdk.services.dynamodb.model.DescribeStreamRequest;
 import software.amazon.awssdk.services.dynamodb.model.DescribeStreamResponse;
 import software.amazon.awssdk.services.dynamodb.model.GetRecordsRequest;
@@ -140,7 +140,7 @@ public class DynamodbStreamsRecordProcessor {
 
     private GetRecordsResponse getRecordsResponse( String streamArn, String shardId, String currentShardIteratorArg ) {
         // Use the shard iterator to read the stream records
-        GetRecordsResponse recordsResponse = null;
+        GetRecordsResponse recordsResponse;
         String currentShardIterator = currentShardIteratorArg;
         try {
             recordsResponse = streamClient.getRecords( GetRecordsRequest.builder()
